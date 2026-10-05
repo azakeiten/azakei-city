@@ -208,18 +208,37 @@ details.rules ol b{color:var(--ink)}
 .ghost.warn{border-color:var(--down);color:var(--down)}
 .note{font-size:12px;color:var(--muted);background:#191c3c;border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
 
-/* build bar: always at the bottom of the screen once a lot is chosen (PC and phone) */
-.dock{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:15;gap:12px;align-items:center;
-  width:min(480px,calc(100% - 24px));padding:10px 12px 10px 16px;background:rgba(20,22,48,.97);border:1px solid var(--gold);border-radius:14px;
-  box-shadow:0 12px 40px rgba(0,0,0,.55);backdrop-filter:blur(6px);animation:dockIn .25s ease}
-@keyframes dockIn{from{opacity:0;transform:translate(-50%,12px)}}
-.dock .dt{flex:1;min-width:0;font-size:13px;font-weight:700}
-.dock .dt b{font-family:var(--display);color:var(--gold);font-size:20px;margin-left:6px}
-.dock .go{width:auto;padding:10px 20px}
-.wrap{padding-block-end:96px}
+/* simple rules: hide what is switched off */
+body.simple .quest,body.simple .polnow{display:none}
+@media (max-width:640px){#sound{font-size:0;width:34px;height:30px;padding:0}#sound::before{content:"♪";font-size:15px}#sound[aria-pressed="false"]{opacity:.45}}
+
+/* newspaper: a bar shows it will move on by itself */
+#paperClose{position:relative;overflow:hidden}
+#paperClose .autobar{position:absolute;left:0;bottom:0;height:3px;background:var(--gold);animation:autobar 6s linear forwards}
+@keyframes autobar{from{width:100%}to{width:0}}
+
+/* hand tray: the cards and the build button live together at the bottom, under your thumb */
+.tray{position:fixed;left:0;right:0;bottom:0;z-index:15;padding:0 12px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.tray-in{pointer-events:auto;max-width:720px;margin:0 auto;background:rgba(20,22,48,.97);border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line));border-radius:18px;
+  padding:8px 10px 10px;box-shadow:0 -8px 40px rgba(0,0,0,.5);backdrop-filter:blur(8px);display:grid;gap:8px}
+.tray-msg{font-size:12.5px;font-weight:800;color:var(--muted);text-align:center;min-height:1.4em}
+.tray-msg b{color:var(--gold)}
+.tray .mk{gap:6px}
+.tray .mcard{padding:6px 2px 5px}
+.tray .mcard .ic{width:30px;height:30px}
+.tray[data-wait="1"] .tray-in{border-color:var(--line)}
+.tray .dock{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--gold) 10%,#191c3c)}
+.tray .dock .dt{flex:1;min-width:0;font-size:13px;font-weight:700}
+.tray .dock .dt b{font-family:var(--display);color:var(--gold);font-size:20px;margin-left:6px}
+.tray .dock .go{width:auto;padding:10px 22px}
+.tray .dock .x{border:1px solid var(--line);background:none;color:var(--muted);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:800}
+.wrap{padding-block-end:190px}
+.side .cardrule:empty{display:none}
+@media (min-width:921px){.boardbox{max-width:min(100%,max(340px,calc(100vh - 380px)))}}
+
 /* PC: the side panel scrolls on its own, so the board stays in view */
 @media (min-width:921px){
-  .side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding-right:4px;scrollbar-width:thin}
+  .side{position:sticky;top:12px;max-height:calc(100vh - 210px);overflow:auto;padding-right:4px;scrollbar-width:thin}
 }
 
 /* overlays */
@@ -656,7 +675,6 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
     <aside class="side">
       <div class="panel turnP" id="turnP">
         <div class="stepbar"><ol class="steps" id="steps" aria-label="手順"><li>カード</li><li>場所</li><li>建てる</li></ol><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
-        <div class="mk" id="market"></div>
         <div class="cardrule" id="cardrule"></div>
         <div class="deckline" id="deckline"></div><em id="mkNote" hidden></em>
         <div class="pre" id="pre" aria-live="polite"></div>
@@ -686,7 +704,13 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
     </aside>
   </div>
 </div>
-<div class="dock" id="dock" hidden></div>
+<div class="tray" id="tray" aria-label="手札（市場のカード）">
+  <div class="tray-in">
+    <div class="tray-msg" id="trayMsg"></div>
+    <div class="mk" id="market"></div>
+    <div class="dock" id="dock" hidden></div>
+  </div>
+</div>
 <div class="ov" id="paperbg" hidden></div>
 <div class="ov" id="typebg" hidden></div>
 <div class="ov" id="resultbg" hidden></div>
@@ -923,6 +947,7 @@ const MQT=[
   '稼ぎ8以上の製造を建てる（円安で輸出が好調）'
 ];
 function missionHit(e,g,r,c,k,v,isBuy){
+  if(SIMPLE) return false; // かんたんルールでは、時代のお題はお休み
   const n4=around(g,r,c,D4), n8=around(g,r,c,D8);
   switch(HI(e)){
     case 0: return k==='tr'&&n4.includes('tr');
@@ -959,7 +984,7 @@ function simulate(g,r,c,k,era,ty,st){
 }
 /* 市場：シードつきの山札から5枚。とった分を補充し、時代が変わると総入れ替え */
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-var NOBUY=false; // ひとりのゲームでは買収カードを出さない（買う相手がいない）
+var NOBUY=false, SIMPLE=false; // ひとりのゲームでは買収カードを出さない（買う相手がいない）
 function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):KEYS,tot=KS.reduce((s,k)=>s+W[k],0),cards=[];
   return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
 function replay(tiles,seed,onStep){
@@ -1237,7 +1262,7 @@ function showBook(){
 
 /* ---------- render ---------- */
 function chipRow(r){return IND.map((n,i)=>`<span class="chip k-${KEYS[i+1]}"><i></i>${n}<b class="${cls(r[i])}">${r[i]>0?'▲':r[i]<0?'▼':''}${Math.abs(r[i])||'0'}</b></span>`).join('')}
-function syncEL(){NOBUY=S.mode==="local"&&!!S.game&&S.game.players.length===1;EL=S.mode==="local"&&S.game?(Array.isArray(S.game.eras)?S.game.eras:S.game.short?SHORT:FULL):FULL}
+function syncEL(){SIMPLE=S.mode==="local"&&!!S.game&&!!S.game.simple;NOBUY=S.mode==="local"&&!!S.game&&(S.game.players.length===1||SIMPLE);document.body.classList.toggle("simple",SIMPLE);EL=S.mode==="local"&&S.game?(Array.isArray(S.game.eras)?S.game.eras:S.game.short?SHORT:FULL):FULL}
 function render(){
   syncEL();
   const R=S.R=replay(tiles(),seedNow()), e=eraNow(), ev=H(e), cyc=Math.floor(e/NE()), fin=finished();
@@ -1401,7 +1426,7 @@ function renderPre0(){
       <p class="sub">${ty==='turtle'?'🐢 カメなので、買った会社は倒産しなくなります。':'弱った会社なので、次の決算で倒産する危険もあります。'}</p>`;
     $('go').onclick=place;
     $('dock').hidden=false;
-    $('dock').innerHTML=`<div class="dt">買収 次の稼ぎ<b>${s.fut}</b></div><button class="go" type="button" id="go2">買収する</button>`;
+    $('dock').innerHTML=`<div class="dt">買収 次の稼ぎ<b>${s.fut}</b></div><button class="x" type="button" data-cancel="1">やめる</button><button class="go" type="button" id="go2">買収する</button>`;
     $('go2').onclick=place;
     return;
   }
@@ -1425,7 +1450,7 @@ function renderPre0(){
     <p class="sub">盤面の小さな数字が、まわりの建物の増減です。赤い棒は、その時代の決算で倒産する危険（稼ぎ2以下）。</p>`;
   $('go').onclick=place;
   $('dock').hidden=false;
-  $('dock').innerHTML=`<div class="dt">${T[k].name}<b>${sg(s.score)}</b>${danger?' <span class="n" style="font-size:11px">倒産注意</span>':''}</div><button class="go" type="button" id="go2">ここに建てる</button>`;
+  $('dock').innerHTML=`<div class="dt">${T[k].name}<b>${sg(s.score)}</b>${danger?' <span class="n" style="font-size:11px">倒産注意</span>':''}</div><button class="x" type="button" data-cancel="1">やめる</button><button class="go" type="button" id="go2">ここに建てる</button>`;
   $('go2').onclick=place;
 }
 function faceOf(ty){return ty&&TY[ty]?TY[ty].face:'・'}
@@ -1482,7 +1507,13 @@ function renderSteps(){
   $('turnP').dataset.wait=lk?'1':'';
   $('steps').dataset.msg=lk?(S.mode==='local'&&tp&&tp.cpu?`${sh(tp.nick)}の番…`:S.policy?'政策会議中…':S.pause?'決算中…':finished()?'おしまい':'待っています…'):'';
   $('hintBtn').disabled=lk;
+  $('tray').dataset.wait=lk?'1':'';
+  $('trayMsg').innerHTML=lk?esc($('steps').dataset.msg||'')
+    :!card?'<b>カード</b>を1枚えらぼう　→　盤面の数字が「増えるスコア」'
+    :!S.cell?(card.k==='buy'?'「買収」と出ている<b>会社</b>をタップ':'数字の出ている<b>マス</b>をタップ（金の枠がいちばんお得）')
+    :'もう一度タップか<b>「ここに建てる」</b>';
 }
+$('dock').addEventListener('click',e=>{if(e.target.closest('[data-cancel]')){S.sel=null;S.cell=null;sfx.pick();render()}});
 // ヒント：いま一番よさそうな一手を選んで見せる（理由はプレビューに出る）
 $('hintBtn').onclick=()=>{
   if(locked()) return;
@@ -1536,7 +1567,7 @@ function toast(html){
 function settleFx(rep){
   if(!rep) return;
   S.pause=true;
-  const board=$('board'), wait=reduced()?0:1500;
+  const board=$('board'), wait=reduced()?0:1100;
   if(!reduced()){
     let i=0;
     for(const[r,c,v,f]of rep.cells){
@@ -1568,13 +1599,13 @@ function showPaper(){
       <div>${payLine}</div>
       <div>${rep.bust.length?`倒産 <b>${rep.bust.length}社</b>（${summarize(rep.bust)}）${names(rep.bust)?`<br><small>${esc(names(rep.bust))}</small>`:""}${!many&&myBust?` うちあなた ${myBust}社`:''}`:'倒産 なし'}</div>
       <div>${rep.grow.length?`成長 <span class="g">${rep.grow.length}社</span>（${summarize(rep.grow)}）${names(rep.grow)?`<br><small>${esc(names(rep.grow))}</small>`:""}${!many&&myGrow?` うちあなた ${myGrow}社`:''}`:'成長 なし'}</div>
-      ${fin?'':`<div>次のお題：${MQT[HI(e)]}</div>`}
+      ${fin||SIMPLE?"":`<div>次のお題：${MQT[HI(e)]}</div>`}
     </div>
-    <div class="btns">${fin?`<button type="button" id="paperRes">結果を見る</button>`:`<button type="button" id="paperClose">街にもどる</button>`}</div></div>`;
+    <div class="btns">${fin?`<button type="button" id="paperRes">結果を見る</button>`:`<button type="button" id="paperClose">街にもどる<i class="autobar"></i></button>`}</div></div>`;
   $('paperbg').hidden=false;
   sfx.paper(rep.bust.length>0);
   if(fin){$('paperRes').onclick=()=>{hidePaper();showResult()};$('paperRes').focus()}
-  else{$('paperClose').onclick=hidePaper;$('paperClose').focus();clearTimeout(paperTimer);paperTimer=setTimeout(hidePaper,12000)}
+  else{$('paperClose').onclick=hidePaper;$('paperClose').focus();clearTimeout(paperTimer);paperTimer=setTimeout(hidePaper,6000)}
 }
 function hidePaper(){$('paperbg').hidden=true;clearTimeout(paperTimer);if(S.pause){S.pause=false;renderBoard();renderMarket();renderPre()}}
 
@@ -1700,7 +1731,7 @@ function drawPickSelf(){
 }
 
 /* ---------- setup: players, mode ---------- */
-const SU={daily:false,short:false,n:1,rows:[],cpu:store.get('azakei-city-cpu')||'normal'};
+const SU={daily:false,short:false,n:1,rows:[],cpu:store.get('azakei-city-cpu')||'normal',simple:!(store.get('azakei-city-badges')||{}).first};
 function showSetup(){
   const names=store.get('azakei-city-names')||[];
   SU.rows=[0,1,2,3].map(i=>SU.rows[i]||{nick:names[i]||(i===0?(S.nick||''):''),ty:i===0?(store.get('azakei-city-ty-local')||null):null});
@@ -1715,6 +1746,8 @@ function drawSetup(){
     <p class="lead">1964年から2022年まで。12の時代を、街ごと生き抜こう。</p>
     <div class="slab">モード</div>
     <div class="seg"><button type="button" data-daily="0" aria-pressed="${!SU.daily}">ふつうの街<small>毎回ちがう市場</small></button><button type="button" data-daily="1" aria-pressed="${SU.daily}">今日の街 ${today.slice(5).replace('-','/')}<small>今日はみんな同じ市場で点数勝負</small></button></div>
+    <div class="slab">ルール${SU.daily?"（今日の街はぜんぶ）":""}</div>
+    <div class="seg"><button type="button" data-simple="1" aria-pressed="${!SU.daily&&SU.simple}"${SU.daily?" disabled":""}>かんたん<small>はじめての人に。買収・政策会議・お題はお休み</small></button><button type="button" data-simple="0" aria-pressed="${SU.daily||!SU.simple}">ぜんぶ<small>すべてのルールで遊ぶ</small></button></div>
     <div class="slab">長さ${SU.daily?'（今日の街はフル）':''}</div>
     <div class="seg"><button type="button" data-short="0" aria-pressed="${SU.daily||!SU.short}">フル 12時代<small>1964→2022 ・ じっくり</small></button><button type="button" data-short="1" aria-pressed="${!SU.daily&&SU.short}"${SU.daily?' disabled':''}>ショート 6時代<small>大事件だけ ・ 約3分の1の長さ</small></button></div>
     <div class="slab">人数${SU.daily?'（今日の街は1人で挑戦）':'（1台を順番に回して遊ぶ）'}</div>
@@ -1733,7 +1766,7 @@ function startGame(){
   const players=SU.rows.slice(0,n).map((r,i)=>({key:'h'+(i+1),nick:(r.nick||'').trim()||(n>1?`${i+1}P`:'あなた'),ty:r.ty,cpu:false}));
   const rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
   for(let i=0;i<Math.max(0,3-n);i++) players.push({key:'cpu'+(i+1),nick:CPUN[i],ty:cp[i],cpu:true});
-  S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,cpu:SU.daily?'normal':SU.cpu,players,tiles:[]}; store.set('azakei-city-cpu',SU.cpu);
+  S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,simple:!SU.daily&&SU.simple,cpu:SU.daily?'normal':SU.cpu,players,tiles:[]}; store.set('azakei-city-cpu',SU.cpu);
   store.set('azakei-city-names',SU.rows.map(r=>r.nick)); store.set('azakei-city-ty-local',SU.rows[0].ty);
   if(n===1&&players[0].nick!=='あなた'){S.nick=players[0].nick;store.set('azakei-city-nick',S.nick);$('nick').value=S.nick}
   saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false;
@@ -1757,6 +1790,7 @@ $('typebg').addEventListener('click',e=>{
   if(tk){const ty=tk.dataset.take;sfx.pick();if(DX.cb)DX.cb(ty);return}
   // setup
   const dl=t.closest('[data-daily]'); if(dl&&!dl.disabled){readNames();SU.daily=dl.dataset.daily==='1';drawSetup();return}
+  const sp=t.closest('[data-simple]'); if(sp&&!sp.disabled){readNames();SU.simple=sp.dataset.simple==='1';sfx.pick();drawSetup();return}
   const cp=t.closest('[data-cpu]'); if(cp){readNames();SU.cpu=cp.dataset.cpu;sfx.pick();drawSetup();return}
   const sh=t.closest('[data-short]'); if(sh&&!sh.disabled){readNames();SU.short=sh.dataset.short==='1';drawSetup();return}
   const nn=t.closest('[data-n]'); if(nn&&!nn.disabled){readNames();SU.n=+nn.dataset.n;drawSetup();return}
@@ -1785,7 +1819,7 @@ function advance(){
   const R=replay(S.game.tiles,S.game.seed);
   if(R.n>=ERA*NE()||!validCells(R.g).length){S.busy=false;render();return}
   const tp=turnPlayer();
-  if(tp.cpu){S.busy=true;renderMarket();renderPre();renderTurn();setTimeout(cpuStep,reduced()?150:700);return}
+  if(tp.cpu){S.busy=true;renderMarket();renderPre();renderTurn();setTimeout(cpuStep,reduced()?120:420);return}
   const changed=S.viewer!==tp.key;
   S.viewer=tp.key; S.busy=false; S.sel=null; S.cell=null; S.insp=null;
   render();
@@ -1793,6 +1827,7 @@ function advance(){
 }
 /* ---------- 政策会議 ---------- */
 function needPolicy(){
+  if(SIMPLE) return false; // かんたんルールでは、政策会議はお休み
   if(S.mode!=='local'||!S.game) return false;
   syncEL();
   const R=replay(S.game.tiles,S.game.seed), e=Math.floor(R.n/ERA);
@@ -1842,7 +1877,7 @@ function cpuStep(){
   S.game.tiles.push(best?{r:best.r,c:best.c,k:best.k,src:best.src,t:Date.now(),ok:tp.key,nick:tp.nick,ty:tp.ty}:{k:'pass',t:Date.now(),ok:tp.key});
   saveGame();
   render(); if(best){floatAt(best.r,best.c,best.d);rippleAt(best.ch);cpuTalk(tp,best)}
-  setTimeout(advance,reduced()?150:500);
+  setTimeout(advance,reduced()?120:380);
 }
 async function place(){
   const card=selCard();
@@ -2004,7 +2039,7 @@ const BOOK=[
   {t:'1手の流れ',h:()=>`
     <div class="bk-row">${'<div class="vs">'+mini([['','?+2',''],['?+4*','ho:2','?+2'],['','hall','']])+'<span class="arr">→</span>'+mini([['','',''],['re:3','ho:3:+1',''],['','hall','']])+'</div>'}
       <ol class="bk-cap">
-        <li><b>市場</b>から1枚えらぶ（例：小売）。</li>
+        <li>画面の下の<b>手札（市場）</b>から1枚えらぶ（例：小売）。</li>
         <li>建てられるマスに<b>増えるスコア</b>が出る。<b>金色の枠</b>が一番お得。</li>
         <li>マスをえらんで<b>「ここに建てる」</b>。もう一度タップでもOK。</li>
         <li>迷ったら<b>💡ヒント</b>。いま一番よさそうな一手と、その理由を教えてくれる。</li>
