@@ -452,9 +452,6 @@ ol.rules b{color:var(--ink)}
   .h-era .era{font-size:15px}
   .h-gdp .spark{display:none}
   .timeline{display:none}
-  .side>#eraPanel{order:3}
-  .side>.panel:has(#market){order:1}
-  .side>#pre{order:2}
   .side>.tabsP{order:4}
   .side>.tools{order:5}
 }
@@ -472,6 +469,28 @@ ol.rules b{color:var(--ink)}
 @keyframes flow{50%{transform:translateX(2px)}}
 .cell.terr.k-sta{background:linear-gradient(180deg,#e9ebfa,#b9bde0);color:#2a2f5e;box-shadow:0 3px 0 rgba(0,0,0,.4)}
 .cell.hall{box-shadow:0 0 14px color-mix(in srgb,var(--gold) 40%,transparent),0 3px 0 rgba(0,0,0,.4)}
+
+/* your-turn panel: steps → market → preview, all in one place */
+.turnP{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 12%,transparent),0 10px 30px rgba(0,0,0,.25)}
+.turnP[data-wait="1"]{border-color:var(--line);box-shadow:none}
+.stepbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.steps{list-style:none;margin:0;padding:0;display:flex;gap:4px;flex:1;min-width:0;counter-reset:s;position:relative}
+.steps li{counter-increment:s;flex:1;min-width:0;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--muted);padding:6px 6px;border-radius:9px;background:#191c3c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps li::before{content:counter(s);flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:11px;background:var(--line);color:var(--ink)}
+.steps li.now{background:color-mix(in srgb,var(--gold) 18%,#191c3c);color:var(--ink);box-shadow:inset 0 0 0 1px var(--gold)}
+.steps li.now::before{background:var(--gold);color:var(--gold-ink)}
+.steps li.done{color:var(--ink)} .steps li.done::before{content:"✓";background:var(--up);color:#06281a}
+.steps[data-msg]:not([data-msg=""])::after{content:attr(data-msg);position:absolute;inset:0;display:grid;place-items:center;border-radius:9px;background:#191c3c;font-size:12.5px;font-weight:800;color:var(--muted)}
+.hintbtn{flex:none;border:1px solid color-mix(in srgb,var(--glow) 60%,transparent);background:color-mix(in srgb,var(--glow) 12%,transparent);color:var(--ink);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800}
+.hintbtn:disabled{opacity:.35;cursor:not-allowed}
+.turnP .pre{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:13px}
+.turnP .pre:empty{display:none}
+.turnP .pre h2{font-size:13px;letter-spacing:.04em;color:var(--ink);margin-bottom:6px}
+.turnP .pre h2 em{font-family:var(--display);font-size:18px;font-style:normal}
+.lgd summary{cursor:pointer;font-weight:800;color:var(--muted);font-size:12px}
+.lgdin{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:6px}
+.lgdin span{display:inline-flex;align-items:center;gap:4px}
+.legend{display:block}
 
 /* 3D town view */
 .boardbox{position:relative}
@@ -635,14 +654,14 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
     </section>
 
     <aside class="side">
-      <div class="panel" id="eraPanel"></div>
-      <div class="panel">
-        <h2><span>① 市場から1枚えらぶ</span><em id="mkNote"></em></h2>
+      <div class="panel turnP" id="turnP">
+        <div class="stepbar"><ol class="steps" id="steps" aria-label="手順"><li>カード</li><li>場所</li><li>建てる</li></ol><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
         <div class="mk" id="market"></div>
         <div class="cardrule" id="cardrule"></div>
-        <div class="deckline" id="deckline"></div>
+        <div class="deckline" id="deckline"></div><em id="mkNote" hidden></em>
+        <div class="pre" id="pre" aria-live="polite"></div>
       </div>
-      <div class="panel pre" id="pre" aria-live="polite"></div>
+      <div class="panel" id="eraPanel"></div>
       <div class="panel tabsP">
         <div class="tabbar" role="tablist" aria-label="くわしい情報">
           <button type="button" role="tab" data-tab="rank" id="t-rank">番付</button>
@@ -1339,7 +1358,8 @@ function locked(){
   if(S.mode==='shared'&&(!NET.db||!NET.canWrite)) return true;
   return !validCells(S.R.g).length;
 }
-function renderPre(){
+function renderPre(){renderPre0();renderSteps()}
+function renderPre0(){
   const R=S.R,g=R.g,e=eraNow(),ty=myTy(); $('dock').hidden=true;
   if(S.mode==='local'&&!S.game){$('pre').innerHTML=`<h2><span>新しい街</span></h2><p class="hint">人数と社長タイプを決めて、街づくりを始めよう。</p><button class="go" type="button" id="openSetup" style="margin-top:10px">街をつくる</button>`;$('openSetup').onclick=showSetup;return}
   if(finished()){$('pre').innerHTML=`<h2><span>おつかれさまでした</span></h2><p class="hint">60年分の街ができました。</p>`;return}
@@ -1360,9 +1380,9 @@ function renderPre(){
       <p class="sub">${isInd(t.k)&&canBust(t)&&nv<=BUST?'<span class="n">次の決算で倒産の危険（稼ぎ2以下）。</span>':''}白い枠が、この稼ぎに関わる周りの建物です。</p>`;return}
   }
   const tp=turnPlayer();
-  if(S.mode==='local'&&tp&&tp.cpu){$('pre').innerHTML=`<h2><span>${esc(sh(tp.nick))}の番</span></h2><p class="hint">CPUが考えています…</p>`;return}
+  if(S.mode==='local'&&tp&&tp.cpu){$('pre').innerHTML='';return}
   const card=selCard();
-  if(!card){$('pre').innerHTML=`<h2><span>つぎの一手</span></h2><p class="hint">市場から1枚選ぶと、建てられる場所にスコアが出ます。<span style="color:var(--gold)">◆</span>は名所、<span style="color:var(--glow)">★</span>は時代のお題が達成できる場所。建物をタップすると稼ぎの内訳が見られます。</p>`;return}
+  if(!card){$('pre').innerHTML='';return}
   const k=card.k;
   if(k==='buy'){
     const tg=buyTargets(g,e,myKey());
@@ -1455,7 +1475,27 @@ function renderMe(){
   }
 }
 // はじめの数手だけのガイド（ひとりモード）
+// ①カードをえらぶ → ②場所をえらぶ → ③建てる（いまの段階を光らせる）
+function renderSteps(){
+  const lk=locked(), card=selCard(), st=lk?0:!card?1:!S.cell?2:3, tp=turnPlayer();
+  [...$('steps').children].forEach((li,i)=>{li.className=i+1<st?'done':i+1===st?'now':''});
+  $('turnP').dataset.wait=lk?'1':'';
+  $('steps').dataset.msg=lk?(S.mode==='local'&&tp&&tp.cpu?`${sh(tp.nick)}の番…`:S.policy?'政策会議中…':S.pause?'決算中…':finished()?'おしまい':'待っています…'):'';
+  $('hintBtn').disabled=lk;
+}
+// ヒント：いま一番よさそうな一手を選んで見せる（理由はプレビューに出る）
+$('hintBtn').onclick=()=>{
+  if(locked()) return;
+  const ty=myTy(), best=cpuPick(S.R,ty,myKey(),'hint');
+  if(!best){toast('いまは建てられる場所がありません');return}
+  const j=choices(S.R,ty).findIndex(x=>x.k===best.k&&x.src===best.src);
+  if(j<0) return;
+  S.sel=j; S.cell=[best.r,best.c]; S.insp=null; sfx.pick(); render();
+  const why=best.lms&&best.lms.length?'名所が完成するから':best.mq?'時代のお題を達成できるから':best.d>=8?'いまのスコアが大きいから':'次の時代も稼げそうだから';
+  toast(`ヒント：<b>${T[best.k].name}</b>をここに。${why}`);
+};
 function renderCoach(){
+  $("coach").hidden=true; return; // 手順はステップ表示（①②③）とヒントボタンにまかせる
   const el=$('coach');
   if(S.mode!=='local'||S.tut>=4||!S.game||humans().length>1||finished()){el.hidden=true;return}
   if(S.tut===0&&S.sel!=null) S.tut=1;
@@ -1484,7 +1524,7 @@ function spark(vals){
   const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   $('spark').innerHTML=vals.length<2?'':`<polyline points="${x(0)},${h} ${pts} ${x(vals.length-1)},${h}" fill="rgba(255,200,58,.12)" stroke="none"/><polyline points="${pts}" fill="none" stroke="#ffc83a" stroke-width="2" vector-effect="non-scaling-stroke"/><circle cx="${x(vals.length-1)}" cy="${y(vals.at(-1))}" r="3" fill="#ffc83a"/>`;
 }
-function legend(){$('legend').innerHTML=['ho',...KEYS.slice(1,9),'river','sta'].map(k=>`<span class="k-${k}" style="color:var(--c)">${ic(k)}<span style="color:var(--muted)">${T[k].name}</span></span>`).join('')+'<span>◤ 左上の色＝持ち主 ・ ★ 成長 ・ ◆ 名所</span>'}
+function legend(){$('legend').innerHTML='<details class="lgd"><summary>記号の見かた</summary><div class="lgdin">'+['ho',...KEYS.slice(1,9),'river','sta'].map(k=>`<span class="k-${k}" style="color:var(--c)">${ic(k)}<span style="color:var(--muted)">${T[k].name}</span></span>`).join('')+'<span>◤ 左上の色＝持ち主 ・ ★ 成長 ・ ◆ 名所 ・ 金の枠＝いちばんお得</span></div></details>'}
 let toastTimer=null;
 function toast(html){
   const old=document.querySelector('.toast'); if(old) old.remove();
@@ -1846,7 +1886,7 @@ function afterPlace(r,c,d,ch){
   render(); floatAt(r,c,d); rippleAt(ch);
 }
 // CPU：市場（ウサギは山札も）から選ぶ。強さで「先の読み」と「迷い」が変わる
-const CPULV={easy:{fut:0,risk:0,noise:7,top:5},normal:{fut:.4,risk:1,noise:5,top:1},hard:{fut:.9,risk:3,noise:0,top:1}};
+const CPULV={hint:{fut:.9,risk:3,noise:0,top:1},easy:{fut:0,risk:0,noise:7,top:5},normal:{fut:.4,risk:1,noise:5,top:1},hard:{fut:.9,risk:3,noise:0,top:1}};
 function cpuPick(R,ty,ok,lvName){
   const L=CPULV[lvName||'normal']||CPULV.normal, g=R.g, cells=validCells(g), e=Math.floor(R.n/ERA), cand=[];
   for(const x of choices(R,ty)){
@@ -1967,6 +2007,7 @@ const BOOK=[
         <li><b>市場</b>から1枚えらぶ（例：小売）。</li>
         <li>建てられるマスに<b>増えるスコア</b>が出る。<b>金色の枠</b>が一番お得。</li>
         <li>マスをえらんで<b>「ここに建てる」</b>。もう一度タップでもOK。</li>
+        <li>迷ったら<b>💡ヒント</b>。いま一番よさそうな一手と、その理由を教えてくれる。</li>
       </ol></div>
     <div class="bk-box">この例：小売の稼ぎ <b>3</b> ＋ となりの住宅が <b>+1</b> ＝ スコア <b>+4</b>。<br>市場はライバルと共通。ほしいカードは先にとられるかも。</div>`},
   {t:'ルールの図の読み方',h:()=>`
