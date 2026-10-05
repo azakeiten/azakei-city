@@ -1,0 +1,2097 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="1964年から2022年まで。建物を建てて、となりどうしで稼ぎを増やし、オイルショックもバブルも街ごと乗りこえる経済ゲーム。AZAKEI（麻経）制作。">
+<meta property="og:title" content="AZAKEI CITY">
+<meta property="og:description" content="1964→2022。60年の経済を、街ごと生き抜け。AZAKEI（麻経）の経済ゲーム。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#12142b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2312142b'/%3E%3Cpath d='M12 3 20 16.5H4Z M12 21 4 7.5h16Z' fill='none' stroke='%23ffc83a' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>AZAKEI CITY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Shippori+Mincho+B1:wght@700;800&family=DM+Mono:wght@500&display=swap">
+<style>html{color-scheme:dark}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<style>
+/* Layout: night city seen from above — 11×11 lots on the left, a trading-desk side panel (era, shared market, preview, landmarks, ranking) on the right; stacks on phones with a bottom build dock.
+   Single deliberate night look whose sky shifts by era (Showa amber → Heisei blue → Reiwa violet); gold for value, the six AZAKEI MARKET industry colors for buildings, newspaper cream for settlements. */
+:root{
+  --night:#12142b; --night2:#1b1e40; --lot:#20244c; --line:#2f3466;
+  --ink:#eef0ff; --muted:#9ba1cc; --gold:#ffc83a; --gold-ink:#2a1d00;
+  --up:#3ad283; --down:#ff6b5e; --paper:#fbf3dc; --paper-ink:#24180a; --paper-red:#b8261b;
+  --i0:#ff7a3d; --i1:#eab520; --i2:#5f86ff; --i3:#ff5c9a; --i4:#20c6d1; --i5:#a77bff;
+  --ho:#e9dcc0; --sys:#ffc83a;
+  --lion:#e0a12a; --fox:#ff8a3d; --turtle:#4fb35a; --rabbit:#ff7aa8;
+  --sky:#3a2a3a; --glow:#ffb85c;
+  --c:var(--muted);
+  --display:"Dela Gothic One","M PLUS Rounded 1c","Yu Gothic",sans-serif;
+  --body:"M PLUS Rounded 1c","Yu Gothic","Meiryo",sans-serif;
+  --serif:"Shippori Mincho B1","Yu Mincho",serif;
+  --mono:"DM Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+:root[data-age="heisei"]{--sky:#1d3266;--glow:#6cbcff}
+:root[data-age="reiwa"]{--sky:#33206a;--glow:#d08bff}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--night);color:var(--ink)}
+body{font-family:var(--body);font-weight:500;font-size:14px;line-height:1.6;
+  background:radial-gradient(1200px 640px at 30% -12%,var(--sky) 0,transparent 62%),var(--night);background-attachment:fixed}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:18px 48px}
+
+/* top bar */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto;border:0;background:none;padding:0;text-align:left;color:inherit}
+.brand svg{width:34px;height:34px;color:var(--gold)}
+.brand .h1{display:block;font-family:var(--display);font-weight:400;font-size:26px;letter-spacing:.04em;line-height:1}
+.brand .sub2{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.tabs{display:flex;background:var(--night2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13px;color:var(--muted)}
+.tabs button[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink)}
+.tabs button:disabled{opacity:.4;cursor:not-allowed}
+.nick{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.nick input{width:8.5em;background:var(--night2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink);font:inherit;font-weight:700}
+.me-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--night2);border-radius:999px;padding:4px 12px 4px 6px;font-size:12px;font-weight:800}
+.me-chip .face{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 26%,transparent);font-size:13px}
+.icon-btn{border:1px solid var(--line);background:var(--night2);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--muted)}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:22px;align-items:start}
+@media (max-width:920px){.app{grid-template-columns:1fr}}
+
+/* stats */
+.stats{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 18px;align-items:end;margin-bottom:12px}
+.stat .lab{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.stat .num{font-family:var(--display);font-size:34px;line-height:1.05;color:var(--gold);font-variant-numeric:tabular-nums}
+.stat .era{font-family:var(--serif);font-weight:800;font-size:19px;line-height:1.25}
+.stat .era b{font-family:var(--mono);font-weight:500;color:var(--gold);margin-right:6px}
+.gengo{font-family:var(--serif);font-size:12px;font-weight:800;color:var(--glow);border:1px solid color-mix(in srgb,var(--glow) 55%,transparent);border-radius:4px;padding:0 6px;margin-left:8px;vertical-align:3px;white-space:nowrap}
+.stat.right{text-align:right}
+.stat .small{font-size:12px;color:var(--muted)}
+.spark{grid-column:1/-1;height:36px;width:100%}
+@media (max-width:520px){.stats{grid-template-columns:1fr 1fr}.stat.mid{grid-column:1/-1;order:-1}.stat .num{font-size:28px}}
+
+/* era timeline */
+.timeline{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px;margin:2px 0 12px}
+.timeline span{height:22px;border-radius:4px;background:var(--line);position:relative;overflow:hidden;font-family:var(--mono);font-size:9px;color:var(--muted);display:grid;place-items:center}
+.timeline span.done{background:#3a3f78;color:var(--ink)}
+.timeline span.now{background:#2b2f62;color:var(--ink);box-shadow:inset 0 0 0 1px var(--gold)}
+.timeline span.now i{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--gold) 35%,transparent)}
+.timeline span b{position:relative;font-weight:500}
+
+/* coach */
+.coach{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:color-mix(in srgb,var(--glow) 13%,var(--night2));border:1px solid color-mix(in srgb,var(--glow) 50%,transparent);
+  border-radius:12px;padding:8px 12px;margin-bottom:10px;font-size:13px;font-weight:700}
+.coach .no{font-family:var(--display);color:var(--glow);font-size:16px}
+.coach span.t{flex:1;min-width:12em}
+.coach button{border:1px solid var(--line);background:var(--night);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted)}
+.coach button.ok{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+
+/* board */
+.boardbox{width:100%;max-width:min(100%,80vh);margin:0 auto}
+.board{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px;padding:8px;border-radius:14px;background:#171a39;border:1px solid var(--line);
+  box-shadow:0 0 60px color-mix(in srgb,var(--glow) 12%,transparent)}
+.cell{aspect-ratio:1;border:0;border-radius:7px;background:var(--lot);position:relative;padding:0;display:grid;place-items:center;
+  color:var(--muted);transition:transform .12s ease}
+.cell svg{width:56%;height:56%}
+.cell.t{background:color-mix(in srgb,var(--c) 24%,var(--lot));color:var(--c);box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--c) 70%,transparent)}
+.cell.lv2{box-shadow:inset 0 -3px 0 var(--c),0 0 0 1px color-mix(in srgb,var(--c) 60%,transparent)}
+.cell.lv3{background:color-mix(in srgb,var(--c) 40%,var(--lot));box-shadow:inset 0 -3px 0 var(--c),0 0 10px color-mix(in srgb,var(--c) 55%,transparent)}
+.cell .v{position:absolute;right:3px;bottom:1px;font-family:var(--mono);font-size:clamp(8px,1.4vw,11px);color:var(--ink);line-height:1}
+.cell .v.z{color:var(--down)}
+.cell .st{position:absolute;right:3px;top:1px;font-size:clamp(7px,1.2vw,10px);color:var(--gold);line-height:1;letter-spacing:-1px}
+.cell .lmk{position:absolute;left:3px;bottom:1px;font-size:clamp(7px,1.1vw,9px);color:var(--gold);line-height:1}
+.cell.mine::after{content:"";position:absolute;left:4px;top:4px;width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.cell.hall{background:color-mix(in srgb,var(--gold) 18%,var(--lot));color:var(--gold)}
+.cell.ruin{background:repeating-linear-gradient(45deg,#2a1d2c 0 4px,#221a33 4px 8px)}
+.cell.ruin::before{content:"倒産";position:absolute;top:2px;left:0;right:0;text-align:center;font-size:clamp(7px,1.1vw,9px);color:var(--down);font-weight:800}
+.cell.crumble{animation:shake .45s ease 3}
+@keyframes shake{25%{transform:translateX(-2px) rotate(-4deg)}75%{transform:translateX(2px) rotate(4deg)}}
+.cell.valid{background:#1b1f44;outline:1px dashed #3d4380;outline-offset:-3px}
+.cell.valid.ruin{background:repeating-linear-gradient(45deg,#2a1d2c 0 4px,#1b1f44 4px 8px)}
+.cell.valid .pv{font-family:var(--mono);font-size:clamp(9px,1.8vw,14px);font-weight:500}
+.cell.valid .pv.p{color:var(--up)} .cell.valid .pv.n{color:var(--down)} .cell.valid .pv.zz{color:var(--muted)}
+.cell.valid .pv.lmv{color:var(--gold)}
+.cell.best{outline:2px solid var(--gold);outline-offset:-2px}
+.cell.pick{outline:2px solid var(--ink);outline-offset:-2px;background:color-mix(in srgb,var(--c) 30%,var(--lot));color:var(--c)}
+.cell.pick .v{color:var(--gold)}
+.cell.insp{outline:2px solid var(--ink);outline-offset:-2px}
+.cell.src{outline:1.5px solid color-mix(in srgb,var(--ink) 55%,transparent);outline-offset:-2px}
+.cell .nb{position:absolute;left:2px;top:2px;font-family:var(--mono);font-size:clamp(8px,1.3vw,11px);padding:0 3px;border-radius:4px;background:rgba(8,10,30,.88);line-height:1.35;z-index:2}
+.cell .nb.p{color:var(--up)} .cell .nb.n{color:var(--down)}
+.cell.flash{animation:pop .6s ease}
+.cell.risk::before{content:"";position:absolute;inset:2px;border-radius:6px;border:1.5px dashed var(--down);opacity:.8}
+.cell.target{outline:2px dashed var(--down);outline-offset:-3px}
+.cell.target.best{outline:2px solid var(--gold)}
+.cell .bv{position:absolute;inset:auto 0 0 0;font-family:var(--mono);font-size:clamp(8px,1.5vw,12px);color:var(--ink);background:rgba(10,10,30,.75);border-radius:0 0 7px 7px;line-height:1.4}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+.float{position:absolute;left:50%;top:-4px;transform:translateX(-50%);font-family:var(--display);font-size:16px;color:var(--gold);pointer-events:none;
+  text-shadow:0 2px 6px #000;animation:rise 1.4s ease forwards;white-space:nowrap;z-index:3}
+.float.neg{color:var(--down)}
+.float.pay{font-family:var(--mono);font-size:12px;animation-duration:1.2s}
+@keyframes rise{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-30px)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:11px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.legend svg{width:14px;height:14px}
+.toggles{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.toggles label{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer}
+
+/* type colors */
+.k-en{--c:var(--i0)}.k-fi{--c:var(--i1)}.k-ma{--c:var(--i2)}.k-re{--c:var(--i3)}.k-tr{--c:var(--i4)}.k-me{--c:var(--i5)}
+.k-ho{--c:var(--ho)}.k-in{--c:var(--sys)}.k-sc{--c:var(--sys)}.k-buy{--c:var(--down)}
+
+/* side */
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--night2);border:1px solid var(--line);border-radius:14px;padding:14px}
+.panel h2{font-size:11px;letter-spacing:.14em;color:var(--muted);font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;gap:8px}
+.panel h2 em{font-style:normal;color:var(--gold);letter-spacing:.04em}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px 2px 6px;border-radius:999px;
+  background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--ink)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.chip b{font-family:var(--mono);font-weight:500}
+.chip b.p{color:var(--up)} .chip b.n{color:var(--down)} .chip b.z{color:var(--muted)}
+.next{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted)}
+.next strong{color:var(--ink);font-family:var(--serif);font-size:14px}
+.warn-line{margin-top:8px;font-size:12px;color:var(--down);font-weight:700}
+
+/* market */
+.mk{display:grid;grid-template-columns:repeat(var(--cols,5),minmax(0,1fr));gap:6px}
+.mcard{border:1px solid var(--line);background:#191c3c;border-radius:10px;padding:8px 3px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;position:relative}
+.mcard .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c)}
+.mcard .ic svg{width:20px;height:20px}
+.mcard .nm{font-weight:800;font-size:12px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcard .tg{font-size:9px;color:var(--c);font-weight:800;letter-spacing:.04em}
+.mcard.sys{background:linear-gradient(170deg,#2b2611,#191c3c 70%)}
+.mcard.deck{border-style:dashed}
+.mcard.deck::before{content:"山札";position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;background:var(--rabbit);color:#2a0d18;border-radius:999px;padding:0 6px}
+.mcard[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,#191c3c);box-shadow:0 0 0 1px var(--c)}
+.mcard:disabled{opacity:.45;cursor:not-allowed}
+.cardrule{margin-top:10px;padding:9px 11px;border-radius:10px;background:#191c3c;font-size:12.5px;color:var(--muted);min-height:3.2em}
+.cardrule b{color:var(--ink)}
+.deckline{margin-top:8px;font-size:11.5px;color:var(--muted);display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.deckline .dk{display:inline-flex;align-items:center;gap:3px;padding:1px 7px 1px 4px;border-radius:999px;background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--ink);font-weight:700}
+.deckline .dk svg{width:12px;height:12px;color:var(--c)}
+
+.pre{font-size:13px}
+.pre .hint{color:var(--muted)}
+.rows{display:grid;gap:4px;margin:8px 0 10px}
+.rows div{display:flex;justify-content:space-between;gap:10px}
+.rows span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.rows .tot{border-top:1px solid var(--line);padding-top:6px;margin-top:2px;font-weight:800}
+.rows .tot span:last-child{font-family:var(--display);font-size:20px;color:var(--gold)}
+.rows .sm{font-size:12px;color:var(--muted)}
+.p{color:var(--up)} .n{color:var(--down)}
+.go{width:100%;border:0;border-radius:10px;padding:11px;background:var(--gold);color:var(--gold-ink);font-weight:800;font-size:15px}
+.go:disabled{opacity:.45;cursor:not-allowed}
+.sub{font-size:11px;color:var(--muted);margin-top:6px}
+
+.lms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.lm{border:1px dashed var(--line);border-radius:10px;padding:7px 9px;min-width:0}
+.lm .ln{font-weight:800;font-size:13px;display:flex;justify-content:space-between;gap:6px}
+.lm .ln small{font-family:var(--mono);color:var(--gold);font-weight:500}
+.lm .lh{font-size:11px;color:var(--muted);line-height:1.45}
+.lm.got{border-style:solid;border-color:color-mix(in srgb,var(--gold) 50%,transparent);background:color-mix(in srgb,var(--gold) 9%,transparent)}
+.lm.got .lh{color:var(--gold)}
+
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.rank li{display:grid;grid-template-columns:22px 22px minmax(0,1fr) auto;gap:6px;align-items:center;padding:4px 6px;border-radius:7px}
+.rank li.me{background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.rank .no{font-family:var(--mono);color:var(--muted);text-align:right}
+.rank li:first-child .no{color:var(--gold)}
+.rank .face{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:color-mix(in srgb,var(--tc,var(--muted)) 24%,transparent)}
+.rank .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.rank .who small{color:var(--muted);font-weight:500;margin-left:4px}
+.rank .sc{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.log{list-style:none;margin:0;padding:0;font-size:12px;display:grid;gap:3px;color:var(--muted)}
+.log b{color:var(--ink)}
+.log .ev{color:var(--gold)}
+.empty{font-size:12px;color:var(--muted)}
+
+details.rules summary{cursor:pointer;font-weight:800;font-size:13px}
+details.rules ol{margin:8px 0 0;padding-left:1.3em;font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+details.rules ol b{color:var(--ink)}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.ghost{border:1px solid var(--line);background:none;border-radius:8px;padding:6px 10px;font-size:12px;color:var(--muted)}
+.ghost.warn{border-color:var(--down);color:var(--down)}
+.note{font-size:12px;color:var(--muted);background:#191c3c;border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
+
+/* build bar: always at the bottom of the screen once a lot is chosen (PC and phone) */
+.dock{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:15;gap:12px;align-items:center;
+  width:min(480px,calc(100% - 24px));padding:10px 12px 10px 16px;background:rgba(20,22,48,.97);border:1px solid var(--gold);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.55);backdrop-filter:blur(6px);animation:dockIn .25s ease}
+@keyframes dockIn{from{opacity:0;transform:translate(-50%,12px)}}
+.dock .dt{flex:1;min-width:0;font-size:13px;font-weight:700}
+.dock .dt b{font-family:var(--display);color:var(--gold);font-size:20px;margin-left:6px}
+.dock .go{width:auto;padding:10px 20px}
+.wrap{padding-block-end:96px}
+/* PC: the side panel scrolls on its own, so the board stays in view */
+@media (min-width:921px){
+  .side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding-right:4px;scrollbar-width:thin}
+}
+
+/* overlays */
+.ov[hidden]{display:none}
+.ov{position:fixed;inset:0;background:rgba(6,7,20,.7);display:grid;place-items:center;padding:16px;z-index:20;overflow:auto}
+.paper{background:var(--paper);color:var(--paper-ink);width:min(470px,100%);border-radius:4px;padding:18px 20px 16px;box-shadow:0 30px 80px rgba(0,0,0,.5);
+  transform:rotate(-1.2deg);animation:drop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes drop{from{transform:rotate(-8deg) scale(.6);opacity:0}}
+.paper .mast{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px double var(--paper-ink);padding-bottom:4px;font-family:var(--serif);font-weight:800;gap:8px}
+.paper .mast small{font-size:12px;font-weight:700;color:#6a5a3a}
+.paper .mast span:last-child{background:var(--paper-red);color:var(--paper);padding:0 8px;font-size:13px}
+.paper .yr{font-family:var(--serif);font-weight:800;font-size:44px;line-height:1;margin-top:12px;color:var(--paper-red)}
+.paper .yr small{font-size:16px;margin-left:8px;color:var(--paper-ink)}
+.paper h3{font-family:var(--serif);font-weight:800;font-size:28px;line-height:1.2;margin:4px 0 8px}
+.paper p{font-family:var(--serif);font-weight:700;font-size:13.5px;line-height:1.7}
+.paper .chips{margin:10px 0}
+.paper .chip{color:var(--paper-ink);background:color-mix(in srgb,var(--c) 22%,transparent)}
+.paper .chip b.p{color:#0f7a43}.paper .chip b.n{color:var(--paper-red)}.paper .chip b.z{color:#8a7a5a}
+.paper .box{border:1px solid #cdbb8d;border-radius:3px;padding:8px 10px;margin-top:10px;font-family:var(--body);font-size:13px;font-weight:700;display:grid;gap:3px}
+.paper .box .hd{font-family:var(--serif);font-weight:800;font-size:14px;border-bottom:1px solid #cdbb8d;padding-bottom:3px;margin-bottom:2px}
+.paper .box b{color:var(--paper-red)}
+.paper .box .g{color:#0f7a43}
+.paper .btns{display:flex;gap:8px;margin-top:12px}
+.paper .btns button{flex:1;border:0;background:var(--paper-ink);color:var(--paper);border-radius:6px;padding:9px;font-weight:800}
+
+.sheet{background:var(--night2);border:1px solid var(--line);border-radius:18px;width:min(640px,100%);padding:20px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.sheet h3{font-family:var(--display);font-weight:400;font-size:22px;margin-bottom:4px}
+.sheet .lead{font-size:13px;color:var(--muted);margin-bottom:14px}
+.types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.types{grid-template-columns:1fr}}
+.type{--tc:var(--muted);text-align:left;border:1px solid var(--line);background:#191c3c;border-radius:14px;padding:12px;display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 12px;align-items:start}
+.type:hover{border-color:var(--tc)}
+.type .face{grid-row:span 3;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:color-mix(in srgb,var(--tc) 22%,transparent)}
+.type .tn{font-weight:800;font-size:15px;color:var(--tc)}
+.type .ta{font-size:12.5px;color:var(--ink);line-height:1.5}
+.ty-lion{--tc:var(--lion)}.ty-fox{--tc:var(--fox)}.ty-turtle{--tc:var(--turtle)}.ty-rabbit{--tc:var(--rabbit)}
+.sheet .foot{margin-top:12px;font-size:12px;color:var(--muted)}
+.dtabs{display:flex;gap:6px;margin-bottom:12px}
+.dtabs button{border:1px solid var(--line);background:none;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;color:var(--muted)}
+.dtabs button[aria-pressed="true"]{background:var(--ink);color:var(--night);border-color:var(--ink)}
+.quiz .qn{font-family:var(--mono);font-size:12px;color:var(--gold)}
+.quiz .qt{font-weight:800;font-size:18px;margin:4px 0 12px;line-height:1.45}
+.quiz .ans{display:grid;gap:8px}
+.quiz .ans button{text-align:left;border:1px solid var(--line);background:#191c3c;border-radius:12px;padding:12px 14px;font-weight:700;font-size:14px}
+.quiz .ans button:hover{border-color:var(--gold)}
+.quiz .dots{display:flex;gap:5px;margin-top:12px}
+.quiz .dots i{width:22px;height:4px;border-radius:2px;background:var(--line)}
+.quiz .dots i.on{background:var(--gold)}
+.dres{text-align:center}
+.dres .big{font-size:56px;line-height:1}
+.dres .tn{font-family:var(--display);font-weight:400;font-size:24px;color:var(--tc);margin:6px 0}
+.dres .lead2{font-size:13px;color:var(--muted);max-width:30em;margin:0 auto 10px}
+.dres .abil{display:inline-block;text-align:left;background:#191c3c;border:1px solid var(--tc);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+.dres .abil b{color:var(--tc)}
+.dres .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+.result .podium{display:grid;gap:6px;margin:12px 0}
+.result .podium div{display:grid;grid-template-columns:30px 26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:#191c3c}
+.result .podium div.me{background:color-mix(in srgb,var(--gold) 16%,#191c3c);box-shadow:0 0 0 1px var(--gold)}
+.result .podium .no{font-family:var(--display);color:var(--gold)}
+.result .podium .face{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 24%,transparent)}
+.result .podium .sc{font-family:var(--mono)}
+.result .title{font-family:var(--serif);font-weight:800;font-size:26px;color:var(--gold);line-height:1.3}
+.result .eras{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.result .eras td,.result .eras th{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left}
+.result .eras td:nth-child(n+3){text-align:right;font-family:var(--mono)}
+.result .eras th{color:var(--muted);font-weight:700}
+.result .tblwrap{max-height:260px;overflow:auto}
+.result .btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.result .btns button{flex:1;min-width:140px}
+
+.toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:30;background:linear-gradient(90deg,#3a2c05,#5a4510);
+  color:var(--gold);border:1px solid var(--gold);border-radius:999px;padding:10px 20px;font-weight:800;font-size:14px;box-shadow:0 10px 40px rgba(0,0,0,.5);
+  animation:toast 3.6s ease forwards;max-width:calc(100% - 32px);text-align:center}
+.toast b{font-family:var(--display);font-weight:400;font-size:18px;color:#fff3c8;margin:0 6px}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,-20px)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-10px)}}
+
+/* HUD: the three numbers that matter, always in one row */
+.hud{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr);gap:10px;margin-bottom:8px}
+.h-cell{background:var(--night2);border:1px solid var(--line);border-radius:14px;padding:10px 14px;min-width:0;position:relative;overflow:hidden}
+.h-cell .lab{display:block;font-size:11px;color:var(--muted);letter-spacing:.1em;font-weight:800}
+.h-cell b{font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;color:var(--gold);font-variant-numeric:tabular-nums;position:relative}
+.h-gdp .spark{position:absolute;left:0;right:0;bottom:0;height:30px;width:100%;opacity:.55}
+.h-era .era{font-family:var(--serif);font-weight:800;font-size:18px;line-height:1.3}
+.h-era .era b{font-family:var(--mono);font-weight:500;font-size:18px;color:var(--gold);margin-right:6px}
+.settle{display:flex;align-items:center;gap:4px;margin-top:4px;font-size:12px;color:var(--muted);font-weight:700}
+.settle i{width:12px;height:6px;border-radius:3px;background:var(--line)}
+.settle i.on{background:var(--gold)}
+.settle em{font-style:normal;margin-left:6px;color:var(--ink)}
+.h-me{text-align:right}
+.h-me .small{display:block;font-size:12px;color:var(--muted);font-weight:700}
+@media (max-width:640px){.hud{grid-template-columns:1fr 1fr}.h-era{grid-column:1/-1;order:-1}.h-cell b{font-size:26px}}
+.under{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
+.under label{margin-left:auto;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+
+/* owner tag: colored corner = who owns it */
+.cell .own{position:absolute;left:0;top:0;width:0;height:0;border-top:11px solid var(--oc);border-right:11px solid transparent;border-top-left-radius:7px}
+.cell.mine::after{display:none}
+.pdot{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--oc);margin-right:4px;vertical-align:1px}
+
+/* NEWS split into tailwind / headwind */
+.wind{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 8px;align-items:center;font-size:12px}
+.wind .wl{font-weight:800;color:var(--up)} .wind .wl.dn{color:var(--down)} .wind .wl.zz{color:var(--muted)}
+.more{margin-top:8px;font-size:12px;color:var(--muted)}
+.more summary{cursor:pointer;font-weight:800;color:var(--ink)}
+.more p{margin-top:6px}
+
+/* tabs */
+.tabsP{padding:0;overflow:hidden}
+.tabbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.tabbar button{border:0;background:none;padding:10px 4px;font-size:12.5px;font-weight:800;color:var(--muted);border-bottom:2px solid transparent}
+.tabbar button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+.tabbar small{font-family:var(--mono);font-weight:500;color:var(--gold)}
+.tabpane{padding:12px 14px 14px}
+.tabnote{font-size:12px;color:var(--muted);margin-bottom:8px}
+ol.rules{margin:0;padding-left:1.3em;font-size:12.5px;color:var(--muted);display:grid;gap:5px}
+ol.rules b{color:var(--ink)}
+
+/* neighbor ripple when something is built */
+.cell.ripple{animation:ripple .7s ease}
+@keyframes ripple{0%{box-shadow:0 0 0 0 var(--gold)}100%{box-shadow:0 0 0 8px transparent}}
+.float.side{font-family:var(--mono);font-size:12px;top:2px}
+.paper .tip{margin-top:8px;font-family:var(--body);font-size:12px;font-weight:700;background:#f1e2b6;border-radius:3px;padding:6px 9px}
+
+/* rule as a picture formula */
+.rch{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.rch b{color:var(--ink);font-size:14px}
+.rch small{font-size:10px;font-weight:800;color:var(--c);letter-spacing:.06em}
+.rci{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c)}
+.rci svg{width:17px;height:17px}
+.fx{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;color:var(--ink);font-weight:800}
+.fx .fb{font-family:var(--display);font-size:18px;color:var(--gold);min-width:16px;text-align:center}
+.fx .op{color:var(--muted);font-size:14px}
+.fx .ft{display:inline-flex;align-items:center;gap:4px;background:var(--night);border:1px solid var(--line);border-radius:8px;padding:3px 7px 3px 4px}
+.fx .ft b{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--gold)}
+.fx .ft.nw{font-size:11px;color:var(--muted);padding:3px 8px}
+.fx .rg{width:15px;height:15px;flex:none}
+.fc-ic{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;color:var(--c);background:color-mix(in srgb,var(--c) 20%,transparent)}
+.fc-ic svg{width:14px;height:14px}
+.fc-ind{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;color:var(--ink)}
+.fc-ind i{width:6px;height:6px;border-radius:50%}
+.fxn{font-size:11.5px;color:var(--muted);margin-top:5px;font-weight:600}
+.pre .fx{margin-top:8px}
+
+/* earnings forecast */
+.fcst{display:flex;gap:6px;align-items:flex-end;margin:4px 0 10px;padding:6px 8px;background:#191c3c;border-radius:10px}
+.fcc{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.fcc b{font-family:var(--mono);font-weight:500;font-size:12px;color:var(--ink)}
+.fcc i{display:block;width:70%;max-width:26px;border-radius:3px 3px 0 0;background:color-mix(in srgb,var(--gold) 70%,transparent)}
+.fcc.now i{background:var(--gold)}
+.fcc.risk i{background:var(--down)} .fcc.risk b{color:var(--down)}
+.fcc span{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.pre .slab{font-size:11px;letter-spacing:.08em;color:var(--muted);font-weight:800;margin-top:4px}
+
+/* notebook */
+.book{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:60vh;overflow:auto}
+@media (max-width:520px){.book{grid-template-columns:1fr}}
+.badge{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:center;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;font-size:13px}
+.badge .bm{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--night);color:var(--muted);font-weight:800}
+.badge b{display:block}
+.badge small{display:block;color:var(--muted);font-size:11px;line-height:1.4}
+.badge.got{border-style:solid;border-color:color-mix(in srgb,var(--gold) 55%,transparent);background:color-mix(in srgb,var(--gold) 8%,transparent)}
+.badge.got .bm{background:var(--gold);color:var(--gold-ink)}
+.newbadge{margin-top:12px;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--gold) 10%,transparent);border:1px solid color-mix(in srgb,var(--gold) 50%,transparent)}
+.nb2{display:inline-block;margin:2px 6px 2px 0;font-weight:800;color:var(--gold)}
+.sheet .btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* era mission */
+.quest{margin-top:10px;border:1px solid color-mix(in srgb,var(--glow) 55%,transparent);background:color-mix(in srgb,var(--glow) 9%,transparent);border-radius:10px;padding:8px 10px;font-size:12.5px}
+.quest .qh{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;color:var(--glow);letter-spacing:.06em}
+.quest .qb{font-weight:800;color:var(--ink);margin-top:2px}
+.quest.got{opacity:.75;border-style:dashed}
+.cell.valid .pv.mqv{color:var(--glow)}
+
+/* turn banner (pass-and-play) */
+.turn{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:12px;background:var(--night2);border:1px solid var(--line);font-weight:800}
+.turn .face{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:17px;background:color-mix(in srgb,var(--tc) 26%,transparent)}
+.turn .ord{margin-left:auto;display:flex;gap:4px}
+.turn .ord i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:color-mix(in srgb,var(--tc) 18%,transparent);opacity:.5}
+.turn .ord i.on{opacity:1;box-shadow:0 0 0 2px var(--gold)}
+.turn small{color:var(--muted);font-weight:600}
+
+/* setup */
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.seg button{border:1px solid var(--line);background:#191c3c;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{border-color:var(--gold);color:var(--ink);background:color-mix(in srgb,var(--gold) 14%,#191c3c)}
+.seg button small{display:block;font-weight:600;font-size:11px;color:var(--muted)}
+.slab{font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:800;margin:4px 0 6px}
+.prow{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px 10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;background:#191c3c;margin-bottom:8px}
+.prow .pn{font-family:var(--display);color:var(--gold);font-size:15px;text-align:center}
+.prow input{width:100%;background:var(--night);border:1px solid var(--line);border-radius:8px;padding:7px 10px;color:var(--ink);font:inherit;font-weight:700}
+.prow .tys{grid-column:2;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.prow .tys button{border:1px solid var(--line);background:var(--night);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;color:var(--muted)}
+.prow .tys button[aria-pressed="true"]{border-color:var(--tc);color:var(--ink);background:color-mix(in srgb,var(--tc) 22%,var(--night))}
+.prow .tys .dg{border-style:dashed}
+.cpurow{font-size:12px;color:var(--muted);margin:2px 0 10px}
+.daily{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.daily ol{margin:6px 0 0;padding-left:1.4em;font-size:13px;display:grid;gap:2px}
+.daily li.me{color:var(--gold);font-weight:800}
+
+#typebg,#bookbg,#polbg{z-index:30}
+.pol h3{font-family:var(--serif);font-weight:800;font-size:21px;margin:2px 0 6px}
+.polcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.polcards{grid-template-columns:1fr}}
+.polcard{text-align:left;border:1px solid var(--line);background:#191c3c;border-radius:14px;padding:14px;display:grid;gap:6px}
+.polcard:hover,.polcard:focus-visible{border-color:var(--glow);background:color-mix(in srgb,var(--glow) 10%,#191c3c)}
+.polcard .pn{font-family:var(--display);font-size:20px;color:var(--glow)}
+.polcard .pd{font-size:12.5px;color:var(--muted)}
+.polcard .pe{display:flex;flex-wrap:wrap;gap:5px}
+.polcard .pm{font-size:12px;color:var(--muted)} .polcard .pm b{color:var(--gold);font-family:var(--mono);font-weight:500}
+.polnow{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:10px;padding:7px 10px;border-radius:10px;background:color-mix(in srgb,var(--glow) 12%,transparent);font-size:12px}
+.polnow span{color:var(--glow);font-weight:800}.polnow b{font-size:14px}.polnow small{color:var(--muted)}
+.bk-body .chip{color:var(--paper-ink);background:color-mix(in srgb,var(--c) 22%,transparent)}
+.bk-body .chip b.p{color:#0f7a43}.bk-body .chip b.n{color:var(--paper-red)}
+.bk-body .wind .wl{color:#0f7a43}.bk-body .wind .wl.dn{color:var(--paper-red)}
+.bk-body ol.three li{background:#f1e2b6}.bk-body ol.three span{color:#5a4a2a}
+/* phone: keep the board near the top, the market right under it */
+@media (max-width:640px){
+  .wrap{padding-block-start:10px}
+  .top{gap:8px;margin-bottom:10px}
+  .brand svg{width:24px;height:24px}
+  .brand .h1{font-size:19px}
+  .brand .sub2{display:none}
+  .tabs button{padding:5px 10px;font-size:12px}
+  .me-chip{font-size:11px;padding:3px 10px 3px 4px}
+  .icon-btn{padding:4px 9px}
+  .hud{gap:6px}
+  .h-cell{padding:7px 10px;border-radius:12px}
+  .h-cell b{font-size:22px}
+  .h-era .era{font-size:15px}
+  .h-gdp .spark{display:none}
+  .timeline{display:none}
+  .side>#eraPanel{order:3}
+  .side>.panel:has(#market){order:1}
+  .side>#pre{order:2}
+  .side>.tabsP{order:4}
+  .side>.tools{order:5}
+}
+
+/* challenge mode */
+.menu .mbtn:first-child{grid-column:span 2}
+.menu.n6 .mbtn:first-child{grid-column:auto}
+@media (max-width:640px){.menu.n6 .mbtn:first-child{grid-column:span 2}}
+.chl{display:grid;gap:8px;max-height:52vh;overflow:auto}
+.chc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;text-align:left;border:1px solid var(--line);background:#191c3c;border-radius:12px;padding:10px 12px}
+.chc:hover:not(:disabled){border-color:var(--gold)}
+.chc:disabled{opacity:.45;cursor:not-allowed}
+.chc .cy{grid-column:1;font-family:var(--mono);font-size:11px;color:var(--glow)}
+.chc b{grid-column:1;font-size:15px}
+.chc .cd{grid-column:1;font-size:12px;color:var(--muted)}
+.chc .cs{grid-column:2;grid-row:1/3;align-self:center;font-size:20px;color:var(--gold);letter-spacing:1px}
+.chc .cg{grid-column:2;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right}
+.chc.done{border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+.chres{margin:12px 0;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--gold) 9%,#191c3c);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);text-align:center}
+.chres .big{font-size:40px;color:var(--gold);letter-spacing:4px;line-height:1.2}
+.chres p{font-size:13px;color:var(--muted)} .chres p b{color:var(--ink);font-family:var(--mono)}
+.chres .ok{color:var(--gold);font-weight:800}
+.chres .btns{justify-content:center;margin-top:8px}
+.goal{display:grid;gap:2px;margin-top:10px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--gold) 10%,transparent);border:1px dashed color-mix(in srgb,var(--gold) 55%,transparent);font-size:12px}
+.goal span{color:var(--gold);font-weight:800}.goal b{font-family:var(--mono);font-weight:500}.goal small{color:var(--muted)}
+
+/* CPU speech bubble */
+.talk{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;border-radius:12px;background:var(--paper);color:var(--paper-ink);font-size:13.5px;position:relative;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.talk::after{content:"";position:absolute;left:22px;bottom:-7px;border:7px solid transparent;border-bottom:0;border-top-color:var(--paper)}
+.talk .face{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 30%,#fff)}
+.talk .line{font-family:var(--serif);font-weight:800}
+.talk.pop{animation:pop .35s ease}
+
+/* timelapse */
+.tlap{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;margin:12px 0;padding:10px;border-radius:12px;background:#191c3c}
+.tlap canvas{width:min(220px,46vw);height:auto;aspect-ratio:1;border-radius:8px;display:block}
+.tlinfo{display:grid;gap:4px;justify-items:start}
+.tlinfo .lab{font-size:11px;color:var(--muted);letter-spacing:.1em;font-weight:800}
+.tlinfo b{font-family:var(--display);font-weight:400;font-size:30px;color:var(--gold);line-height:1}
+.tlinfo #tln{font-family:var(--serif);font-weight:800;font-size:14px;min-height:1.4em}
+.tlinfo #tlg{font-family:var(--mono);font-size:13px;color:var(--muted)}
+@media (max-width:480px){.tlap{grid-template-columns:1fr;justify-items:center}.tlinfo{justify-items:center}}
+
+/* 3 things to remember */
+ol.three{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:t}
+ol.three li{counter-increment:t;display:grid;grid-template-columns:30px minmax(0,1fr);gap:2px 10px;align-items:center;background:#191c3c;border-radius:10px;padding:8px 10px}
+ol.three li::before{content:counter(t);grid-row:span 2;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:var(--gold-ink);font-family:var(--display);font-size:15px}
+ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
+
+/* home screen */
+.home{position:fixed;inset:0;z-index:25;overflow:auto;background:radial-gradient(900px 520px at 50% -8%,#3a2a4a 0,transparent 65%),radial-gradient(700px 400px at 100% 100%,#1d3266 0,transparent 60%),var(--night)}
+.home-in{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:calc(28px + env(safe-area-inset-top,0px)) 40px;display:grid;gap:22px}
+.hero{text-align:center;display:grid;justify-items:center;gap:10px}
+.hero svg.mark{width:56px;height:56px;color:var(--gold);animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hero .logo{font-family:var(--display);font-size:clamp(40px,9vw,76px);line-height:1;letter-spacing:.03em;
+  background:linear-gradient(180deg,#fff3c8,var(--gold) 60%,#c98d12);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .tag{font-family:var(--serif);font-weight:800;font-size:clamp(15px,3.2vw,20px)}
+.hero .tag2{font-size:13px;color:var(--muted);max-width:34em}
+.skyline{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px;width:min(620px,100%);margin-top:6px}
+.skyline span{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 24%,#1b1e40);color:var(--c);
+  box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--c) 70%,transparent);opacity:0;animation:rise2 .5s ease forwards}
+.skyline span svg{width:58%;height:58%}
+.skyline span.empty{background:#1b1e40;box-shadow:none}
+@keyframes rise2{from{opacity:0;transform:translateY(8px) scale(.7)}to{opacity:1;transform:none}}
+.years{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.years b{color:var(--gold);font-weight:500}
+.cont{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;border:1px solid var(--gold);background:color-mix(in srgb,var(--gold) 10%,var(--night2));text-align:left;width:100%}
+.cont .big{font-family:var(--display);font-size:20px;color:var(--gold)}
+.cont small{display:block;color:var(--muted);font-size:12px}
+.cont .arrow{margin-left:auto;font-family:var(--display);font-size:22px;color:var(--gold)}
+.menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.menu{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mbtn{text-align:left;border:1px solid var(--line);background:var(--night2);border-radius:16px;padding:14px;display:grid;gap:4px;min-width:0}
+.mbtn:hover:not(:disabled){border-color:var(--gold);transform:translateY(-2px)}
+.mbtn:disabled{opacity:.45;cursor:not-allowed}
+.mbtn .mi{font-size:22px}
+.mbtn b{font-size:15px}
+.mbtn small{color:var(--muted);font-size:12px;line-height:1.45}
+.mbtn.main{background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 22%,var(--night2)),var(--night2) 70%);border-color:color-mix(in srgb,var(--gold) 60%,transparent)}
+.homefoot{text-align:center;font-size:12px;color:var(--muted)}
+
+/* rulebook */
+.book2{background:var(--paper);color:var(--paper-ink);width:min(720px,100%);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.55);display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:calc(100vh - 32px);overflow:hidden}
+.bk-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--paper-ink);color:var(--paper)}
+.bk-head b{font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:.04em}
+.bk-head span{font-size:12px;opacity:.8}
+.bk-head button{margin-left:auto;border:1px solid rgba(251,243,220,.4);background:none;color:var(--paper);border-radius:8px;padding:4px 10px;font-size:12px}
+.bk-body{overflow:auto;padding:18px 22px 10px}
+.bk-no{font-family:var(--mono);font-size:12px;color:var(--paper-red)}
+.bk-body h3{font-family:var(--serif);font-weight:800;font-size:clamp(22px,4.4vw,30px);line-height:1.25;margin:2px 0 10px}
+.bk-body p{font-size:14px;line-height:1.8;margin-bottom:10px}
+.bk-body b{color:var(--paper-red)}
+.bk-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px 18px;align-items:center;margin:12px 0}
+@media (max-width:560px){.bk-row{grid-template-columns:1fr;justify-items:center}}
+.bk-cap{font-size:13px;line-height:1.7}
+.bk-cap li{margin:3px 0}
+.bk-box{background:#f1e2b6;border-radius:10px;padding:10px 14px;font-size:13.5px;margin:10px 0}
+.bk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.bk-grid{grid-template-columns:1fr}}
+.bk-card{background:var(--night2);color:var(--ink);border-radius:10px;padding:9px 11px}
+.bk-card .fx{margin-top:4px}
+.bk-foot{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid #cdbb8d;background:#f6ebcc}
+.bk-foot button{border:0;border-radius:9px;padding:9px 16px;font-weight:800;background:var(--paper-ink);color:var(--paper)}
+.bk-foot button:disabled{opacity:.3;cursor:not-allowed}
+.bk-dots{flex:1;display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.bk-dots i{width:9px;height:9px;border-radius:50%;background:#cdbb8d;cursor:pointer}
+.bk-dots i.on{background:var(--paper-red);width:22px;border-radius:5px}
+/* small board pictures inside the rulebook */
+.mini{display:grid;grid-template-columns:repeat(var(--n),44px);gap:3px;padding:6px;border-radius:10px;background:#171a39}
+.mini .cell{cursor:default}
+.mini .cell .tagx{position:absolute;inset:auto -4px -9px auto;font-family:var(--mono);font-size:10px;padding:0 4px;border-radius:4px;background:var(--gold);color:var(--gold-ink);z-index:2}
+.mini .cell .tagx.n{background:var(--down);color:#fff}
+.vs{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.vs .arr{font-family:var(--display);font-size:22px;color:var(--paper-red)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <button class="brand" id="toHome" type="button" aria-label="ホーム画面へ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 21 17H3Z"/><path d="M12 22 3 7h18Z"/></svg>
+      <span><span class="h1">AZAKEI CITY</span><span class="sub2">1964→2022。60年の経済を、街ごと生き抜け。</span></span>
+    </button>
+    <div class="tabs" role="group" aria-label="遊ぶ街">
+      <button id="mShared" type="button" aria-pressed="false">みんなの街</button>
+      <button id="mLocal" type="button" aria-pressed="true">ひとり・友だち</button>
+    </div>
+    <button class="me-chip" id="meChip" type="button" aria-label="社長タイプを変える"></button>
+    <label class="nick" for="nick">社長名 <input id="nick" maxlength="12" placeholder="なまえ" autocomplete="off"></label>
+    <button class="icon-btn" id="sound" type="button" aria-pressed="true">音 ON</button>
+  </header>
+
+  <div class="hud" aria-label="いまの状況">
+    <div class="h-cell h-gdp"><span class="lab">街のGDP</span><b id="gdp">0</b><svg class="spark" id="spark" viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    <div class="h-cell h-era"><span class="lab">いまの時代</span><div class="era" id="era"></div><div class="settle" id="settle"></div></div>
+    <div class="h-cell h-me"><span class="lab" id="hudMeLab">あなたのスコア</span><b id="hudMe">0</b><span class="small" id="myRank"></span></div>
+  </div>
+  <div class="timeline" id="timeline" aria-label="時代の進み"></div>
+
+  <div class="app">
+    <section class="left" aria-label="街">
+      <div class="turn" id="turn" hidden></div>
+      <div class="talk" id="talk" hidden aria-live="polite"></div>
+      <div class="coach" id="coach" hidden></div>
+      <div class="boardbox"><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div></div>
+      <div class="under">
+        <span class="small" id="count"></span><span class="small" id="countSub"></span>
+        <label for="riskT"><input type="checkbox" id="riskT"> 倒産しそうな建物に印</label>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <aside class="side">
+      <div class="panel" id="eraPanel"></div>
+      <div class="panel">
+        <h2><span>① 市場から1枚えらぶ</span><em id="mkNote"></em></h2>
+        <div class="mk" id="market"></div>
+        <div class="cardrule" id="cardrule"></div>
+        <div class="deckline" id="deckline"></div>
+      </div>
+      <div class="panel pre" id="pre" aria-live="polite"></div>
+      <div class="panel tabsP">
+        <div class="tabbar" role="tablist" aria-label="くわしい情報">
+          <button type="button" role="tab" data-tab="rank" id="t-rank">番付</button>
+          <button type="button" role="tab" data-tab="lm" id="t-lm">名所 <small id="lmNote"></small></button>
+          <button type="button" role="tab" data-tab="log" id="t-log">できごと</button>
+          <button type="button" role="tab" data-tab="rules" id="t-rules">あそびかた</button>
+        </div>
+        <div class="tabpane" id="p-rank" role="tabpanel"><ol class="rank" id="rank"></ol></div>
+        <div class="tabpane" id="p-lm" role="tabpanel" hidden><p class="tabnote">最初に完成させた社長に＋30。早い者勝ち。</p><div class="lms" id="lms"></div></div>
+        <div class="tabpane" id="p-log" role="tabpanel" hidden><ul class="log" id="log"></ul></div>
+        <div class="tabpane" id="p-rules" role="tabpanel" hidden>
+          <p class="tabnote">覚えるのは、この3つだけ。</p>
+          <ol class="three" id="rulesBox">
+            <li><b>1枚とって、建てる</b><span>市場の5枚から1枚。建物の上下左右に置く。</span></li>
+            <li><b>となりで稼ぎが変わる</b><span>置く前に、増えるスコアがマスに出る。</span></li>
+            <li><b>8手ごとに決算</b><span>稼ぎを受け取る。稼ぎ2以下の会社は倒産。</span></li>
+          </ol>
+          <button class="go" type="button" id="openBook2" style="margin-top:10px">ルールブックを開く（絵でわかる）</button>
+        </div>
+      </div>
+      <div class="tools" id="tools"></div>
+    </aside>
+  </div>
+</div>
+<div class="dock" id="dock" hidden></div>
+<div class="ov" id="paperbg" hidden></div>
+<div class="ov" id="typebg" hidden></div>
+<div class="ov" id="resultbg" hidden></div>
+<div class="home" id="home" hidden></div>
+<div class="ov" id="bookbg" hidden></div>
+<div class="ov" id="polbg" hidden></div>
+
+<script>
+const N=11, MID=5, ERA=8, ERAS=12, MKT=5;
+// このゲームで使う時代（フル＝12時代、ショート＝6時代）
+const FULL=[0,1,2,3,4,5,6,7,8,9,10,11], SHORT=[0,1,3,4,7,10];
+var EL=FULL;
+function HI(e){return EL[((e%EL.length)+EL.length)%EL.length]}
+function H(e){return HIST[HI(e)]}
+function NE(){return EL.length}
+var GROW=11, LVB=1, BUST=2; // 成長ライン・成長1段の上乗せ・倒産ライン（決算の稼ぎがこれ以下で倒産）
+const BUYMAX=3, LMBONUS=30, SHARED_SEED=19641010;
+const IND=['エネルギー','金融','製造','小売','運輸','メディア'];
+// AZAKEI MARKET 歴史モードと同じ出来事・点数（列：エネルギー, 金融, 製造, 小売, 運輸, メディア）
+const HIST=[
+  {y:1964,w:'昭和39年',age:'showa',n:'東京オリンピック',d:'東海道新幹線や首都高速が開通し、建設と輸送が活気づく。中継を見るためテレビも売れた。',r:[2,1,3,1,3,1]},
+  {y:1973,w:'昭和48年',age:'showa',n:'第一次オイルショック',d:'産油国が原油の供給を絞り、原油価格は約4倍に。モノを作る・運ぶコストが急上昇し、買いだめ騒ぎも起きた。',r:[3,0,-2,2,-3,0]},
+  {y:1985,w:'昭和60年',age:'showa',n:'プラザ合意で急激な円高',d:'先進国がドル高の是正で合意し、円が急上昇。輸出は打撃を受け、輸入品や海外旅行は割安になった。',r:[1,2,-2,2,3,0]},
+  {y:1988,w:'昭和63年',age:'showa',n:'バブル景気',d:'株価と地価が急上昇。企業も個人もお金を使い、広告やレジャーが活気づいた。',r:[0,3,1,1,2,3]},
+  {y:1991,w:'平成3年',age:'heisei',n:'バブル崩壊',d:'株価と地価が下落し、銀行は多額の不良債権を抱えた。安さを売りにする店が伸びた。',r:[1,-3,-1,2,0,-1]},
+  {y:1995,w:'平成7年',age:'heisei',n:'インターネット元年',d:'Windows 95の発売で、パソコンとインターネットが一気に身近になった。',r:[0,0,3,0,1,3]},
+  {y:1999,w:'平成11年',age:'heisei',n:'ITバブル',d:'IT関連企業の株価が世界的に急騰。ネット企業への投資が過熱した。',r:[-1,3,1,0,0,3]},
+  {y:2008,w:'平成20年',age:'heisei',n:'リーマン・ショック',d:'米国の大手投資銀行が破綻し、世界的な金融危機に。輸出も生産も広告費も急減した。',r:[-1,-3,-2,1,-1,-2]},
+  {y:2010,w:'平成22年',age:'heisei',n:'スマートフォン普及',d:'スマートフォンが急速に広まり、ネット通販やアプリ、動画が日常になった。',r:[0,1,2,1,1,3]},
+  {y:2013,w:'平成25年',age:'heisei',n:'アベノミクスと訪日客急増',d:'大胆な金融緩和で円安・株高に。訪日外国人観光客も急増した。',r:[0,3,1,1,3,0]},
+  {y:2020,w:'令和2年',age:'reiwa',n:'巣ごもり需要',d:'感染症の流行で外出自粛が広がり、旅行は激減。動画配信やネット通販、スーパーが伸びた。',r:[-1,1,0,3,-3,3]},
+  {y:2022,w:'令和4年',age:'reiwa',n:'資源高と円安',d:'資源価格の高騰と急速な円安が重なり、値上げが相次いだ。輸出企業は円安で利益を伸ばした。',r:[3,2,3,-2,-1,0]}
+];
+const T={
+  en:{i:0,name:'エネルギー',tag:'産業',rule:'1 ＋ 隣の製造1つにつき＋2'},
+  fi:{i:1,name:'金融',tag:'産業',rule:'周り8マスの産業1つにつき＋1'},
+  ma:{i:2,name:'製造',tag:'産業',rule:'1 ＋ 隣のエネルギー×2 ＋ 隣の運輸×1'},
+  re:{i:3,name:'小売',tag:'産業',rule:'隣の住宅1つにつき＋2、隣の小売1つにつき−1'},
+  tr:{i:4,name:'運輸',tag:'産業',rule:'隣にある種類（住宅・産業）の数×2'},
+  me:{i:5,name:'メディア',tag:'産業',rule:'周り8マスの住宅1つにつき＋1'},
+  ho:{name:'住宅',tag:'家計',rule:'1 ＋ 隣の産業・役所1つにつき＋1（エネルギーは−1）'},
+  in:{name:'保険',tag:'仕組み',rule:'周り8マスの産業をNEWSのマイナスから守る。稼ぎ＝守る産業の数÷2'},
+  sc:{name:'学校',tag:'仕組み',rule:'隣の産業の稼ぎ＋2。稼ぎ＝隣の住宅の数'},
+  buy:{name:'買収',tag:'作戦',rule:'ライバルの産業で稼ぎ3以下の会社を、自分のものにする'}
+};
+const KEYS=['ho','en','fi','ma','re','tr','me','in','sc','buy'];
+const W={ho:4,en:2,fi:2,ma:2,re:2,tr:2,me:2,in:1.2,sc:1.2,buy:1};
+// 名所：最初に完成させた社長に +30（ゲーム中に各1回）
+const LM=[
+  {id:'ind',name:'工業地帯',hint:'エネルギー1・製造2・運輸1 をつなげる'},
+  {id:'shop',name:'商店街',hint:'小売3・住宅3 をつなげる'},
+  {id:'fin',name:'金融街',hint:'金融を3つつなげる'},
+  {id:'town',name:'ニュータウン',hint:'住宅を2×2のかたまりに'},
+  {id:'media',name:'放送センター',hint:'メディア2・住宅3 をつなげる'},
+  {id:'school',name:'学園都市',hint:'学校の上下左右のうち3つを住宅に'},
+  {id:'hub',name:'物流ハブ',hint:'運輸の上下左右を4種類の建物でうめる'},
+  {id:'safe',name:'安心の街',hint:'保険1つで産業5つを守る'}
+];
+// エコノミスト診断の4タイプ = 社長タイプ
+const TY={
+  lion:{name:'ライオン',face:'🦁',what:'攻め',ab:'建てた瞬間・買収のスコアが2倍。ただしマイナスも2倍。'},
+  fox:{name:'キツネ',face:'🦊',what:'読み',ab:'山札の次の3枚と、2つ先の時代の予報が見える。NEWSが▲の自分の産業は稼ぎ＋1（▲2以上なら＋2）。時代のお題は＋30。'},
+  turtle:{name:'カメ',face:'🐢',what:'堅実',ab:'自分の建物は倒産しない。NEWSのマイナスも1だけ。'},
+  rabbit:{name:'ウサギ',face:'🐰',what:'消費',ab:'市場に加えて山札の一番上もとれる。自分の住宅は稼ぎ＋2。'}
+};
+const TYK=Object.keys(TY);
+const ICON={
+  en:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  fi:'<path d="M3 9.5 12 4l9 5.5z"/><path d="M5 12v6M10 12v6M14 12v6M19 12v6M3 20.5h18"/>',
+  ma:'<path d="M3 20.5V11l5 3.5V11l5 3.5V7h3l1-3.5h2L20 7v13.5z"/>',
+  re:'<path d="M3.5 4h17l-1.2 5a2.6 2.6 0 0 1-5 0 2.6 2.6 0 0 1-5 0 2.6 2.6 0 0 1-5 0z"/><path d="M5.5 11.5v8.5h13v-8.5M10 20v-5h4v5"/>',
+  tr:'<path d="M2.5 6.5h11v9.5h-11zM13.5 10h4l3.5 3.5V16h-7.5"/><circle cx="6.5" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
+  me:'<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8.5 3.5 12 8l3.5-4.5"/>',
+  ho:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10M10 20v-6h4v6"/>',
+  in:'<path d="M12 3 4.5 6v6c0 4.6 3.2 7.8 7.5 9 4.3-1.2 7.5-4.4 7.5-9V6z"/><path d="m8.8 12 2.2 2.2 4.4-4.4"/>',
+  sc:'<path d="m2 9.5 10-5 10 5-10 5z"/><path d="M6 11.5v4.7c3.4 2.3 8.6 2.3 12 0v-4.7M22 9.5v5"/>',
+  hall:'<path d="M12 2 21 17H3Z"/><path d="M12 22 3 7h18Z"/>',
+  buy:'<rect x="3" y="7.5" width="18" height="12.5" rx="2"/><path d="M9 7.5V5h6v2.5M3 13h18M11 13v2h2v-2"/>'
+};
+const ic=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+const $=id=>document.getElementById(id);
+const sh=n=>/社長$/.test(n||"")?n:(n||"")+"社長"; // 「駅前の社長」に「社長」を重ねない
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const sg=v=>v>0?'+'+v:v<0?'−'+(-v):'±0';
+const cls=v=>v>0?'p':v<0?'n':'z';
+const isInd=k=>!!(T[k]&&T[k].i!=null);
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- rules engine ---------- */
+const D4=[[1,0],[-1,0],[0,1],[0,-1]], D8=[...D4,[1,1],[1,-1],[-1,1],[-1,-1]];
+const inb=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
+function grid0(){const g=[];for(let r=0;r<N;r++)g.push(Array(N).fill(null));g[MID][MID]={k:'hall'};return g}
+function around(g,r,c,D){const a=[];for(const[dr,dc]of D){const R=r+dr,C=c+dc;if(inb(R,C)&&g[R][C])a.push(g[R][C].k)}return a}
+const cnt=(a,f)=>a.reduce((s,x)=>s+(f(x)?1:0),0);
+function newsOf(g,r,c,era){
+  const t=g[r][c]; if(!t||!isInd(t.k)) return 0;
+  let rr=H(era).r[T[t.k].i];
+  if(rr<0&&around(g,r,c,D8).includes('in')) rr=0;
+  if(rr<0&&t.ty==='turtle') rr=-1;
+  if(rr>0&&t.ty==='fox') rr+=rr>=2?2:1;
+  return rr;
+}
+// 稼ぎの内訳（[説明, 値]）。out() はこの合計。
+/* 政策：決算のあと、最下位の社長がその時代の政策を1つ選ぶ（逆転のチャンス） */
+const POL=[
+  {id:"pw",name:"公共事業",d:"道路や橋をつくる",b:{tr:1,ma:1}},
+  {id:"tax",name:"減税",d:"家計の負担を軽くする",b:{ho:1,re:1}},
+  {id:"qe",name:"金融緩和",d:"お金を借りやすくする",b:{fi:2}},
+  {id:"dx",name:"デジタル推進",d:"ネットとITを後押し",b:{me:2}},
+  {id:"ep",name:"エネルギー政策",d:"発電所を支援する",b:{en:2}},
+  {id:"edu",name:"教育と安心",d:"人を育て、暮らしを守る",b:{sc:2,in:2}}
+];
+const POLBY=Object.fromEntries(POL.map(p=>[p.id,p]));
+var POLMAP={};
+const polTxt=p=>Object.entries(p.b).map(([k,v])=>`${T[k].name}＋${v}`).join("・");
+function polAdd(add,k,era){const id=POLMAP[era];if(id&&POLBY[id].b[k])add(`政策「${POLBY[id].name}」`,POLBY[id].b[k])}
+// その時代に出される2つの政策（シードで決まる）
+function polOffer(seed,e){const rnd=mulberry((seed^((e+1)*7919))>>>0),a=POL.slice().sort(()=>rnd()-.5);return [a[0],a[1]]}
+function parts(g,r,c,era){
+  const t=g[r][c]; if(!t) return [];
+  const k=t.k, n4=around(g,r,c,D4), n8=around(g,r,c,D8), P=[], add=(l,v,keep)=>{if(v||keep)P.push([l,v])};
+  switch(k){
+    case 'ho':{const a=cnt(n4,x=>(isInd(x)&&x!=='en')||x==='hall'),b=cnt(n4,x=>x==='en');add('基本',1,1);add(`隣の産業・役所 ${a}`,a);add(`隣のエネルギー ${b}`,-b);if(t.ty==='rabbit')add('🐰 ウサギ',2);polAdd(add,k,era);return P}
+    case 'in':{const a=cnt(n8,isInd);add(`守る産業 ${a}÷2`,Math.floor(a/2),1);polAdd(add,k,era);return P}
+    case 'sc':{const a=cnt(n4,x=>x==='ho');add(`隣の住宅 ${a}`,a,1);polAdd(add,k,era);return P}
+    case 'en':{const a=cnt(n4,x=>x==='ma');add('基本',1,1);add(`隣の製造 ${a}×2`,2*a);break}
+    case 'fi':{const a=cnt(n8,isInd);add(`周りの産業 ${a}`,a,1);break}
+    case 'ma':{const a=cnt(n4,x=>x==='en'),b=cnt(n4,x=>x==='tr');add('基本',1,1);add(`隣のエネルギー ${a}×2`,2*a);add(`隣の運輸 ${b}`,b);break}
+    case 're':{const a=cnt(n4,x=>x==='ho'),b=cnt(n4,x=>x==='re');add(`隣の住宅 ${a}×2`,2*a,1);add(`隣の小売 ${b}`,-b);break}
+    case 'tr':{const a=new Set(n4.filter(x=>x==='ho'||isInd(x))).size;add(`隣の種類 ${a}×2`,2*a,1);break}
+    case 'me':{const a=cnt(n8,x=>x==='ho');add(`周りの住宅 ${a}`,a,1);break}
+    default: return P;
+  }
+  add('隣の学校',2*cnt(n4,x=>x==='sc'));
+  add('★ 成長',LVB*((t.lv||1)-1));
+  polAdd(add,k,era);
+  add(`NEWS（${H(era).y}）`,newsOf(g,r,c,era),1);
+  return P;
+}
+function out(g,r,c,era){const t=g[r][c];if(!t||t.k==='hall')return 0;return Math.max(0,parts(g,r,c,era).reduce((s,x)=>s+x[1],0))}
+function gdp(g,era){let s=0;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(g[r][c])s+=out(g,r,c,era);return s}
+function valid(g,r,c){return !g[r][c]&&D4.some(([dr,dc])=>inb(r+dr,c+dc)&&g[r+dr][c+dc])}
+function validCells(g){const a=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(valid(g,r,c))a.push([r,c]);return a}
+const canBust=t=>t&&isInd(t.k)&&t.ty!=='turtle';
+const lionx=(ty,v)=>ty==='lion'?v*2:v;
+/* 名所の判定 */
+function compCount(g,r,c,set){
+  const t=g[r][c]; if(!t||!set.includes(t.k)) return null;
+  const seen=new Set([r+'_'+c]), q=[[r,c]], cn={};
+  while(q.length){const[R,C]=q.pop();const k=g[R][C].k;cn[k]=(cn[k]||0)+1;
+    for(const[dr,dc]of D4){const a=R+dr,b=C+dc,id=a+'_'+b;if(inb(a,b)&&!seen.has(id)&&g[a][b]&&set.includes(g[a][b].k)){seen.add(id);q.push([a,b])}}}
+  return cn;
+}
+const need=(cn,req)=>!!cn&&Object.entries(req).every(([k,v])=>(cn[k]||0)>=v);
+function lmAt(g,r,c,id){
+  switch(id){
+    case 'ind': return need(compCount(g,r,c,['en','ma','tr']),{en:1,ma:2,tr:1});
+    case 'shop': return need(compCount(g,r,c,['re','ho']),{re:3,ho:3});
+    case 'fin': return need(compCount(g,r,c,['fi']),{fi:3});
+    case 'media': return need(compCount(g,r,c,['me','ho']),{me:2,ho:3});
+    case 'town':
+      if(!g[r][c]||g[r][c].k!=='ho') return false;
+      for(const[a,b]of[[0,0],[-1,0],[0,-1],[-1,-1]]){const R=r+a,C=c+b;
+        if([[0,0],[1,0],[0,1],[1,1]].every(([x,y])=>inb(R+x,C+y)&&g[R+x][C+y]&&g[R+x][C+y].k==='ho')) return true}
+      return false;
+    default:
+      for(let R=r-1;R<=r+1;R++)for(let C=c-1;C<=c+1;C++){
+        if(!inb(R,C)||!g[R][C]) continue; const k=g[R][C].k;
+        if(id==='school'&&k==='sc'&&cnt(around(g,R,C,D4),x=>x==='ho')>=3) return true;
+        if(id==='hub'&&k==='tr'){const n4=around(g,R,C,D4);if(n4.length===4&&new Set(n4).size===4) return true}
+        if(id==='safe'&&k==='in'&&cnt(around(g,R,C,D8),isInd)>=5) return true;
+      }
+      return false;
+  }
+}
+const newLms=(g,r,c,claimed)=>LM.filter(l=>!claimed[l.id]&&lmAt(g,r,c,l.id)).map(l=>l.id);
+/* 買収 */
+function buyable(g,r,c,era,ok){const t=g[r][c];return !!(t&&isInd(t.k)&&t.ok!=null&&t.ok!==ok&&out(g,r,c,era)<=BUYMAX)}
+function buyTargets(g,era,ok){const a=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(buyable(g,r,c,era,ok))a.push([r,c]);return a}
+/* 時代のお題：その時代のうちに最初に達成した社長に +15 */
+// 経済まめ知識（号外にのせる）
+const TIPS=[
+  "東海道新幹線は、開業したとき東京〜新大阪を4時間で結んだ。",
+  "「トイレットペーパーがなくなる」といううわさで、店に行列ができた。",
+  "合意のあと、1ドル＝約240円だった円は、1年ほどで150円台まで上がった。",
+  "1989年の大納会で、日経平均株価は史上最高の38,915円をつけた。",
+  "株価や地価の下落から、長い不況「失われた10年」が始まった。",
+  "Windows 95の日本語版の発売日、深夜の秋葉原に行列ができた。",
+  "「ドットコム企業」の株が急騰し、2000年ごろにはじけた。",
+  "リーマン・ブラザーズの負債は約6,130億ドルで、アメリカ史上最大の倒産。",
+  "日本でiPhoneが発売されたのは2008年。このころからスマホが一気に広まった。",
+  "訪日外国人は2013年に、初めて年間1,000万人をこえた。",
+  "東京オリンピックは1年延期され、2021年に開かれた。",
+  "円相場は一時1ドル＝150円台に。約32年ぶりの円安だった。"
+];
+const MQ=15, mqPts=ty=>ty==='fox'?MQ*2:MQ;
+const MQT=[
+  '運輸を2つ隣り合わせて建てる（新幹線開通）',
+  '稼ぎ6以上のエネルギーを建てる（石油が高い今こそ）',
+  '稼ぎ6以上の運輸を建てる（円高で海外旅行ブーム）',
+  '稼ぎ7以上の金融を建てる（株と土地が急上昇）',
+  '買収を成功させる（不良債権を処理せよ）',
+  '稼ぎ7以上のメディアか製造を建てる（パソコンとネット）',
+  '金融とメディアを隣り合わせる（ネット企業に投資）',
+  '保険を建てて、周りの産業4つ以上を守る（金融危機に備えよ）',
+  '周りに住宅3つ以上のメディアを建てる（スマホで動画）',
+  '運輸の隣に小売を建てる（訪日客のお買い物）',
+  '稼ぎ6以上の小売を建てる（巣ごもりでネット通販）',
+  '稼ぎ8以上の製造を建てる（円安で輸出が好調）'
+];
+function missionHit(e,g,r,c,k,v,isBuy){
+  const n4=around(g,r,c,D4), n8=around(g,r,c,D8);
+  switch(HI(e)){
+    case 0: return k==='tr'&&n4.includes('tr');
+    case 1: return k==='en'&&v>=6;
+    case 2: return k==='tr'&&v>=6;
+    case 3: return k==='fi'&&v>=7;
+    case 4: return !!isBuy;
+    case 5: return (k==='me'||k==='ma')&&v>=7&&!isBuy;
+    case 6: return !isBuy&&((k==='fi'&&n4.includes('me'))||(k==='me'&&n4.includes('fi')));
+    case 7: return k==='in'&&cnt(n8,isInd)>=4;
+    case 8: return k==='me'&&cnt(n8,x=>x==='ho')>=3&&!isBuy;
+    case 9: return !isBuy&&((k==='re'&&n4.includes('tr'))||(k==='tr'&&n4.includes('re')));
+    case 10: return k==='re'&&v>=6&&!isBuy;
+    case 11: return k==='ma'&&v>=8&&!isBuy;
+  }
+  return false;
+}
+function simulateBuy(g,r,c,era,ty,st){
+  const t=g[r][c], before=gdp(g,era), sty=t.ty; t.ty=ty;
+  const own=out(g,r,c,era), total=gdp(g,era)-before, fut=out(g,r,c,era+1);
+  const mq=!!(st&&!st.mq[era]&&missionHit(era,g,r,c,t.k,own,true)); t.ty=sty;
+  return {buy:true,own,changes:[],side:total,total,score:lionx(ty,total)+(mq?mqPts(ty):0),fut,from:t.nick,lms:[],mq};
+}
+// 置いたときの内訳：自分の稼ぎ、まわりの建物の増減（位置つき）、完成する名所、時代のお題
+function simulate(g,r,c,k,era,ty,st){
+  const before=[];for(let R=0;R<N;R++)for(let C=0;C<N;C++)if(g[R][C])before.push([R,C,out(g,R,C,era)]);
+  g[r][c]={k,ty,lv:1};
+  const own=out(g,r,c,era), changes=[];
+  for(const[R,C,v]of before){const nv=out(g,R,C,era);if(nv!==v)changes.push({k:g[R][C].k,d:nv-v,r:R,c:C})}
+  const fut=out(g,r,c,era+1), lms=st?newLms(g,r,c,st.claimed):[], mq=!!(st&&!st.mq[era]&&missionHit(era,g,r,c,k,own,false));
+  g[r][c]=null;
+  const side=changes.reduce((s,x)=>s+x.d,0), total=own+side;
+  return {own,changes,side,total,score:lionx(ty,total)+LMBONUS*lms.length+(mq?mqPts(ty):0),fut,lms,mq};
+}
+/* 市場：シードつきの山札から5枚。とった分を補充し、時代が変わると総入れ替え */
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+var NOBUY=false; // ひとりのゲームでは買収カードを出さない（買う相手がいない）
+function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):KEYS,tot=KS.reduce((s,k)=>s+W[k],0),cards=[];
+  return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
+function replay(tiles,seed,onStep){
+  POLMAP={};
+  const g=grid0(), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, D=deck(seed); let n=0, ruins=[], di=0, mk=[];
+  const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
+  refill();
+  const O=(k,nick,ty)=>{const o=own[k]||(own[k]={key:k,nick:'',ty:'',score:0,build:0,settle:0,built:0,bust:0,grow:0,buys:0,lm:0,mq:0,kinds:{}});if(nick)o.nick=nick;if(ty)o.ty=ty;return o};
+  const quest=(e,r,c,k,isBuy,t,o)=>{if(mq[e]||!missionHit(e,g,r,c,k,out(g,r,c,e),isBuy))return;mq[e]={ok:t.ok,nick:t.nick,n};o.score+=mqPts(t.ty);o.mq++;log.push({type:'q',e,nick:t.nick,ok:t.ok,n})};
+  for(const t of tiles){
+    if(n>=ERA*ERAS*9) break;
+    if(t.k==='pol'){const e0=Math.floor(n/ERA);if(n>0&&n%ERA===0&&t.e===e0&&!POLMAP[e0]&&POLBY[t.p]&&polOffer(seed,e0).some(p=>p.id===t.p)){POLMAP[e0]=t.p;log.push({type:'p',p:t.p,nick:t.nick,ok:t.ok,e:e0,n})}continue}
+    if(!inb(t.r,t.c)||!T[t.k]) continue;
+    // 市場（またはウサギの山札）にそのカードがあるか
+    let slot=-1, fromDeck=false;
+    if(t.src==='d'&&t.ty==='rabbit'&&D(di)===t.k) fromDeck=true; else slot=mk.indexOf(t.k);
+    if(!fromDeck&&slot<0) continue;
+    const e=Math.floor(n/ERA), before=gdp(g,e);
+    if(t.k==='buy'){
+      if(!buyable(g,t.r,t.c,e,t.ok)) continue;
+      const x=g[t.r][t.c], from=x.nick;
+      x.ok=t.ok; x.nick=t.nick; x.ty=t.ty;
+      const sc=lionx(t.ty,gdp(g,e)-before), o=O(t.ok,t.nick,t.ty);
+      o.score+=sc; o.build+=sc; o.buys++;
+      log.push({type:'m',nick:t.nick,k:x.k,from,d:sc,ok:t.ok,n});
+      quest(e,t.r,t.c,x.k,true,t,o);
+    }else{
+      if(!valid(g,t.r,t.c)) continue;
+      g[t.r][t.c]={k:t.k,ok:t.ok,nick:t.nick,ty:t.ty,lv:1};
+      const sc=lionx(t.ty,gdp(g,e)-before), o=O(t.ok,t.nick,t.ty);
+      o.score+=sc; o.build+=sc; o.built++; o.kinds[t.k]=(o.kinds[t.k]||0)+1;
+      log.push({type:'b',nick:t.nick,k:t.k,d:sc,ok:t.ok,n});
+      for(const id of newLms(g,t.r,t.c,claimed)){
+        claimed[id]={ok:t.ok,nick:t.nick,n,r:t.r,c:t.c}; o.score+=LMBONUS; o.lm++;
+        log.push({type:'l',id,nick:t.nick,ok:t.ok,n});
+      }
+      quest(e,t.r,t.c,t.k,false,t,o);
+      ruins=ruins.filter(([r,c])=>!(r===t.r&&c===t.c));
+    }
+    if(fromDeck) di++; else {mk.splice(slot,1);mk.push(D(di++))}
+    n++;
+    if(n%ERA===0){
+      const rep={e,y:H(e).y,gdp:gdp(g,e),bust:[],grow:[],pay:{},cells:[],ind:{}};
+      const vals=[];
+      for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.ok!=null){const v=out(g,r,c,e);vals.push([r,c,v]);const oo=O(x.ok);if(isInd(x.k))rep.ind[x.ok]=(rep.ind[x.ok]||0)+1;oo.score+=v;oo.settle+=v;rep.pay[x.ok]=(rep.pay[x.ok]||0)+v}}
+      ruins=[];
+      for(const[r,c,v]of vals){const x=g[r][c];
+        if(v<=BUST&&canBust(x)){rep.bust.push({k:x.k,ok:x.ok,nick:x.nick});O(x.ok).bust++;g[r][c]=null;ruins.push([r,c]);rep.cells.push([r,c,v,'bust'])}
+        else if(v>=GROW&&isInd(x.k)&&(x.lv||1)<3){x.lv=(x.lv||1)+1;rep.grow.push({k:x.k,ok:x.ok,nick:x.nick,lv:x.lv});O(x.ok).grow++;rep.cells.push([r,c,v,'grow'])}
+        else rep.cells.push([r,c,v,''])
+      }
+      hist.push(rep.gdp); eras.push(rep);
+      log.push({type:'e',rep});
+      refill();
+      if(onStep) onStep(g,n,e,true);
+    }
+    if(onStep&&n%ERA!==0) onStep(g,n,Math.floor(n/ERA),false);
+  }
+  return {g,own,log,hist,eras,n,ruins,claimed,mq,market:mk,peek:[D(di),D(di+1),D(di+2)]};
+}
+
+/* ---------- sound ---------- */
+let AC=null;
+function tone(f,d=.12,type='triangle',vol=.07,at=0){
+  if(!S.sound) return;
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const t0=AC.currentTime+at,o=AC.createOscillator(),gn=AC.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t0);gn.gain.setValueAtTime(vol,t0);gn.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(gn).connect(AC.destination);o.start(t0);o.stop(t0+d+.02)}catch(e){}
+}
+const sfx={
+  build(d){if(d>0){const n=Math.min(5,Math.max(1,Math.ceil(d/2)));for(let i=0;i<n;i++)tone(523*Math.pow(1.26,i),.14,'triangle',.06,i*.06)}else tone(d<0?160:330,.18,'sawtooth',.04)},
+  pick(){tone(880,.05,'sine',.03)},
+  coin(i){tone(1046+((i*97)%400),.07,'sine',.025,i*.018)},
+  turn(){tone(660,.12,'triangle',.05);tone(990,.16,'triangle',.05,.1)},
+  paper(bust){tone(196,.25,'square',.035);tone(262,.3,'triangle',.05,.12);if(bust)tone(110,.4,'sawtooth',.04,.3)},
+  end(){[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',.06,i*.12))}
+};
+
+/* ---------- state ---------- */
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const seedOf=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
+const CPUN=['駅前の社長','となりの社長','港町の社長'];
+const S={mode:'local',sel:null,cell:null,insp:null,busy:false,risk:false,pause:false,
+  nick:store.get('azakei-city-nick')||'', sound:store.get('azakei-city-sound')!==false,
+  tyShared:store.get('azakei-city-ty-shared'),
+  game:store.get('azakei-city-game4'), sharedTiles:[], viewer:null,
+  seen:{local:-1,shared:-1},R:null, tut:store.get('azakei-city-tut')||0};
+const HASCLAUDE=!!(window.claude&&window.claude.use); // Claudeの画面で開いたときだけ「みんなの街」が使える
+const NET={db:null,uid:null,canWrite:true,owner:false,ready:false,err:''};
+const gameOk=g=>g&&Array.isArray(g.tiles)&&Array.isArray(g.players)&&g.players.length>=1&&typeof g.seed==='number';
+if(!gameOk(S.game)) S.game=null;
+const humans=()=>S.game?S.game.players.filter(p=>!p.cpu):[];
+const tiles=()=>S.mode==='local'?(S.game?S.game.tiles:[]):S.sharedTiles;
+const seedNow=()=>S.mode==='local'?(S.game?S.game.seed:1):SHARED_SEED;
+const viewerP=()=>S.game&&S.game.players.find(p=>p.key===S.viewer);
+const myTy=()=>S.mode==='local'?(viewerP()||{}).ty:S.tyShared;
+const myKey=()=>S.mode==='local'?(S.viewer||'h1'):(NET.uid||('n:'+S.nick));
+const eraNow=()=>Math.floor(S.R.n/ERA);
+const finished=()=>S.mode==='local'&&S.R.n>=ERA*NE();
+const moveCount=()=>S.game?S.game.tiles.filter(t=>t.k!=='pol').length:0;
+const turnPlayer=()=>S.game?S.game.players[moveCount()%S.game.players.length]:null;
+const saveGame=()=>store.set('azakei-city-game4',S.game);
+// いま選べるカード：市場の5枚（ウサギは山札の一番上も）
+function choices(R,ty){const a=R.market.map((k,j)=>({k,src:'m',j}));if(ty==='rabbit')a.push({k:R.peek[0],src:'d',j:MKT});return a}
+const selCard=()=>S.sel==null?null:(choices(S.R,myTy())[S.sel]||null);
+
+/* ---------- 図で見るルール ---------- */
+// 各建物の稼ぎの式：[数える相手, 1つあたり, 範囲(4=上下左右 / 8=周り8マス)]
+const FX={
+  ho:{b:1,t:[['ind',1,4],['hall',1,4],['en',-1,4]],note:'産業はエネルギー以外'},
+  en:{b:1,t:[['ma',2,4]]},
+  fi:{b:0,t:[['ind',1,8]]},
+  ma:{b:1,t:[['en',2,4],['tr',1,4]]},
+  re:{b:0,t:[['ho',2,4],['re',-1,4]]},
+  tr:{b:0,t:[['kind',2,4]],note:'住宅・産業の「種類」の数'},
+  me:{b:0,t:[['ho',1,8]]},
+  in:{b:0,t:[['ind',.5,8]],note:'周り8マスの産業をNEWSの▼から守る'},
+  sc:{b:0,t:[['ho',1,4]],note:'隣の産業の稼ぎ＋2'},
+  buy:{note:'ライバルの産業で稼ぎ3以下の会社を、自分のものにする'}
+};
+function rangeSvg(n){
+  let s='<svg class="rg" viewBox="0 0 15 15" aria-hidden="true">';
+  for(let y=0;y<3;y++)for(let x=0;x<3;x++){const ctr=x===1&&y===1, on=ctr||(n===8)||(x===1||y===1);
+    s+=`<rect x="${x*5+.5}" y="${y*5+.5}" width="4" height="4" rx="1" fill="${ctr?'var(--gold)':on?'var(--ink)':'var(--line)'}" opacity="${ctr||on?1:.6}"/>`}
+  return s+'</svg>';
+}
+function fxChip(k){
+  if(k==='ind') return `<span class="fc-ind" aria-label="産業"><i style="background:var(--i0)"></i><i style="background:var(--i2)"></i><i style="background:var(--i4)"></i>産業</span>`;
+  if(k==='kind') return `<span class="fc-ind" aria-label="種類">種類</span>`;
+  return `<span class="fc-ic k-${k}" title="${k==='hall'?'役所':T[k].name}">${ic(k)}</span>`;
+}
+function fxHTML(k){
+  const f=FX[k]; if(!f) return '';
+  if(!f.t) return `<div class="fx"><span class="fxn">${f.note}</span></div>`;
+  const terms=f.t.map(([x,v,r],i)=>{const neg=v<0, val=Math.abs(v), mul=val===.5?'÷2':val===1?'':'×'+val;
+    return `${i||f.b?`<span class="op">${neg?'−':'＋'}</span>`:neg?'<span class="op">−</span>':''}<span class="ft" title="${r===8?'周り8マス':'上下左右'}">${rangeSvg(r)}${fxChip(x)}${mul?`<b>${mul}</b>`:''}</span>`}).join('');
+  return `<div class="fx">${f.b?`<span class="fb">${f.b}</span>`:''}${terms}${isInd(k)?'<span class="op">＋</span><span class="ft nw">NEWS ▲▼</span>':''}</div>${f.note?`<div class="fxn">${f.note}</div>`:''}`;
+}
+const ruleCard=k=>`<div class="rch"><span class="rci k-${k}">${ic(k)}</span><b>${T[k].name}</b><small>${T[k].tag}</small></div>${fxHTML(k)}`;
+// この先の時代の稼ぎ予想（まわりが今のままなら）
+function forecast(g,r,c,k,e,ty){
+  let tmp=false; if(k&&!g[r][c]){g[r][c]={k,ty,lv:1};tmp=true}
+  const t=g[r][c], last=S.mode==='local'?NE()-1:e+3, a=[];
+  for(let x=e;x<=Math.min(e+3,last);x++){const v=out(g,r,c,x);a.push({y:H(x).y,v,risk:x>e&&canBust(t)&&v<=BUST})}
+  if(tmp) g[r][c]=null;
+  return a;
+}
+function fcHTML(a){
+  const mx=Math.max(6,...a.map(x=>x.v));
+  return `<div class="fcst" aria-label="稼ぎの予想">${a.map((x,i)=>`<div class="fcc${x.risk?' risk':''}${i===0?' now':''}"><b>${x.v}</b><i style="height:${Math.max(2,x.v/mx*34)}px"></i><span>${i===0?'いま':String(x.y).slice(2)}</span></div>`).join('')}</div>`;
+}
+
+/* ---------- 社長手帳（この端末に記録） ---------- */
+const BADGES=[
+  {id:'first',name:'はじめての決算',hint:'街づくりを最後まで終える'},
+  {id:'win',name:'億万長者',hint:'1位になる'},
+  {id:'city',name:'大都市',hint:'最後の街のGDPを600以上に（ショートは300）'},
+  {id:'lm3',name:'名所プロデューサー',hint:'1回のゲームで名所を3つ完成'},
+  {id:'mq4',name:'お題ハンター',hint:'1回のゲームで時代のお題を4つ達成'},
+  {id:'nobust',name:'倒産ゼロ',hint:'カメ以外で、産業を8つ以上建てて倒産ゼロ'},
+  {id:'lehman',name:'リーマンを越えて',hint:'2008年の決算で、産業4つ以上を持って倒産ゼロ'},
+  {id:'buy3',name:'買収王',hint:'1回のゲームで買収を3回'},
+  {id:'lv3',name:'★★の大企業',hint:'★★まで成長した会社を持つ'},
+  {id:'all9',name:'ぜんぶ建てた',hint:'1回のゲームで9種類の建物をすべて建てる'},
+  {id:'big',name:'ライオンの一撃',hint:'1手で＋30以上のスコア'},
+  {id:'score',name:'スコア1500',hint:'フルの街でスコア1500以上'},
+  {id:'daily',name:'今日の街に挑戦',hint:'「今日の街」を最後まで遊ぶ'},
+  {id:'friends',name:'みんなで対戦',hint:'2人以上で最後まで遊ぶ'},
+  {id:'short',name:'ショートで1位',hint:'ショートの街で1位'},
+  {id:'types',name:'4タイプ制覇',hint:'4つの社長タイプそれぞれで1位になる'}
+];
+function checkBadges(){
+  if(S.mode!=="local"||!S.game||S.game.badged) return [];
+  if(S.game.chal){S.game.badged=true;S.game.fresh=[];saveGame();return []}
+  const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), got=store.get('azakei-city-badges')||{}, wins=store.get('azakei-city-wins')||{};
+  const today=todayStr(), fresh=[], hs=humans(), finalGdp=R.hist.at(-1)||0;
+  const unlock=id=>{if(!got[id]){got[id]=today;fresh.push(id)}};
+  for(const p of hs){
+    const o=R.own[p.key]; if(!o) continue;
+    const rank=arr.indexOf(o);
+    unlock('first');
+    if(rank===0){unlock('win');wins[p.ty]=(wins[p.ty]||0)+1;if(S.game.short)unlock('short')}
+    if(finalGdp>=(S.game.short?300:600)) unlock('city');
+    if(o.lm>=3) unlock('lm3');
+    if(o.mq>=4) unlock('mq4');
+    const indBuilt=Object.entries(o.kinds).reduce((s,[k,v])=>s+(isInd(k)?v:0),0);
+    if(p.ty!=='turtle'&&o.bust===0&&indBuilt>=8) unlock('nobust');
+    const lr=R.eras.find(x=>HI(x.e)===7); if(lr&&p.ty!=='turtle'&&(lr.ind[p.key]||0)>=4&&!lr.bust.some(b=>b.ok===p.key)) unlock('lehman');
+    if(o.buys>=3) unlock('buy3');
+    if(R.g.some(row=>row.some(x=>x&&x.ok===p.key&&(x.lv||1)>=3))) unlock('lv3');
+    if(['ho','en','fi','ma','re','tr','me','in','sc'].every(k=>o.kinds[k])) unlock('all9');
+    if(R.log.some(x=>x.ok===p.key&&(x.type==='b'||x.type==='m')&&x.d>=30)) unlock('big');
+    if(!S.game.short&&o.score>=1500) unlock('score');
+    if(S.game.daily) unlock('daily');
+    if(hs.length>1) unlock('friends');
+  }
+  if(TYK.every(t=>wins[t])) unlock('types');
+  store.set('azakei-city-badges',got); store.set('azakei-city-wins',wins);
+  S.game.badged=true; S.game.fresh=fresh; saveGame();
+  return fresh;
+}
+function showBook(){
+  const got=store.get('azakei-city-badges')||{}, n=BADGES.filter(b=>got[b.id]).length;
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p>
+    <div class="book">${BADGES.map(b=>`<div class="badge${got[b.id]?' got':''}"><span class="bm">${got[b.id]?'★':'？'}</span><span><b>${b.name}</b><small>${b.hint}${got[b.id]?`（${got[b.id]}）`:''}</small></span></div>`).join('')}</div>
+    <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
+  $('typebg').hidden=false;
+}
+
+/* ---------- render ---------- */
+function chipRow(r){return IND.map((n,i)=>`<span class="chip k-${KEYS[i+1]}"><i></i>${n}<b class="${cls(r[i])}">${r[i]>0?'▲':r[i]<0?'▼':''}${Math.abs(r[i])||'0'}</b></span>`).join('')}
+function syncEL(){NOBUY=S.mode==="local"&&!!S.game&&S.game.players.length===1;EL=S.mode==="local"&&S.game?(Array.isArray(S.game.eras)?S.game.eras:S.game.short?SHORT:FULL):FULL}
+function render(){
+  syncEL();
+  const R=S.R=replay(tiles(),seedNow()), e=eraNow(), ev=H(e), cyc=Math.floor(e/NE()), fin=finished();
+  if(S.sel!=null&&!selCard()) {S.sel=null;S.cell=null}
+  const cur=gdp(R.g,e);
+  document.documentElement.dataset.age=fin?'reiwa':ev.age;
+  $('gdp').textContent=fin?R.hist.at(-1):cur;
+  $('era').innerHTML=fin?`<b>2022</b>60年が終わりました`:`<b>${ev.y}</b>${esc(ev.n)}<span class="gengo">${ev.w}</span>${cyc?`<small style="font-family:var(--body);font-size:11px;color:var(--muted);margin-left:6px">${cyc+1}周目</small>`:''}`;
+  let alive=0;for(const row of R.g)for(const x of row)if(x&&x.k!=='hall')alive++;
+  $('count').textContent=`建物 ${alive}`;
+  $('countSub').textContent=`建設 ${R.n} 手 ・ 倒産 ${R.eras.reduce((s,x)=>s+x.bust.length,0)} 社`;
+  const done=R.n%ERA;
+  $('settle').innerHTML=fin?'':`${Array.from({length:ERA},(_,i)=>`<i class="${i<done?'on':''}"></i>`).join('')}<em>決算まで あと${ERA-done}手</em>`;
+  const ce=e%NE();
+  $('timeline').style.gridTemplateColumns=`repeat(${NE()},minmax(0,1fr))`;$('timeline').innerHTML=EL.map(hi=>HIST[hi]).map((h,i)=>`<span class="${i<ce||fin?'done':i===ce?'now':''}" title="${h.y} ${esc(h.n)}">${i===ce&&!fin?`<i style="width:${(R.n%ERA)/ERA*100}%"></i>`:''}<b>${String(h.y).slice(2)}</b></span>`).join('');
+  spark(fin?R.hist:R.hist.concat(cur));
+  renderTurn(); renderEra(); renderBoard(); renderMarket(); renderPre(); renderRank(); renderLog(); renderLms(); renderTools(); renderMe(); renderCoach();
+  const prev=S.seen[S.mode];
+  S.seen[S.mode]=R.n;
+  if(prev<0) return;
+  const fresh=R.log.filter(x=>(x.type==='l'||x.type==='q')&&x.n>=prev);
+  if(fresh.length){const x=fresh.at(-1);const who=x.ok===myKey()?'あなた':esc(x.nick);
+    toast(x.type==='l'?`名所誕生！<b>${LM.find(l=>l.id===x.id).name}</b>${who} +${LMBONUS}`:`時代のお題 達成！<b>${H(x.e).y}</b>${who} +${MQ}`);sfx.end()}
+  if(Math.floor(R.n/ERA)>Math.floor(prev/ERA)) settleFx(R.eras.at(-1));
+}
+function renderTurn(){
+  const el=$('turn');
+  if(S.mode!=='local'||!S.game||humans().length<2||finished()){el.hidden=true;return}
+  const tp=turnPlayer(), P=S.game.players;
+  el.hidden=false;
+  el.innerHTML=`<span class="face" style="--tc:var(--${tp.ty})">${TY[tp.ty].face}</span><span>${esc(sh(tp.nick))}の番${tp.cpu?' <small>（CPU）</small>':''}</span>
+    <span class="ord">${P.map(p=>`<i class="${p===tp?'on':''}" style="--tc:var(--${p.ty})" title="${esc(p.nick)}">${TY[p.ty].face}</i>`).join('')}</span>`;
+}
+// NEWSを「追い風」「向かい風」に分けて見せる
+function windRows(r){
+  const ch=i=>`<span class="chip k-${KEYS[i+1]}"><i></i>${IND[i]}<b class="${cls(r[i])}">${r[i]>0?'+':'−'}${Math.abs(r[i])}</b></span>`;
+  const up=IND.map((_,i)=>i).filter(i=>r[i]>0).sort((a,b)=>r[b]-r[a]), dn=IND.map((_,i)=>i).filter(i=>r[i]<0).sort((a,b)=>r[a]-r[b]);
+  return `<div class="wind"><span class="wl">▲ 追い風</span><div class="chips">${up.map(ch).join('')||'<span class="small">なし</span>'}</div>
+    <span class="wl dn">▼ 向かい風</span><div class="chips">${dn.map(ch).join('')||'<span class="small" style="color:var(--muted)">なし</span>'}</div></div>`;
+}
+function renderEra(){
+  const R=S.R,e=eraNow();
+  if(finished()){$('eraPanel').innerHTML=`<h2><span>60年が終わりました</span></h2><p>最後の決算が終わりました。結果を見て、もう一度ちがう街をつくってみよう。</p><button class="go" type="button" style="margin-top:10px" id="seeRes">結果を見る</button>`;$('seeRes').onclick=showResult;return}
+  const ev=H(e), nx=H(e+1), nx2=H(e+2);
+  let risky=0;const mk=myKey();
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=R.g[r][c];if(x&&x.ok===mk&&canBust(x)&&out(R.g,r,c,e)<=BUST)risky++}
+  const lastEra=S.mode==='local'&&e===NE()-1, q=R.mq[e];
+  $('eraPanel').innerHTML=`<h2><span>${ev.y}年代のNEWS「${esc(ev.n)}」</span></h2>
+    ${S.mode==="local"&&S.game&&S.game.chal?(()=>{const c=CHAL.find(x=>x.id===S.game.chal);return `<div class="goal"><span>🏆 チャレンジ「${c.name}」</span><b>目標GDP ${c.star.map((s,j)=>`★${j+1} ${s}`).join(" ・ ")}</b><small>${c.hint}</small></div>`})():""}
+    ${windRows(ev.r)}
+    ${POLMAP[e]?`<div class="polnow"><span>▣ この時代の政策</span><b>${POLBY[POLMAP[e]].name}</b><small>${polTxt(POLBY[POLMAP[e]])}</small></div>`:''}
+    <div class="quest${q?' got':''}"><div class="qh"><span>★ この時代のお題（早い者勝ち）</span><span>+${mqPts(myTy())}</span></div><div class="qb">${MQT[HI(e)]}</div>${q?`<div style="color:var(--glow);font-size:11.5px;margin-top:2px">${q.ok===mk?'あなた':esc(q.nick)} が達成済み</div>`:''}</div>
+    ${risky?`<p class="warn-line">⚠ このままだと、あなたの建物 ${risky} 棟が決算で倒産（稼ぎ2以下）。</p>`:''}
+    <details class="more"${S.moreOpen?' open':''} id="moreEra"><summary>${lastEra?'これが最後の時代':`次の時代の予報：${nx.y} ${esc(nx.n)}`}</summary>
+      <p>${esc(ev.d)}</p>
+      ${lastEra?'<p>この決算で街づくりが終わります。</p>':`<p style="margin-top:8px;color:var(--ink);font-weight:800">${nx.y} ${esc(nx.n)}</p>${windRows(nx.r)}`}
+      ${myTy()==='fox'&&!(S.mode==='local'&&e>=NE()-2)?`<p style="margin-top:8px;color:var(--ink);font-weight:800">🦊 2つ先：${nx2.y} ${esc(nx2.n)}</p>${windRows(nx2.r)}`:''}
+    </details>`;
+  $('moreEra').addEventListener('toggle',ev2=>{S.moreOpen=ev2.target.open});
+}
+// 持ち主の色：人間は金・水色・ピンク・緑、CPUは落ち着いた色
+const PCOL=["#ffc83a","#4fd1ff","#ff7aa8","#9be15d"], CCOL=["#c9cbe0","#b9a6ff","#ffab70"];
+function ownerColor(ok){
+  if(S.mode==="local"&&S.game){const P=S.game.players,i=P.findIndex(p=>p.key===ok);if(i<0)return "#888";const p=P[i];return p.cpu?CCOL[(+p.key.slice(3)-1)%3]:PCOL[(+p.key.slice(1)-1)%4]}
+  if(ok===myKey()) return PCOL[0];
+  return CCOL[[...String(ok)].reduce((s,ch)=>s+ch.charCodeAt(0),0)%3];
+}
+function renderBoard(){
+  const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null, mk=myKey(), ty=myTy(), lk=locked();
+  let pv=null,best=-1e9,bt=null,nb={},pickOwn=null,src={};
+  if(k&&!lk){
+    if(k==='buy'){bt={};for(const[r,c]of buyTargets(g,e,mk)){const s=simulateBuy(g,r,c,e,ty,R);const v=s.fut*2+s.score;bt[r+'_'+c]=s;if(v>best)best=v}}
+    else{
+      pv={};for(const[r,c]of validCells(g)){const s=simulate(g,r,c,k,e,ty,R);pv[r+'_'+c]=s;if(s.score>best)best=s.score}
+      if(S.cell&&pv[S.cell[0]+'_'+S.cell[1]]){const s=pv[S.cell[0]+'_'+S.cell[1]];pickOwn=s.own;for(const x of s.changes)nb[x.r+'_'+x.c]=x.d}
+    }
+  }
+  if(S.insp){const[r,c]=S.insp;const t=g[r][c];if(t&&t.k!=='hall'){const D=['fi','me','in'].includes(t.k)?D8:D4;for(const[dr,dc]of D){const R2=r+dr,C2=c+dc;if(inb(R2,C2)&&g[R2][C2])src[R2+'_'+C2]=1}}}
+  const ruin=new Set(R.ruins.map(([r,c])=>r+'_'+c));
+  const lmCell={};for(const x of Object.values(R.claimed))lmCell[x.r+'_'+x.c]=1;
+  let h='';
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const t=g[r][c], id=r+'_'+c, here=S.cell&&S.cell[0]===r&&S.cell[1]===c, insp=S.insp&&S.insp[0]===r&&S.insp[1]===c;
+    const badge=id in nb?`<span class="nb ${nb[id]>0?'p':'n'}">${sg(nb[id])}</span>`:'';
+    if(t&&t.k==='hall'){h+=`<button class="cell hall${insp?' insp':''}${src[id]?' src':''}" data-r="${r}" data-c="${c}" aria-label="役所（街の中心）">${ic('hall')}${badge}</button>`;continue}
+    if(t){const v=out(g,r,c,e), lv=t.lv||1, risk=S.risk&&canBust(t)&&out(g,r,c,e+1)<=BUST, b=bt&&bt[id];
+      const tg=b?` target${(b.fut*2+b.score)===best?' best':''}${here?' insp':''}`:'';
+      h+=`<button class="cell t k-${t.k}${lv>1?' lv'+lv:''}${t.ok===mk?' mine':''}${insp?' insp':''}${src[id]?' src':''}${risk?' risk':''}${tg}" data-r="${r}" data-c="${c}" aria-label="${T[t.k].name} 稼ぎ${v} 持ち主 ${esc(t.nick)}${b?" 買収できる":""}"><span class="own" style="--oc:${ownerColor(t.ok)}"></span>${ic(t.k)}${badge}${lv>1?`<span class="st">${'★'.repeat(lv-1)}</span>`:''}${lmCell[id]?`<span class="lmk">◆</span>`:''}${b?`<span class="bv">${b.mq?'★':''}買収</span>`:`<span class="v${v||!isInd(t.k)?'':' z'}">${v}</span>`}</button>`;continue}
+    const rc=ruin.has(id)?' ruin':'';
+    if(pv&&id in pv){
+      const s=pv[id], d=s.score, mark=s.lms.length?'◆':s.mq?'★':'';
+      h+=here?`<button class="cell valid pick k-${k}" data-r="${r}" data-c="${c}" aria-label="ここに建てる予定 ${sg(d)}">${ic(k)}<span class="v">${pickOwn}</span></button>`
+             :`<button class="cell valid${rc}${d===best?' best':''}" data-r="${r}" data-c="${c}" aria-label="建てるとスコア ${sg(d)}"><span class="pv ${s.lms.length?'lmv':s.mq?'mqv':d>0?'p':d<0?'n':'zz'}">${mark}${sg(d)}</span></button>`;
+      continue;
+    }
+    h+=`<button class="cell${rc}" data-r="${r}" data-c="${c}" tabindex="-1" aria-label="${rc?'倒産した跡地':'空き地'}"></button>`;
+  }
+  $('board').innerHTML=h;
+}
+function renderMarket(){
+  const R=S.R, ty=myTy(), lk=locked(), ch=ty?choices(R,ty):R.market.map((k,j)=>({k,src:'m',j}));
+  $('market').style.setProperty('--cols',ch.length);
+  $('market').innerHTML=ch.map((x,j)=>`<button type="button" class="mcard k-${x.k}${T[x.k].tag==='仕組み'||x.k==='buy'?' sys':''}${x.src==='d'?' deck':''}" data-j="${j}" aria-pressed="${S.sel===j}"${lk?' disabled':''} aria-label="${T[x.k].name}：${T[x.k].rule}">
+    <span class="ic">${ic(x.k)}</span><span class="tg">${T[x.k].tag}</span><span class="nm">${T[x.k].name}</span></button>`).join('');
+  const c=selCard(), tp=turnPlayer();
+  $('cardrule').innerHTML=c?ruleCard(c.k):(S.busy&&S.mode==='local'&&tp?`${esc(sh(tp.nick))}が市場から選んでいます…`:'カードに乗せるか選ぶと、ルールが図で出ます。ライバルも同じ市場から選びます。');
+  $('mkNote').textContent=S.busy?'ライバルの番':`時代が変わると総入れ替え`;
+  $('deckline').innerHTML=ty==='fox'
+    ?`🦊 次に並ぶカード ${R.peek.map(k=>`<span class="dk k-${k}">${ic(k)}${T[k].name}</span>`).join('')}`
+    :`<span>山札の次のカードは 🦊キツネ社長だけが見られます。</span>`;
+}
+function locked(){
+  if(S.busy||S.pause||S.policy||!myTy()) return true;
+  if(finished()) return true;
+  if(S.mode==='local'){const tp=turnPlayer();if(!tp||tp.cpu||tp.key!==S.viewer) return true}
+  if(S.mode==='shared'&&(!NET.db||!NET.canWrite)) return true;
+  return !validCells(S.R.g).length;
+}
+function renderPre(){
+  const R=S.R,g=R.g,e=eraNow(),ty=myTy(); $('dock').hidden=true;
+  if(S.mode==='local'&&!S.game){$('pre').innerHTML=`<h2><span>新しい街</span></h2><p class="hint">人数と社長タイプを決めて、街づくりを始めよう。</p><button class="go" type="button" id="openSetup" style="margin-top:10px">街をつくる</button>`;$('openSetup').onclick=showSetup;return}
+  if(finished()){$('pre').innerHTML=`<h2><span>おつかれさまでした</span></h2><p class="hint">60年分の街ができました。</p>`;return}
+  if(!validCells(g).length){$('pre').innerHTML=`<h2><span>街が満員</span></h2><p class="hint">建てられる区画がありません。決算の倒産で空きが出るのを待とう。</p>`;return}
+  if(S.mode==='shared'&&!NET.db){$('pre').innerHTML=`<h2><span>みんなの街</span></h2><p class="hint">この画面では共有の街につながりません。「ひとりで60年」で遊べます。</p>`;return}
+  if(S.mode==='shared'&&!NET.canWrite){$('pre').innerHTML=`<h2><span>みんなの街</span></h2><p class="hint">閲覧のみです。街が育っていく様子はリアルタイムで見られます。</p>`;return}
+  if(S.insp){
+    const[r,c]=S.insp,t=g[r][c];
+    if(t&&t.k==='hall'){$('pre').innerHTML=`<h2><span>役所</span></h2><p class="hint">街の中心。ここから街が広がります。隣の住宅は役所で働けます。</p>`;return}
+    if(t){const P=parts(g,r,c,e),v=out(g,r,c,e),nv=out(g,r,c,e+1);
+      $('pre').innerHTML=`<h2><span>${T[t.k].name}${(t.lv||1)>1?' '+'★'.repeat(t.lv-1):''}</span><em>稼ぎ ${v}</em></h2>
+      <p>持ち主：<b>${esc(t.nick)||'—'}</b>${t.ty&&TY[t.ty]?` ${TY[t.ty].face}`:''}</p>
+      <div class="rows">${P.map(([l,x])=>`<div class="sm"><span>${esc(l)}</span><span class="${x<0?'n':x>0?'p':''}">${sg(x)}</span></div>`).join('')}
+        <div class="tot"><span>いまの稼ぎ${P.reduce((s,x)=>s+x[1],0)<0?'（0未満は0）':''}</span><span>${v}</span></div></div>
+      ${fxHTML(t.k)}
+      ${t.ok!=null?`<div class="slab" style="margin-top:10px">これからの稼ぎ予想（まわりが今のままなら）</div>${fcHTML(forecast(g,r,c,null,e,t.ty))}`:''}
+      <p class="sub">${isInd(t.k)&&canBust(t)&&nv<=BUST?'<span class="n">次の決算で倒産の危険（稼ぎ2以下）。</span>':''}白い枠が、この稼ぎに関わる周りの建物です。</p>`;return}
+  }
+  const tp=turnPlayer();
+  if(S.mode==='local'&&tp&&tp.cpu){$('pre').innerHTML=`<h2><span>${esc(sh(tp.nick))}の番</span></h2><p class="hint">CPUが考えています…</p>`;return}
+  const card=selCard();
+  if(!card){$('pre').innerHTML=`<h2><span>つぎの一手</span></h2><p class="hint">市場から1枚選ぶと、建てられる場所にスコアが出ます。<span style="color:var(--gold)">◆</span>は名所、<span style="color:var(--glow)">★</span>は時代のお題が達成できる場所。建物をタップすると稼ぎの内訳が見られます。</p>`;return}
+  const k=card.k;
+  if(k==='buy'){
+    const tg=buyTargets(g,e,myKey());
+    if(!S.cell){$('pre').innerHTML=`<h2><span>買収する</span></h2><p class="hint">${tg.length?`「買収」と出ているライバルの会社（稼ぎ3以下）を選んでください。次の決算から、その会社の稼ぎがあなたに入ります。<span style="color:var(--gold)">金色の枠</span>が一番お得。`:'いま買収できる会社がありません（ライバルの産業で稼ぎ3以下の会社が対象）。ほかのカードを選ぼう。'}</p>`;return}
+    const[r,c]=S.cell, s=simulateBuy(g,r,c,e,ty,R), t=g[r][c];
+    $('pre').innerHTML=`<h2><span>${esc(s.from)}の${T[t.k].name}を買収</span><em>次の稼ぎ ${s.fut}</em></h2>
+      <div class="rows">
+        <div><span>いまの稼ぎ（あなたの経営で）</span><span>${s.own}</span></div>
+        <div><span>次の時代（${H(e+1).y}）の見込み</span><span>${s.fut}</span></div>
+        ${s.mq?`<div style="color:var(--glow)"><span>★ 時代のお題 達成！</span><span>+${mqPts(ty)}</span></div>`:''}
+        <div class="tot"><span>次の決算であなたに入る見込み</span><span>+${s.fut}</span></div>
+      </div>
+      <div class="slab">買ったあとの稼ぎ予想</div>
+      ${(()=>{const sty=t.ty;t.ty=ty;const a=forecast(g,r,c,null,e,ty);t.ty=sty;return fcHTML(a)})()}
+      <button class="go" id="go" type="button">買収する</button>
+      <p class="sub">${ty==='turtle'?'🐢 カメなので、買った会社は倒産しなくなります。':'弱った会社なので、次の決算で倒産する危険もあります。'}</p>`;
+    $('go').onclick=place;
+    $('dock').hidden=false;
+    $('dock').innerHTML=`<div class="dt">買収 次の稼ぎ<b>${s.fut}</b></div><button class="go" type="button" id="go2">買収する</button>`;
+    $('go2').onclick=place;
+    return;
+  }
+  if(!S.cell){$('pre').innerHTML=`<h2><span>${T[k].name}を建てる</span></h2><p class="hint">数字の出ているマスを選んでください。<span style="color:var(--gold)">金色の枠</span>がいま一番スコアが伸びる場所。<span style="color:var(--gold)">◆</span>は名所、<span style="color:var(--glow)">★</span>はお題が達成できる場所です。</p>`;return}
+  const[r,c]=S.cell, s=simulate(g,r,c,k,e,ty,R);
+  const grp={};for(const x of s.changes){grp[x.k]=(grp[x.k]||0)+x.d}
+  const sideTxt=Object.entries(grp).map(([kk,d])=>`${T[kk]?.name||'役所'} <span class="${cls(d)}">${sg(d)}</span>`).join('、');
+  const danger=isInd(k)&&ty!=='turtle'&&s.fut<=BUST;
+  $('pre').innerHTML=`<h2><span>${T[k].name}をここに建てる</span><em>${sg(s.score)}</em></h2>
+    <div class="rows">
+      <div><span>この建物の稼ぎ</span><span>${s.own}</span></div>
+      <div><span>まわりへの影響${sideTxt?`<br><small style="color:var(--muted)">${sideTxt}</small>`:''}</span><span class="${cls(s.side)}">${sg(s.side)}</span></div>
+      ${ty==='lion'?`<div><span>🦁 ライオンの得意技</span><span>×2</span></div>`:''}
+      ${s.lms.map(id=>`<div style="color:var(--gold)"><span>◆ 名所「${LM.find(l=>l.id===id).name}」完成！</span><span>+${LMBONUS}</span></div>`).join('')}
+      ${s.mq?`<div style="color:var(--glow)"><span>★ 時代のお題 達成！</span><span>+${mqPts(ty)}</span></div>`:''}
+      <div class="tot"><span>あなたのスコア</span><span>${sg(s.score)}</span></div>
+    </div>
+    <div class="slab">この建物の稼ぎ予想${danger?` <span class="n">・${H(e+1).y}年代の決算で倒産の危険</span>`:''}</div>
+    ${fcHTML(forecast(g,r,c,k,e,ty))}
+    <button class="go" id="go" type="button">ここに建てる</button>
+    <p class="sub">盤面の小さな数字が、まわりの建物の増減です。赤い棒は、その時代の決算で倒産する危険（稼ぎ2以下）。</p>`;
+  $('go').onclick=place;
+  $('dock').hidden=false;
+  $('dock').innerHTML=`<div class="dt">${T[k].name}<b>${sg(s.score)}</b>${danger?' <span class="n" style="font-size:11px">倒産注意</span>':''}</div><button class="go" type="button" id="go2">ここに建てる</button>`;
+  $('go2').onclick=place;
+}
+function faceOf(ty){return ty&&TY[ty]?TY[ty].face:'・'}
+function renderRank(){
+  const R=S.R, mk=myKey(), arr=Object.values(R.own).sort((a,b)=>b.score-a.score), many=S.mode==='local'&&humans().length>1;
+  $('hudMeLab').textContent=many?`${viewerP()?.nick||''}社長のスコア`:'あなたのスコア';
+  if(!arr.length){$('rank').innerHTML=`<li class="empty" style="display:block">まだ誰も建てていません。最初の一手を。</li>`;$('myRank').textContent='まだ0手';$('hudMe').textContent='0';return}
+  const mi=arr.findIndex(o=>o.key===mk);
+  $('hudMe').textContent=mi>=0?arr[mi].score:0;
+  $('myRank').textContent=mi>=0?`${arr.length}人中 ${mi+1}位${mi>0?`（1位まで ${arr[0].score-arr[mi].score}）`:''}`:'まだ建てていません';
+  if(S.mode==='local'&&S.game&&S.game.chal){const c=CHAL.find(x=>x.id===S.game.chal),g=gdp(R.g,eraNow()),nx=c.star.find(s=>g<s);$('myRank').textContent=nx?`いまのGDP ${g} ・ 次の★まで あと${nx-g}`:`いまのGDP ${g} ・ ★★★ペース！`}
+  $('rank').innerHTML=arr.slice(0,8).map((o,i)=>`<li class="${o.key===mk?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span class="who"><span class="pdot" style="--oc:${ownerColor(o.key)}"></span>${esc(o.nick)||'名無し'}<small>名所${o.lm}・お題${o.mq}</small></span><span class="sc">${o.score}</span></li>`).join('');
+}
+// くわしい情報はタブにまとめる（画面をすっきり）
+function setTab(t){
+  S.tab=t; store.set('azakei-city-tab',t);
+  for(const k of ['rank','lm','log','rules']){$('t-'+k).setAttribute('aria-selected',k===t);$('p-'+k).hidden=k!==t}
+}
+document.querySelector('.tabbar').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
+function renderLog(){
+  const L=S.R.log.slice(-8).reverse();
+  $('log').innerHTML=L.length?L.map(x=>x.type==='e'
+    ?`<li class="ev">■ ${x.rep.y}年代の決算：GDP ${x.rep.gdp}${x.rep.bust.length?`・倒産 ${x.rep.bust.length}社`:''}${x.rep.grow.length?`・成長 ${x.rep.grow.length}社`:''}</li>`
+    :x.type==='l'?`<li class="ev">◆ <b>${esc(x.nick)}</b> が名所「${LM.find(l=>l.id===x.id).name}」を完成 +${LMBONUS}</li>`
+    :x.type==='p'?`<li class="ev" style="color:var(--glow)">▣ <b>${esc(x.nick)}</b> が政策「${POLBY[x.p].name}」を決定（${polTxt(POLBY[x.p])}）</li>`
+    :x.type==='q'?`<li class="ev" style="color:var(--glow)">★ <b>${esc(x.nick)}</b> が${H(x.e).y}年のお題を達成 +${MQ}</li>`
+    :x.type==='m'?`<li><b>${esc(x.nick)||'名無し'}</b> が ${esc(x.from)} の${T[x.k].name}を<span class="n">買収</span></li>`
+    :`<li><b>${esc(x.nick)||'名無し'}</b> が ${T[x.k].name} を建設 <span class="${cls(x.d)}" style="font-family:var(--mono)">${sg(x.d)}</span></li>`).join(''):'<li>まだありません</li>';
+}
+function renderLms(){
+  const R=S.R, mk=myKey(); let mine=0;
+  $('lms').innerHTML=LM.map(l=>{const x=R.claimed[l.id];if(x&&x.ok===mk)mine++;
+    return x?`<div class="lm got"><div class="ln">${l.name}<small>+${LMBONUS}</small></div><div class="lh">${x.ok===mk?'あなた':esc(x.nick)} が完成</div></div>`
+            :`<div class="lm"><div class="ln">${l.name}<small>+${LMBONUS}</small></div><div class="lh">${l.hint}</div></div>`}).join('');
+  $('lmNote').textContent=`${Object.keys(R.claimed).length}/${LM.length}`;
+}
+function renderMe(){
+  $("nick").parentElement.hidden=S.mode!=="shared"; // 社長名の入力は「みんなの街」だけ
+  const ty=myTy();
+  if(S.mode==='local'){
+    const vp=viewerP(), d=S.game&&S.game.daily;
+    $('meChip').innerHTML=vp?`<span class="face" style="--tc:var(--${vp.ty})">${TY[vp.ty].face}</span>${humans().length>1?`${esc(vp.nick)} ・ `:''}${TY[vp.ty].name}社長${d?' ・ 今日の街':''}`:`<span class="face" style="--tc:var(--muted)">＋</span>新しい街をつくる`;
+    $('meChip').setAttribute('aria-label','新しい街をつくる');
+  }else{
+    $('meChip').innerHTML=ty?`<span class="face" style="--tc:var(--${ty})">${TY[ty].face}</span>${TY[ty].name}社長`:`<span class="face" style="--tc:var(--muted)">？</span>タイプを決める`;
+    $('meChip').setAttribute('aria-label','社長タイプを変える');
+  }
+}
+// はじめの数手だけのガイド（ひとりモード）
+function renderCoach(){
+  const el=$('coach');
+  if(S.mode!=='local'||S.tut>=4||!S.game||humans().length>1||finished()){el.hidden=true;return}
+  if(S.tut===0&&S.sel!=null) S.tut=1;
+  if(S.tut===1&&S.cell) S.tut=2;
+  const msg=['市場のカードを1枚えらぼう。ライバルも同じ市場から選ぶ。','数字の出ているマスをタップ。<b style="color:var(--gold)">金色の枠</b>が一番お得。','盤面の小さな数字が「まわりの増減」。もう一度タップするか「ここに建てる」で建設！','8手ごとに決算。稼ぎ2以下の会社は<b style="color:var(--down)">倒産</b>。時代のお題（+15）も狙おう。'][S.tut];
+  el.hidden=false;
+  el.innerHTML=`<span class="no">${S.tut+1}/4</span><span class="t">${msg}</span>${S.tut===3?`<button class="ok" type="button" id="tutOk">わかった</button>`:`<button type="button" id="tutSkip">ガイドを閉じる</button>`}`;
+  const done=()=>{S.tut=4;store.set('azakei-city-tut',4);el.hidden=true};
+  if($('tutOk'))$('tutOk').onclick=done; if($('tutSkip'))$('tutSkip').onclick=done;
+}
+let resetArm=false;
+function renderTools(){
+  let h='';
+  {const got=store.get("azakei-city-badges")||{};h=`<button class="ghost" id="book" type="button">社長手帳 ${BADGES.filter(b=>got[b.id]).length}/${BADGES.length}</button>`;}
+  if(S.mode==="local") h+=`<button class="ghost" id="newGame" type="button">新しい街をつくる（人数・モードを選ぶ）</button>`;
+  else if(NET.owner) h+=`<button class="ghost${resetArm?' warn':''}" id="reset" type="button">${resetArm?'全員の建物を消します。もう一度押す':'みんなの街をリセット（オーナーのみ）'}</button>`;
+  if(S.mode==='shared'&&NET.err) h+=`<p class="note">${esc(NET.err)}</p>`;
+  $('tools').innerHTML=h;
+  const b=$('reset'); if(b) b.onclick=resetShared;
+  const n=$("newGame"); if(n) n.onclick=showSetup;
+  const bk=$("book"); if(bk) bk.onclick=showBook;
+}
+function spark(vals){
+  const w=600,h=36,mx=Math.max(4,...vals),n=Math.max(2,vals.length);
+  const x=i=>i*(w-6)/(n-1)+3, y=v=>h-3-(v/mx)*(h-8);
+  const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  $('spark').innerHTML=vals.length<2?'':`<polyline points="${x(0)},${h} ${pts} ${x(vals.length-1)},${h}" fill="rgba(255,200,58,.12)" stroke="none"/><polyline points="${pts}" fill="none" stroke="#ffc83a" stroke-width="2" vector-effect="non-scaling-stroke"/><circle cx="${x(vals.length-1)}" cy="${y(vals.at(-1))}" r="3" fill="#ffc83a"/>`;
+}
+function legend(){$('legend').innerHTML=['ho',...KEYS.slice(1,9)].map(k=>`<span class="k-${k}" style="color:var(--c)">${ic(k)}<span style="color:var(--muted)">${T[k].name}</span></span>`).join('')+'<span>◤ 左上の色＝持ち主 ・ ★ 成長 ・ ◆ 名所</span>'}
+let toastTimer=null;
+function toast(html){
+  const old=document.querySelector('.toast'); if(old) old.remove();
+  const d=document.createElement('div'); d.className='toast'; d.setAttribute('role','status'); d.innerHTML=html; document.body.appendChild(d);
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>d.remove(),3700);
+}
+
+/* ---------- settlement: coins, crumbling, then the newspaper ---------- */
+function settleFx(rep){
+  if(!rep) return;
+  S.pause=true;
+  const board=$('board'), wait=reduced()?0:1500;
+  if(!reduced()){
+    let i=0;
+    for(const[r,c,v,f]of rep.cells){
+      const el=board.querySelector(`[data-r="${r}"][data-c="${c}"]`); if(!el) continue;
+      if(f==='bust'){el.classList.add('crumble');continue}
+      if(v<=0) continue;
+      const d=i++*14;
+      setTimeout(()=>{const s=document.createElement('span');s.className='float pay';s.textContent='+'+v;el.appendChild(s);if(d<500)sfx.coin(i)},d);
+      if(f==='grow') el.classList.add('flash');
+    }
+  }
+  setTimeout(showPaper,wait);
+}
+let paperTimer=null;
+function summarize(list){const m={};for(const x of list)m[x.k]=(m[x.k]||0)+1;return Object.entries(m).map(([k,v])=>`${T[k].name}${v>1?v:''}`).join('・')}
+function showPaper(){
+  const R=S.R,rep=R.eras.at(-1); if(!rep){S.pause=false;return}
+  const e=eraNow(),fin=finished(),ev=H(e),done=H(rep.e),mk=myKey();
+  const many=S.mode==='local'&&humans().length>1;
+  const payLine=many?humans().map(p=>`${esc(p.nick)} <b>${sg(rep.pay[p.key]||0)}</b>`).join('　'):`あなたの稼ぎ <b>${sg(rep.pay[mk]||0)}</b>`;
+  const myBust=rep.bust.filter(x=>x.ok===mk).length, myGrow=rep.grow.filter(x=>x.ok===mk).length;
+  $('paperbg').innerHTML=`<div class="paper" role="dialog" aria-label="決算と時代の変化">
+    <div class="mast"><span>AZAKEI 経済新聞</span><small>${fin?'令和4年':ev.w}</small><span>${fin?'最終号':'号外'}</span></div>
+    ${fin?`<div class="yr">2022</div><h3>${S.game&&S.game.chal?"チャレンジ、決算完了":"60年の決算、完了"}</h3><p>${S.game&&S.game.chal?"この時代を、街ごと乗りこえました。結果を見てみよう。":"東京オリンピックから資源高まで。この街は、日本の60年を生き抜きました。"}</p>`
+         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${esc(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>`}
+    <div class="box"><div class="hd">${done.y}年代（${done.n}）の決算</div>
+      <div>街のGDP <b>${rep.gdp}</b></div>
+      <div>${payLine}</div>
+      <div>${rep.bust.length?`倒産 <b>${rep.bust.length}社</b>（${summarize(rep.bust)}）${!many&&myBust?` うちあなた ${myBust}社`:''}`:'倒産 なし'}</div>
+      <div>${rep.grow.length?`成長 <span class="g">${rep.grow.length}社</span>（${summarize(rep.grow)}）${!many&&myGrow?` うちあなた ${myGrow}社`:''}`:'成長 なし'}</div>
+      ${fin?'':`<div>次のお題：${MQT[HI(e)]}</div>`}
+    </div>
+    <div class="btns">${fin?`<button type="button" id="paperRes">結果を見る</button>`:`<button type="button" id="paperClose">街にもどる</button>`}</div></div>`;
+  $('paperbg').hidden=false;
+  sfx.paper(rep.bust.length>0);
+  if(fin){$('paperRes').onclick=()=>{hidePaper();showResult()};$('paperRes').focus()}
+  else{$('paperClose').onclick=hidePaper;$('paperClose').focus();clearTimeout(paperTimer);paperTimer=setTimeout(hidePaper,12000)}
+}
+function hidePaper(){$('paperbg').hidden=true;clearTimeout(paperTimer);if(S.pause){S.pause=false;renderBoard();renderMarket();renderPre()}}
+
+/* ---------- result ---------- */
+function titleFor(o,rank){
+  const top=Object.entries(o.kinds||{}).sort((a,b)=>b[1]-a[1])[0];
+  if(rank===0) return 'AZAKEI CITY の億万長者';
+  if(o.lm>=3) return '名所プロデューサー';
+  if(o.mq>=4) return '時代を読む社長';
+  if(o.buys>=3) return '買収王';
+  if(o.bust>=3) return '七転び八起きの社長';
+  if(o.grow>=3) return '大企業を育てた社長';
+  return top?`${T[top[0]].name}の顔役`:'街の新人社長';
+}
+// 結果画面：1964年から最後まで、街が育つ様子を早送りで再生
+const TCOL={en:'#ff7a3d',fi:'#eab520',ma:'#5f86ff',re:'#ff5c9a',tr:'#20c6d1',me:'#a77bff',ho:'#e9dcc0',in:'#ffc83a',sc:'#ffc83a',hall:'#ffc83a'};
+let tlTimer=null;
+function playTimelapse(){
+  const cv=$('tlc'); if(!cv) return;
+  clearTimeout(tlTimer);
+  const frames=[];
+  replay(tiles(),seedNow(),(g,n,e,settled)=>{frames.push({n,e,settled,gdp:gdp(g,e),cells:g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null))})});
+  const ctx=cv.getContext('2d'), Z=cv.width/N, pad=2;
+  const draw=f=>{
+    ctx.fillStyle='#171a39'; ctx.fillRect(0,0,cv.width,cv.height);
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+      const x=c*Z+pad, y=r*Z+pad, w=Z-pad*2, t=f?f.cells[r][c]:(r===MID&&c===MID?{k:'hall',lv:1}:null);
+      ctx.fillStyle='#20244c'; ctx.beginPath(); ctx.roundRect(x,y,w,w,4); ctx.fill();
+      if(!t) continue;
+      const col=TCOL[t.k]||'#888';
+      ctx.globalAlpha=t.lv>1?.75:.42; ctx.fillStyle=col; ctx.beginPath(); ctx.roundRect(x,y,w,w,4); ctx.fill();
+      ctx.globalAlpha=1; ctx.fillRect(x+3,y+w-4,w-6,3);
+      if(t.lv>1){ctx.strokeStyle='#ffc83a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x+.5,y+.5,w-1,w-1,4);ctx.stroke()}
+      if(t.ok){ctx.fillStyle=ownerColor(t.ok);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+9,y);ctx.lineTo(x,y+9);ctx.fill()}
+    }
+    if(f){$('tly').textContent=H(f.e).y+(f.settled?' 決算':'');$('tln').textContent=f.settled?'':H(f.e).n;$('tlg').textContent=`GDP ${f.gdp}`}
+  };
+  draw(null);
+  if(reduced()){draw(frames.at(-1));return}
+  let i=0;
+  const step=()=>{if(i>=frames.length||$('resultbg').hidden)return;const f=frames[i++];draw(f);tlTimer=setTimeout(step,f.settled?420:55)};
+  tlTimer=setTimeout(step,400);
+}
+function showResult(){
+  const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey();
+  const hs=S.mode==='local'?humans():[], many=hs.length>1;
+  const mi=arr.findIndex(o=>o.key===mk), me=arr[mi], win=arr[0];
+  if(!win) return;
+  const peak=R.eras.reduce((a,b)=>b.gdp>a.gdp?b:a,R.eras[0]||{gdp:0,y:'-'});
+  const daily=S.mode==='local'&&S.game&&S.game.daily;
+  const text=many
+    ?`AZAKEI CITY 1964→2022 対戦結果\n${arr.map((o,i)=>`${i+1}位 ${o.nick}（${TY[o.ty]?.name||''}）${o.score}点`).join('\n')}`
+    :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
+  $('resultbg').innerHTML=`<div class="sheet result" role="dialog" aria-label="結果">
+    <h3>${S.game&&S.game.chal?'チャレンジの結果':daily?`今日の街（${daily}）の結果`:S.game&&S.game.short?'ショート（6時代）の結果':'60年の結果'}</h3>
+    <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
+    <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
+    ${chalResultHTML()}
+    <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
+    <div class="tlap"><canvas id="tlc" width="330" height="330" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div></div>
+    <div class="tblwrap"><table class="eras"><thead><tr><th>年代</th><th>できごと</th><th>GDP</th><th>倒産</th><th>成長</th></tr></thead><tbody>
+      ${R.eras.map(x=>`<tr${x===peak?' style="color:var(--gold)"':''}><td>${x.y}</td><td>${esc(H(x.e).n)}</td><td>${x.gdp}</td><td>${x.bust.length}</td><td>${x.grow.length}</td></tr>`).join('')}
+    </tbody></table></div>
+    ${daily?`<div class="daily" id="dailyBox"><div class="slab">今日の街ランキング</div><p class="empty">読み込み中…</p></div>`:''}
+    ${(()=>{if(S.mode!=='local')return '';checkBadges();const fr=(S.game&&S.game.fresh)||[];return fr.length?`<div class="newbadge"><div class="slab">社長手帳に新しいバッジ</div>${fr.map(id=>{const b=BADGES.find(x=>x.id===id);return `<span class="nb2">★ ${b.name}</span>`}).join('')}</div>`:''})()}
+    <div class="btns"><button class="go" type="button" id="again">新しい街をつくる</button><button class="ghost" type="button" id="openBook">社長手帳</button><button class="ghost" type="button" id="copyRes">結果をコピー</button><button class="ghost" type="button" id="closeRes">街をながめる</button></div>
+  </div>`;
+  $('resultbg').hidden=false; sfx.end();
+  $('again').onclick=()=>{$('resultbg').hidden=true;showSetup()};
+  $('closeRes').onclick=()=>{$('resultbg').hidden=true};
+  playTimelapse(); $('tlPlay').onclick=playTimelapse;
+  $('openBook').onclick=()=>{$('resultbg').hidden=true;showBook()};
+  renderTools();
+  $('copyRes').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(text);b.textContent='コピーしました'}catch(err){b.textContent='コピーできませんでした'}};
+  $('again').focus();
+  if(daily&&me) dailyBoard(daily,me);
+}
+// 今日の街：共有のランキングに記録（使えないときは、この端末の自己ベストだけ）
+async function dailyBoard(date,me){
+  const box=$('dailyBox'); if(!box) return;
+  const best=store.get('azakei-city-daily-best')||{};
+  if(best.date!==date||me.score>best.score) store.set('azakei-city-daily-best',{date,score:me.score});
+  const myBest=Math.max(me.score,best.date===date?best.score:0);
+  if(!NET.db){box.innerHTML=`<div class="slab">今日の街</div><p class="empty">この端末での今日の自己ベスト：<b style="color:var(--gold)">${myBest}</b> 点。結果をコピーして友だちと比べよう。</p>`;return}
+  try{
+    if(NET.canWrite&&!S.game.submitted){
+      const id=(date+'_'+(NET.uid||('n'+seedOf(me.nick)))).replace(/[^A-Za-z0-9_\-.~:@+]/g,'');
+      const ref=NET.db.collection('daily').doc(id), cur=await ref.get();
+      const old=cur.exists?cur.data():null;
+      if(!old||me.score>(old.score||0)) await ref.set({date,nick:me.nick,score:me.score,ty:me.ty,t:Date.now()});
+      S.game.submitted=true; saveGame();
+    }
+    const snap=await NET.db.collection('daily').where('date','==',date).orderBy('score','desc').limit(10).get();
+    const rows=snap.docs.map(d=>d.data());
+    box.innerHTML=`<div class="slab">今日の街ランキング（${date}）</div>${rows.length?`<ol>${rows.map(x=>`<li class="${x.nick===me.nick&&x.score===me.score?'me':''}">${TY[x.ty]?.face||''} ${esc(x.nick)} ・ ${x.score}点</li>`).join('')}</ol>`:'<p class="empty">まだ記録がありません。</p>'}<p class="empty" style="margin-top:6px">自己ベスト ${myBest} 点。同じ日なら、何回でも挑戦できます。</p>`;
+  }catch(err){box.innerHTML=`<div class="slab">今日の街</div><p class="empty">ランキングを読み込めませんでした。自己ベスト：${myBest} 点。</p>`}
+}
+
+/* ---------- diagnosis (4 questions, inside the game) ---------- */
+const QZ=[
+  {q:'お年玉を1万円もらった。どうする？',a:[['ほしかった物や体験に、すぐ使う',{rabbit:2}],['とりあえず貯金。増やす方法も考える',{turtle:2}]]},
+  {q:'新しいゲームを始めるとき、まず何をする？',a:[['攻略やルールを読み込んでから始める',{fox:2}],['説明は後回し。とにかく突っ込む',{lion:2}]]},
+  {q:'「1万円が2倍になるか、0になるか」半々の勝負。',a:[['やる。チャンスは逃さない',{lion:1,rabbit:1}],['やらない。損はしたくない',{turtle:1,fox:1}]]},
+  {q:'友だちとゲームで遊ぶなら？',a:[['みんなで盛り上がれれば、勝ち負けはどっちでも',{rabbit:1,turtle:1}],['作戦を立てて、きっちり勝ちたい',{lion:1,fox:1}]]}
+];
+const TYLEAD={
+  lion:'チャンスと見たら大胆に飛び込む、攻めの社長。一手一手で大きく稼ぎにいく。',
+  fox:'情報を読み解く頭脳派の社長。次に市場に並ぶカードと先の時代を読んで、波に乗る。',
+  turtle:'コツコツ積み上げる堅実な社長。嵐の時代でも会社を守り抜く。',
+  rabbit:'「今」を楽しむ消費派の社長。山札からも選べる自由さで、住みやすい街を回す。'
+};
+const DX={step:0,pts:{},res:null,who:'',cb:null};
+function openDiag(who,cb){DX.step=0;DX.pts={};DX.res=null;DX.who=who;DX.cb=cb;drawDiag();$('typebg').hidden=false}
+function drawDiag(){
+  let body;
+  if(DX.res){const k=DX.res;
+    body=`<div class="dres ty-${k}"><div class="big">${TY[k].face}</div><div class="tn">${TY[k].name}タイプ</div>
+      <p class="lead2">${TYLEAD[k]}</p><div class="abil"><b>得意技</b>　${TY[k].ab}</div>
+      <div class="row"><button class="go" type="button" data-take="${k}" style="width:auto;padding:11px 22px">${TY[k].name}社長に決める</button><button class="ghost" type="button" data-redo="1">もう一度診断</button></div></div>`;
+  }else{const q=QZ[DX.step];
+    body=`<div class="quiz"><div class="qn">Q${DX.step+1} / ${QZ.length}</div><div class="qt">${q.q}</div>
+      <div class="ans">${q.a.map((a,i)=>`<button type="button" data-ans="${i}">${a[0]}</button>`).join('')}</div>
+      <div class="dots">${QZ.map((_,i)=>`<i class="${i<=DX.step?'on':''}"></i>`).join('')}</div></div>`;
+  }
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長タイプ診断"><h3>${DX.who?esc(DX.who)+'さんは':'あなたは'}どの社長？</h3>
+    <p class="lead">4つの質問で、社長タイプと得意技が決まります。</p>${body}
+    <div class="foot"><button class="ghost" type="button" data-pickself="1">診断せずに自分で選ぶ</button></div></div>`;
+  const f=$('typebg').querySelector('[data-ans],[data-take]'); if(f) f.focus();
+}
+function drawPickSelf(){
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長タイプを選ぶ"><h3>社長タイプを選ぶ</h3><p class="lead">得意技で選ぼう。</p>
+    <div class="types">${TYK.map(k=>`<button type="button" class="type ty-${k}" data-take="${k}"><span class="face">${TY[k].face}</span><span class="tn">${TY[k].name}タイプ ・ ${TY[k].what}</span><span class="ta">${TY[k].ab}</span></button>`).join('')}</div></div>`;
+}
+
+/* ---------- setup: players, mode ---------- */
+const SU={daily:false,short:false,n:1,rows:[],cpu:store.get('azakei-city-cpu')||'normal'};
+function showSetup(){
+  const names=store.get('azakei-city-names')||[];
+  SU.rows=[0,1,2,3].map(i=>SU.rows[i]||{nick:names[i]||(i===0?(S.nick||''):''),ty:i===0?(store.get('azakei-city-ty-local')||null):null});
+  drawSetup(); $('typebg').hidden=false;
+}
+function drawSetup(){
+  if(SU.daily) SU.n=1;
+  const n=SU.n, cpus=Math.max(0,3-n), ready=SU.rows.slice(0,n).every(r=>r.ty);
+  const today=todayStr();
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="新しい街をつくる">
+    <h3>新しい街をつくる</h3>
+    <p class="lead">1964年から2022年まで。12の時代を、街ごと生き抜こう。</p>
+    <div class="slab">モード</div>
+    <div class="seg"><button type="button" data-daily="0" aria-pressed="${!SU.daily}">ふつうの街<small>毎回ちがう市場</small></button><button type="button" data-daily="1" aria-pressed="${SU.daily}">今日の街 ${today.slice(5).replace('-','/')}<small>今日はみんな同じ市場で点数勝負</small></button></div>
+    <div class="slab">長さ${SU.daily?'（今日の街はフル）':''}</div>
+    <div class="seg"><button type="button" data-short="0" aria-pressed="${SU.daily||!SU.short}">フル 12時代<small>1964→2022 ・ じっくり</small></button><button type="button" data-short="1" aria-pressed="${!SU.daily&&SU.short}"${SU.daily?' disabled':''}>ショート 6時代<small>大事件だけ ・ 約3分の1の長さ</small></button></div>
+    <div class="slab">人数${SU.daily?'（今日の街は1人で挑戦）':'（1台を順番に回して遊ぶ）'}</div>
+    <div class="seg">${[1,2,3,4].map(i=>`<button type="button" data-n="${i}" aria-pressed="${n===i}"${SU.daily&&i>1?' disabled':''}>${i}人</button>`).join('')}</div>
+    ${SU.rows.slice(0,n).map((r,i)=>`<div class="prow"><span class="pn">${i+1}P</span><input id="pn${i}" maxlength="12" placeholder="社長名" value="${esc(r.nick)}" autocomplete="off">
+      <div class="tys">${TYK.map(k=>`<button type="button" class="ty-${k}" data-row="${i}" data-ty="${k}" aria-pressed="${r.ty===k}">${TY[k].face} ${TY[k].name}</button>`).join('')}<button type="button" class="dg" data-diag="${i}">4問で診断</button></div></div>`).join('')}
+    ${cpus?`<p class="cpurow">＋ CPU ${cpus}人（${CPUN.slice(0,cpus).join("・")}）が一緒に街をつくります。</p>${SU.daily?"":`<div class="slab">CPUの強さ</div><div class="seg">${[["easy","やさしい","気まぐれに建てる"],["normal","ふつう","いまと次の時代を見る"],["hard","つよい","先を読み、倒産を避ける"]].map(([v,l,s])=>`<button type="button" data-cpu="${v}" aria-pressed="${SU.cpu===v}">${l}<small>${s}</small></button>`).join("")}</div>`}`:'<p class="cpurow">CPUなし。人間だけの真剣勝負。</p>'}
+    <button class="go" type="button" id="startGame"${ready?'':' disabled'}>${ready?'この街で始める':'全員の社長タイプを選んでください'}</button>
+    ${S.game&&S.game.tiles.length&&!finished()?'<p class="foot">いまの街は消えて、新しい街になります。</p><button class="ghost" type="button" data-close="1">いまの街にもどる</button>':''}
+  </div>`;
+}
+function readNames(){for(let i=0;i<SU.n;i++){const el=$('pn'+i);if(el)SU.rows[i].nick=el.value.slice(0,12)}}
+function startGame(){
+  readNames();
+  const n=SU.n, today=todayStr(), seed=SU.daily?seedOf('azakei-'+today):Math.floor(Math.random()*1e9);
+  const players=SU.rows.slice(0,n).map((r,i)=>({key:'h'+(i+1),nick:(r.nick||'').trim()||(n>1?`${i+1}P`:'あなた'),ty:r.ty,cpu:false}));
+  const rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
+  for(let i=0;i<Math.max(0,3-n);i++) players.push({key:'cpu'+(i+1),nick:CPUN[i],ty:cp[i],cpu:true});
+  S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,cpu:SU.daily?'normal':SU.cpu,players,tiles:[]}; store.set('azakei-city-cpu',SU.cpu);
+  store.set('azakei-city-names',SU.rows.map(r=>r.nick)); store.set('azakei-city-ty-local',SU.rows[0].ty);
+  if(n===1&&players[0].nick!=='あなた'){S.nick=players[0].nick;store.set('azakei-city-nick',S.nick);$('nick').value=S.nick}
+  saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false;
+  S.viewer=players[0].key;
+  hideHome();
+  $('typebg').hidden=true;
+  if(S.mode!=='local') setMode('local'); else render();
+  advance();
+}
+$('typebg').addEventListener('click',e=>{
+  const t=e.target;
+  // diagnosis
+  const a=t.closest('[data-ans]');
+  if(a){const add=QZ[DX.step].a[+a.dataset.ans][1];for(const k in add)DX.pts[k]=(DX.pts[k]||0)+add[k];sfx.pick();
+    if(DX.step<QZ.length-1){DX.step++;drawDiag();return}
+    const mx=Math.max(...TYK.map(k=>DX.pts[k]||0)), tops=TYK.filter(k=>(DX.pts[k]||0)===mx);
+    DX.res=tops[Math.floor(Math.random()*tops.length)]; sfx.end(); drawDiag(); return}
+  if(t.closest('[data-redo]')){DX.step=0;DX.pts={};DX.res=null;drawDiag();return}
+  if(t.closest('[data-pickself]')){drawPickSelf();return}
+  const tk=t.closest('[data-take]');
+  if(tk){const ty=tk.dataset.take;sfx.pick();if(DX.cb)DX.cb(ty);return}
+  // setup
+  const dl=t.closest('[data-daily]'); if(dl&&!dl.disabled){readNames();SU.daily=dl.dataset.daily==='1';drawSetup();return}
+  const cp=t.closest('[data-cpu]'); if(cp){readNames();SU.cpu=cp.dataset.cpu;sfx.pick();drawSetup();return}
+  const sh=t.closest('[data-short]'); if(sh&&!sh.disabled){readNames();SU.short=sh.dataset.short==='1';drawSetup();return}
+  const nn=t.closest('[data-n]'); if(nn&&!nn.disabled){readNames();SU.n=+nn.dataset.n;drawSetup();return}
+  const ty=t.closest('[data-ty]'); if(ty){readNames();SU.rows[+ty.dataset.row].ty=ty.dataset.ty;sfx.pick();drawSetup();return}
+  const dg=t.closest('[data-diag]'); if(dg){readNames();const i=+dg.dataset.diag;openDiag(SU.rows[i].nick||`${i+1}P`,ty=>{SU.rows[i].ty=ty;drawSetup()});return}
+  if(t.closest('#startGame')){startGame();return}
+  if(t.closest('[data-close]')||(t.id==='typebg'&&(S.mode==='shared'?S.tyShared:S.game))){$('typebg').hidden=true;return}
+});
+$('meChip').onclick=()=>{
+  if(S.mode==='local') showSetup();
+  else openDiag('',ty=>{S.tyShared=ty;store.set('azakei-city-ty-shared',ty);$('typebg').hidden=true;S.sel=null;S.cell=null;render()});
+};
+
+/* ---------- turns ---------- */
+function floatAt(r,c,d){
+  const el=$('board').querySelector(`[data-r="${r}"][data-c="${c}"]`); if(!el) return;
+  el.classList.add('flash');
+  const f=document.createElement('span'); f.className='float'+(d<0?' neg':''); f.textContent=sg(d); el.appendChild(f);
+}
+// 次の番へ。CPUなら自動で打ち、人間ならその人に交代
+function advance(){
+  syncEL();
+  if(S.mode!=='local'||!S.game) return;
+  if(S.pause||S.policy){setTimeout(advance,300);return}
+  if(needPolicy()){startPolicy();return}
+  const R=replay(S.game.tiles,S.game.seed);
+  if(R.n>=ERA*NE()||!validCells(R.g).length){S.busy=false;render();return}
+  const tp=turnPlayer();
+  if(tp.cpu){S.busy=true;renderMarket();renderPre();renderTurn();setTimeout(cpuStep,reduced()?150:700);return}
+  const changed=S.viewer!==tp.key;
+  S.viewer=tp.key; S.busy=false; S.sel=null; S.cell=null; S.insp=null;
+  render();
+  if(changed&&humans().length>1){toast(`<b>${esc(sh(tp.nick))}</b>の番です ${TY[tp.ty].face}`);sfx.turn()}
+}
+/* ---------- 政策会議 ---------- */
+function needPolicy(){
+  if(S.mode!=='local'||!S.game) return false;
+  syncEL();
+  const R=replay(S.game.tiles,S.game.seed), e=Math.floor(R.n/ERA);
+  return R.n>0&&R.n%ERA===0&&R.n<ERA*NE()&&!POLMAP[e];
+}
+function startPolicy(){
+  syncEL();
+  const R=replay(S.game.tiles,S.game.seed), e=Math.floor(R.n/ERA), offers=polOffer(S.game.seed,e);
+  // いちばん下位の社長が決める（同点なら手番の早い順）
+  const P=S.game.players, sc=p=>(R.own[p.key]||{score:0}).score;
+  const chooser=P.slice().sort((a,b)=>sc(a)-sc(b))[0];
+  const commit=id=>{
+    S.game.tiles.push({k:'pol',p:id,e,ok:chooser.key,nick:chooser.nick,t:Date.now()});
+    saveGame(); S.policy=false; $('polbg').hidden=true;
+    toast(`政策決定！<b>${POLBY[id].name}</b>${esc(sh(chooser.nick))}が決めました`); sfx.turn();
+    render(); setTimeout(advance,reduced()?100:500);
+  };
+  S.policy=true;
+  if(chooser.cpu){
+    // CPU：自分の建物がいちばん得をする政策を選ぶ
+    const gain=p=>{let s=0;for(const row of R.g)for(const x of row)if(x&&p.b[x.k])s+=(x.ok===chooser.key?1:-.4)*p.b[x.k];return s};
+    const pick=offers.slice().sort((a,b)=>gain(b)-gain(a))[0];
+    setTimeout(()=>commit(pick.id),reduced()?100:700);
+    return;
+  }
+  S.viewer=chooser.key;
+  const ev=H(e);
+  $('polbg').innerHTML=`<div class="sheet pol" role="dialog" aria-label="政策会議">
+    <div class="slab">${ev.y}年代の政策会議</div>
+    <h3>${esc(sh(chooser.nick))}が、この時代の政策を決めます</h3>
+    <p class="lead">いま一番下位の社長が、政府の政策を1つ選べます。逆転のチャンス。選んだ政策は、この時代のあいだ全員に効きます。</p>
+    <div class="polcards">${offers.map(p=>{
+      let mine=0;for(const row of R.g)for(const x of row)if(x&&x.ok===chooser.key&&p.b[x.k])mine+=p.b[x.k];
+      return `<button type="button" class="polcard" data-pol="${p.id}"><span class="pn">${p.name}</span><span class="pd">${p.d}</span><span class="pe">${Object.keys(p.b).map(k=>`<span class="chip k-${k}"><i></i>${T[k].name}<b class="p">+${p.b[k]}</b></span>`).join('')}</span><span class="pm">あなたの今の建物なら <b>+${mine}</b>／決算</span></button>`}).join('')}</div>
+  </div>`;
+  $('polbg').hidden=false;
+  $('polbg').querySelector('.polcard').focus();
+  $('polbg').onclick=ev2=>{const b=ev2.target.closest('[data-pol]');if(b){sfx.pick();commit(b.dataset.pol)}};
+}
+function cpuStep(){
+  syncEL();
+  if(S.mode!=='local'||!S.game) return;
+  if(S.pause||S.policy){setTimeout(cpuStep,300);return}
+  if(needPolicy()){advance();return}
+  const tp=turnPlayer(); if(!tp.cpu){advance();return}
+  const R=replay(S.game.tiles,S.game.seed), best=cpuPick(R,tp.ty,tp.key,S.game.cpu);
+  S.game.tiles.push(best?{r:best.r,c:best.c,k:best.k,src:best.src,t:Date.now(),ok:tp.key,nick:tp.nick,ty:tp.ty}:{k:'pass',t:Date.now(),ok:tp.key});
+  saveGame();
+  render(); if(best){floatAt(best.r,best.c,best.d);rippleAt(best.ch);cpuTalk(tp,best)}
+  setTimeout(advance,reduced()?150:500);
+}
+async function place(){
+  const card=selCard();
+  if(!S.cell||!card||locked()) return;
+  const[r,c]=S.cell, k=card.k, ty=myTy(), src=card.src==='d'?'d':'m';
+  const sim=k==='buy'?simulateBuy(S.R.g,r,c,eraNow(),ty,S.R):simulate(S.R.g,r,c,k,eraNow(),ty,S.R), d=sim.score, ch=sim.changes||[];
+  if(k==='buy') tone(140,.3,'square',.05);
+  if(S.tut===2){S.tut=3}
+  if(S.mode==='local'){
+    const p=viewerP();
+    S.game.tiles.push({r,c,k,src,t:Date.now(),ok:p.key,nick:p.nick,ty:p.ty});
+    saveGame();
+    afterPlace(r,c,d,ch);
+    advance();
+    return;
+  }
+  const nick=(S.nick||'').trim();
+  if(!nick){$('nick').focus();$('nick').placeholder='社長名を入れてね';return}
+  S.busy=true; render();
+  try{
+    const doc={r,c,k,src,t:Date.now(),ok:NET.uid||('n:'+nick),nick,ty};
+    const ref=await NET.db.collection('cells').add(doc);
+    NET.err='';
+    if(!S.sharedTiles.some(x=>x.id===ref.id)){S.sharedTiles.push({id:ref.id,...doc});sortShared()}
+    S.busy=false; afterPlace(r,c,d,ch);
+  }catch(err){
+    S.busy=false; S.cell=null;
+    NET.err=err&&err.code==='invalid_argument'?'この街に建てる権限がありません。閲覧のみになります。':err&&err.code==='quota_exceeded'?'街のデータがいっぱいです。オーナーにリセットを頼んでください。':'建てられませんでした。少し待ってからもう一度どうぞ。';
+    if(err&&err.code==='invalid_argument') NET.canWrite=false;
+    render();
+  }
+}
+// 建てた建物のまわりで、稼ぎが変わった建物を光らせて「＋1」を出す
+function rippleAt(ch){
+  if(!ch||!ch.length) return;
+  ch.forEach((x,i)=>setTimeout(()=>{const el=$("board").querySelector(`[data-r="${x.r}"][data-c="${x.c}"]`);if(!el)return;el.classList.add("ripple");const f=document.createElement("span");f.className="float side"+(x.d<0?" neg":"");f.textContent=sg(x.d);el.appendChild(f)},reduced()?0:180+i*90));
+}
+function afterPlace(r,c,d,ch){
+  S.sel=null; S.cell=null; S.insp=null;
+  sfx.build(d);
+  render(); floatAt(r,c,d); rippleAt(ch);
+}
+// CPU：市場（ウサギは山札も）から選ぶ。強さで「先の読み」と「迷い」が変わる
+const CPULV={easy:{fut:0,risk:0,noise:7,top:5},normal:{fut:.4,risk:1,noise:5,top:1},hard:{fut:.9,risk:3,noise:0,top:1}};
+function cpuPick(R,ty,ok,lvName){
+  const L=CPULV[lvName||'normal']||CPULV.normal, g=R.g, cells=validCells(g), e=Math.floor(R.n/ERA), cand=[];
+  for(const x of choices(R,ty)){
+    if(x.k==='buy'){
+      for(const[r,c]of buyTargets(g,e,ok)){const s=simulateBuy(g,r,c,e,ty,R);cand.push({v:s.score+(L.fut+.9)*s.fut-(ty!=='turtle'&&s.fut<=BUST?L.risk*2:0)+Math.random()*L.noise,r,c,k:x.k,src:x.src,d:s.score,ch:[],lms:[],mq:s.mq})}
+      continue;
+    }
+    for(const[r,c]of cells){
+      const s=simulate(g,r,c,x.k,e,ty,R);
+      cand.push({v:s.score+L.fut*s.fut-(isInd(x.k)&&ty!=='turtle'&&s.fut<=BUST?L.risk:0)+Math.random()*L.noise,r,c,k:x.k,src:x.src,d:s.score,ch:s.changes,lms:s.lms,mq:s.mq});
+    }
+  }
+  if(!cand.length) return null;
+  cand.sort((a,b)=>b.v-a.v);
+  return cand[Math.floor(Math.random()*Math.min(L.top,cand.length))];
+}
+// CPU社長のひとこと（タイプごとの口ぐせ）
+const TALK={
+  lion:{b:['攻めるぞ！','ここで勝負だ','一気にいく！','ためらうな、建てろ！'],buy:['弱った会社は、いただく！'],lm:['名所はおれのものだ！'],big:['見たか、この稼ぎ！'],mq:['お題も、もらった！']},
+  fox:{b:['読みどおり','次の時代は、こっちだな','計算ずみ','ふふ、ここが効く'],buy:['安く買って、高く育てる'],lm:['名所、いただき'],big:['予想以上の伸びだ'],mq:['歴史は、くり返す']},
+  turtle:{b:['コツコツいこう','守りを固めよう','急がば回れ','長い目で見れば得'],buy:['うちで立て直そう'],lm:['地道にやった結果だ'],big:['たまには大きく稼ぐ'],mq:['時代を読むのも仕事']},
+  rabbit:{b:['楽しくいこう！','街をにぎやかに！','今が一番！','みんなで住もう〜'],buy:['一緒にがんばろう！'],lm:['名所できた〜！'],big:['やった、大もうけ！'],mq:['お題クリア〜！']}
+};
+let talkTimer=null;
+function cpuTalk(p,best){
+  if(!best||reduced()) return;
+  const t=TALK[p.ty]||TALK.lion, pick=a=>a[Math.floor(Math.random()*a.length)];
+  const line=best.k==='buy'?pick(t.buy):best.lms&&best.lms.length?pick(t.lm):best.mq?pick(t.mq):best.d>=15?pick(t.big):Math.random()<.45?pick(t.b):null;
+  if(!line) return;
+  const el=$('talk'); el.hidden=false;
+  el.innerHTML=`<span class="face" style="--tc:var(--${p.ty})">${TY[p.ty].face}</span><b>${esc(p.nick)}</b><span class="line">「${line}」</span>`;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  clearTimeout(talkTimer); talkTimer=setTimeout(()=>{el.hidden=true},2600);
+}
+async function resetShared(){
+  if(!resetArm){resetArm=true;renderTools();setTimeout(()=>{resetArm=false;renderTools()},4000);return}
+  resetArm=false;
+  S.busy=true; render();
+  for(const t of S.sharedTiles.slice()){try{await NET.db.collection('cells').doc(t.id).delete()}catch(e){}}
+  S.sharedTiles=[]; S.seen.shared=-1; S.busy=false; render();
+}
+$('board').addEventListener('click',e=>{
+  const b=e.target.closest('.cell'); if(!b||!S.R) return;
+  const r=+b.dataset.r,c=+b.dataset.c,g=S.R.g, card=selCard();
+  const isBuy=card&&card.k==='buy';
+  if(isBuy&&!locked()&&buyable(g,r,c,eraNow(),myKey())){
+    S.insp=null;
+    if(S.cell&&S.cell[0]===r&&S.cell[1]===c){place();return}
+    S.cell=[r,c]; sfx.pick(); render(); return;
+  }
+  if(g[r][c]){S.insp=(S.insp&&S.insp[0]===r&&S.insp[1]===c)?null:[r,c];S.cell=null;render();return}
+  if(!card||isBuy||!valid(g,r,c)||locked()) return;
+  S.insp=null;
+  if(S.cell&&S.cell[0]===r&&S.cell[1]===c){place();return}
+  S.cell=[r,c]; sfx.pick(); render();
+});
+$('market').addEventListener('click',e=>{
+  const b=e.target.closest('.mcard'); if(!b||b.disabled) return;
+  const j=+b.dataset.j; S.sel=S.sel===j?null:j; S.insp=null;
+  const card=selCard();
+  if(!card) S.cell=null;
+  else if(S.cell&&(card.k==='buy'?!buyable(S.R.g,S.cell[0],S.cell[1],eraNow(),myKey()):!valid(S.R.g,S.cell[0],S.cell[1]))) S.cell=null;
+  sfx.pick(); render();
+});
+// 市場のカードに乗せるだけで、そのルールを図で見られる
+function hoverRule(e){const b=e.target.closest('.mcard');if(!b||!S.R)return;const ch=choices(S.R,myTy()||'lion'),x=ch[+b.dataset.j];if(x)$('cardrule').innerHTML=ruleCard(x.k)}
+$('market').addEventListener('mouseover',hoverRule);
+$('market').addEventListener('focusin',hoverRule);
+$('market').addEventListener('mouseleave',()=>{const c=selCard();$('cardrule').innerHTML=c?ruleCard(c.k):'カードに乗せるとルールが図で出ます。ライバルも同じ市場から選びます。'});
+$('paperbg').addEventListener('click',e=>{if(e.target.id==='paperbg'&&!finished())hidePaper()});
+$('resultbg').addEventListener('click',e=>{if(e.target.id==='resultbg')$('resultbg').hidden=true});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!finished())hidePaper();$('resultbg').hidden=true;if(S.mode==='shared'?S.tyShared:S.game)$('typebg').hidden=true});
+$('nick').value=S.nick;
+$('nick').addEventListener('input',e=>{S.nick=e.target.value.slice(0,12);store.set('azakei-city-nick',S.nick);renderRank()});
+$('riskT').addEventListener('change',e=>{S.risk=e.target.checked;renderBoard()});
+function paintSound(){$('sound').textContent=S.sound?'音 ON':'音 OFF';$('sound').setAttribute('aria-pressed',S.sound)}
+$('sound').onclick=()=>{S.sound=!S.sound;store.set('azakei-city-sound',S.sound);paintSound();sfx.pick()};
+function setMode(m){
+  if(m==='shared'&&!NET.ready) return;
+  S.mode=m; S.sel=null; S.cell=null; S.insp=null; resetArm=false;
+  $('mShared').setAttribute('aria-pressed',m==='shared'); $('mLocal').setAttribute('aria-pressed',m==='local');
+  store.set('azakei-city-mode',m); render();
+  if(m==='shared'&&!S.tyShared) $('meChip').click();
+  if(m==='local'){if(!S.game)showSetup();else advance()}
+}
+$('mShared').onclick=()=>setMode('shared');
+$('mLocal').onclick=()=>setMode('local');
+
+/* ---------- 盤面の小さな図（ルールブック用） ---------- */
+// 'ho' 建物 / 'ho:3' 稼ぎつき / 'ho:3:+1' 増減つき / '?+4' 建てられるマス（*で一番お得）/ 'x' 倒産跡 / 'hall' 役所 / '' 空き地
+function mini(rows){
+  const n=rows[0].length;
+  return `<div class="mini" style="--n:${n}" aria-hidden="true">${rows.flat().map(s=>{
+    if(!s) return '<span class="cell"></span>';
+    if(s==='x') return '<span class="cell ruin"></span>';
+    if(s==='hall') return `<span class="cell hall">${ic('hall')}</span>`;
+    if(s[0]==='?'){const best=s.endsWith('*'),v=s.slice(1).replace('*','');return `<span class="cell valid${best?' best':''}"><span class="pv ${v.startsWith('-')?'n':'p'}">${v}</span></span>`}
+    const[k,v,tag]=s.split(':'), lv=k.endsWith('2')?2:1, kk=k.replace('2','');
+    return `<span class="cell t k-${kk}${lv>1?' lv2':''}">${ic(kk)}${lv>1?'<span class="st">★</span>':''}${v!=null&&v!==''?`<span class="v${v==='0'?' z':''}">${v}</span>`:''}${tag?`<span class="tagx${tag.startsWith('-')?' n':''}">${tag}</span>`:''}</span>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- ルールブック（絵でわかる10ページ） ---------- */
+const BOOK=[
+  {t:'ようこそ、社長',h:()=>`
+    <p>1964年の東京オリンピックから、2022年まで。あなたは街の社長です。建物を建てて稼ぎ、<b>最後にいちばんスコアが高い社長</b>が勝ち。</p>
+    <p>覚えるのは、この3つだけ。</p>
+    <ol class="three">
+      <li><b>1枚とって、建てる</b><span>市場の5枚から1枚。建物の上下左右に置く。</span></li>
+      <li><b>となりで稼ぎが変わる</b><span>置く前に、増えるスコアがマスに出る。</span></li>
+      <li><b>8手ごとに決算</b><span>稼ぎを受け取る。稼ぎ2以下の会社は倒産。</span></li>
+    </ol>
+    <div class="bk-box">ゲーム中も、数字と色がいつも教えてくれます。まずは遊んで、わからなくなったらこの本に戻ってきてください。</div>`},
+  {t:'1手の流れ',h:()=>`
+    <div class="bk-row">${'<div class="vs">'+mini([['','?+2',''],['?+4*','ho:2','?+2'],['','hall','']])+'<span class="arr">→</span>'+mini([['','',''],['re:3','ho:3:+1',''],['','hall','']])+'</div>'}
+      <ol class="bk-cap">
+        <li><b>市場</b>から1枚えらぶ（例：小売）。</li>
+        <li>建てられるマスに<b>増えるスコア</b>が出る。<b>金色の枠</b>が一番お得。</li>
+        <li>マスをえらんで<b>「ここに建てる」</b>。もう一度タップでもOK。</li>
+      </ol></div>
+    <div class="bk-box">この例：小売の稼ぎ <b>3</b> ＋ となりの住宅が <b>+1</b> ＝ スコア <b>+4</b>。<br>市場はライバルと共通。ほしいカードは先にとられるかも。</div>`},
+  {t:'ルールの図の読み方',h:()=>`
+    <p>カードのルールは、図で書いてあります。</p>
+    <div class="bk-card">${ruleCard('ma')}</div>
+    <ul class="bk-cap" style="margin-top:10px">
+      <li>大きな数字（<b>1</b>）は、何もなくてももらえる<b>基本</b>。</li>
+      <li>小さな3×3の図は<b>数える範囲</b>。十字は上下左右、四角は周り8マス。</li>
+      <li>「⚡×2」は「となりのエネルギー1つにつき＋2」という意味。</li>
+    </ul>
+    <div class="bk-row"><div class="vs">${mini([['','tr',''],['en','ma:6',''],['','','']])}</div>
+      <p class="bk-cap">製造のとなりにエネルギーと運輸。<br>基本1 ＋ ⚡2 ＋ 🚚1 ＋ NEWS（1964年は+3）＝ <b>稼ぎ7</b>…のように計算します。</p></div>`},
+  {t:'建物図鑑',h:()=>`
+    <p>9種類の建物と、作戦カード「買収」。組み合わせを考えよう。</p>
+    <div class="bk-grid">${['ho','en','fi','ma','re','tr','me','in','sc','buy'].map(k=>`<div class="bk-card">${ruleCard(k)}</div>`).join('')}</div>
+    <div class="bk-box">ゲーム中は、市場のカードに乗せるだけでこの図が出ます。</div>`},
+  {t:'時代とNEWS',h:()=>`
+    <p><b>8手ごとに時代が進みます</b>（1964→2022の12時代）。時代ごとのNEWSで、産業の稼ぎが上下します。</p>
+    <div class="bk-box"><b>例：1973年 第一次オイルショック</b>${windRows(HIST[1].r)}</div>
+    <ul class="bk-cap">
+      <li>▲追い風の産業は稼ぎが増え、▼向かい風の産業は減る。</li>
+      <li>次の時代の<b>予報</b>はいつでも見られる。先回りして建てるのがコツ。</li>
+      <li>時代が変わると、市場のカードは総入れ替え。</li>
+      <li>決算のあとは<b>政策会議</b>。いちばん下位の社長が、この時代の政策（公共事業・減税・金融緩和など）を2つから選ぶ。逆転のチャンス。</li>
+    </ul>`},
+  {t:'決算・倒産・成長',h:()=>`
+    <p>時代の終わりに<b>決算</b>。すべての建物が、その時代の稼ぎを持ち主に払います。</p>
+    <div class="bk-row"><div class="vs">${mini([['fi:1','re:5',''],['ma:12','ho:3','']])}<span class="arr">→</span>${mini([['x','re:5',''],['ma2:13','ho:3','']])}</div>
+      <ul class="bk-cap">
+        <li>稼ぎ<b>2以下</b>の産業は<b>倒産</b>して空き地に。</li>
+        <li>稼ぎ<b>11以上</b>の産業は<b>成長</b>して★（ずっと＋1）。</li>
+        <li>住宅・保険・学校は倒産しない。</li>
+      </ul></div>
+    <div class="bk-box">マスを選ぶと、<b>この先の稼ぎ予想</b>が棒グラフで出ます。赤い棒は倒産の危険。</div>`},
+  {t:'名所と、時代のお題',h:()=>`
+    <p><b>名所</b>は、最初に完成させた社長に<b>＋30</b>。早い者勝ち。</p>
+    <div class="bk-grid">${LM.map(l=>`<div class="bk-box" style="margin:0"><b>${l.name}</b><br>${l.hint}</div>`).join('')}</div>
+    <p style="margin-top:10px"><b>時代のお題</b>は、時代ごとに歴史にちなんだお題が1つ。その時代のうちに最初に達成すると<b>＋15</b>。</p>
+    <div class="bk-box">例（1964年）：${MQT[0]}</div>`},
+  {t:'買収',h:()=>`
+    <div class="bk-row"><div class="vs">${mini([['fi:2','ho:3'],['me:5','']])}<span class="arr">→</span>${mini([['fi:2','ho:3'],['me:5','']])}</div>
+      <ul class="bk-cap">
+        <li>「買収」カードで、<b>ライバルの稼ぎ3以下の会社</b>を自分のものにできる。</li>
+        <li>次の決算から、その会社の稼ぎがあなたに入る。</li>
+        <li>弱った会社なので、立て直せないと倒産することも。</li>
+      </ul></div>
+    <div class="bk-box">盤面の左上の色が、建物の持ち主。買収すると色が変わります。</div>`},
+  {t:'社長タイプ',h:()=>`
+    <p>はじめに4問の診断で、あなたの社長タイプが決まります（自分で選んでもOK）。</p>
+    <div class="bk-grid">${TYK.map(k=>`<div class="bk-box" style="margin:0"><b>${TY[k].face} ${TY[k].name}タイプ（${TY[k].what}）</b><br>${TY[k].ab}</div>`).join('')}</div>`},
+  {t:'勝つためのコツと、遊び方',h:()=>`
+    <ul class="bk-cap">
+      <li><b>金色の枠</b>は「いま」一番。でも<b>次の時代の予報</b>も見よう。</li>
+      <li>エネルギーと製造、住宅と小売…<b>相性のいい組み合わせ</b>を作る。</li>
+      <li>暴落の前に<b>保険</b>を。周りの産業をNEWSの▼から守る。</li>
+      <li>市場はライバルと共通。<b>相手がほしいカードを先にとる</b>のも作戦。</li>
+      <li>名所とお題の<b>ボーナス</b>は大きい。早い者勝ち。</li>
+    </ul>
+    <div class="bk-grid">
+      <div class="bk-box" style="margin:0"><b>ひとりで</b><br>CPUの社長2人と対戦。</div>
+      <div class="bk-box" style="margin:0"><b>友だちと</b><br>1台を順番に回して2〜4人。</div>
+      <div class="bk-box" style="margin:0"><b>今日の街</b><br>その日はみんな同じ市場。点数で勝負。</div>
+      <div class="bk-box" style="margin:0"><b>ショート</b><br>大事件の6時代だけ。短く遊べる。</div>
+    </div>`}
+];
+let bookPage=0;
+function showRulebook(p){bookPage=Math.max(0,Math.min(BOOK.length-1,p||0));drawBook();$('bookbg').hidden=false;$('bookbg').querySelector('.bk-next').focus()}
+function drawBook(){
+  const pg=BOOK[bookPage];
+  $('bookbg').innerHTML=`<div class="book2" role="dialog" aria-label="ルールブック">
+    <div class="bk-head"><b>AZAKEI CITY</b><span>ルールブック</span><button type="button" data-bk="close">とじる</button></div>
+    <div class="bk-body"><div class="bk-no">${String(bookPage+1).padStart(2,'0')} / ${String(BOOK.length).padStart(2,'0')}</div><h3>${pg.t}</h3>${pg.h()}</div>
+    <div class="bk-foot"><button type="button" data-bk="prev"${bookPage?'':' disabled'}>← まえ</button>
+      <span class="bk-dots">${BOOK.map((_,i)=>`<i class="${i===bookPage?'on':''}" data-bk="go" data-p="${i}" title="${BOOK[i].t}"></i>`).join('')}</span>
+      <button type="button" class="bk-next" data-bk="${bookPage<BOOK.length-1?'next':'close'}">${bookPage<BOOK.length-1?'つぎへ →':'遊んでみる'}</button></div></div>`;
+}
+$('bookbg').addEventListener('click',e=>{
+  const b=e.target.closest('[data-bk]');
+  if(!b){if(e.target.id==='bookbg')$('bookbg').hidden=true;return}
+  const a=b.dataset.bk;
+  if(a==='close'){$('bookbg').hidden=true;store.set('azakei-city-readbook',1);return}
+  bookPage=a==='prev'?bookPage-1:a==='next'?bookPage+1:+b.dataset.p;
+  drawBook(); $('bookbg').querySelector('.bk-body').scrollTop=0; sfx.pick();
+});
+document.addEventListener('keydown',e=>{
+  if($('bookbg').hidden) return;
+  if(e.key==='ArrowRight'&&bookPage<BOOK.length-1){bookPage++;drawBook()}
+  else if(e.key==='ArrowLeft'&&bookPage>0){bookPage--;drawBook()}
+  else if(e.key==='Escape') $('bookbg').hidden=true;
+});
+$('openBook2').onclick=()=>showRulebook(0);
+
+/* ---------- チャレンジ（歴史シナリオ・ひとりで★を集める） ---------- */
+// star：最後の街のGDPの目標（★1 / ★2 / ★3）
+const CHAL=[
+  {id:'c1',name:'東京オリンピック',yr:'1964',eras:[0],star:[36,44,55],d:'新幹線と首都高の時代。8手で、街の土台をつくれ。',hint:'運輸と製造が追い風。運輸を2つ並べると、時代のお題も達成。'},
+  {id:'c2',name:'オイルショックを乗り切れ',yr:'1964→1973',eras:[0,1],star:[70,80,88],d:'高度成長から、突然の石油危機へ。',hint:'1973年は運輸−3・製造−2。エネルギーに乗り換えるか、保険で守ろう。'},
+  {id:'c3',name:'バブルの宴と崩壊',yr:'1988→1991',eras:[3,4],star:[62,78,92],d:'株と土地が急上昇。そして、はじける。',hint:'1988年は金融とメディアが+3。でも1991年、金融は−3。'},
+  {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[80,100,115],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
+  {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[100,125,145],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'}
+];
+const chalBest=()=>store.get('azakei-city-chal')||{};
+const starsOf=(c,gdp)=>c.star.filter(s=>gdp>=s).length;
+const starStr=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+function showChallenges(){
+  const best=chalBest(), ty=store.get('azakei-city-ty-local')||'fox';
+  const total=CHAL.reduce((s,c)=>s+(best[c.id]||0),0);
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="チャレンジ">
+    <h3>チャレンジ</h3><p class="lead">歴史の一場面を、ひとりで攻略。最後の街のGDPで★がつきます。決算のあとの政策も、あなたが決めます。いまの★ ${total} / ${CHAL.length*3}</p>
+    <div class="slab">社長タイプ</div>
+    <div class="seg" id="chTy">${TYK.map(k=>`<button type="button" data-cty="${k}" aria-pressed="${ty===k}">${TY[k].face} ${TY[k].name}</button>`).join('')}</div>
+    <div class="chl">${CHAL.map((c,i)=>{const b=best[c.id]||0,open=i===0||(best[CHAL[i-1].id]||0)>=1;
+      return `<button type="button" class="chc${b?' done':''}" data-chal="${c.id}"${open?'':' disabled'}><span class="cy">${c.yr}</span><b>${i+1}. ${c.name}</b><span class="cd">${open?c.d:'ひとつ前のチャレンジで★1をとると挑戦できます'}</span><span class="cs">${starStr(b)}</span><span class="cg">目標GDP ${c.star.join(' / ')}</span></button>`}).join('')}</div>
+    <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
+  $('typebg').hidden=false;
+  $('typebg').querySelector('.chc:not(:disabled)').focus();
+}
+function startChallenge(id){
+  const c=CHAL.find(x=>x.id===id); if(!c) return;
+  const ty=store.get('azakei-city-ty-local')||'fox';
+  S.game={seed:Math.floor(Math.random()*1e9),chal:id,eras:c.eras.slice(),players:[{key:'h1',nick:(S.nick||'').trim()||'あなた',ty,cpu:false}],tiles:[]};
+  saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false; S.policy=false; S.viewer='h1';
+  $('typebg').hidden=true; hideHome();
+  if(S.mode!=='local') setMode('local'); else render();
+  toast(`チャレンジ開始！<b>${c.name}</b>目標GDP ${c.star[0]}`);
+  advance();
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-cty]'); if(t){store.set('azakei-city-ty-local',t.dataset.cty);showChallenges();sfx.pick();return}
+  const c=e.target.closest('[data-chal]'); if(c&&!c.disabled){sfx.pick();$('resultbg').hidden=true;startChallenge(c.dataset.chal);return}
+  if(e.target.closest('#toChal')){$('resultbg').hidden=true;showChallenges()}
+});
+// 結果画面に出すチャレンジの評価
+function chalResultHTML(){
+  if(S.mode!=='local'||!S.game||!S.game.chal) return '';
+  const c=CHAL.find(x=>x.id===S.game.chal), gdp=S.R.hist.at(-1)||0, n=starsOf(c,gdp), best=chalBest();
+  if(!S.game.chalSaved){if(n>(best[c.id]||0)){best[c.id]=n;store.set('azakei-city-chal',best)}S.game.chalSaved=true;saveGame()}
+  const i=CHAL.indexOf(c), next=CHAL[i+1];
+  return `<div class="chres"><div class="slab">チャレンジ「${c.name}」</div><div class="big">${starStr(n)}</div>
+    <p>最後の街のGDP <b>${gdp}</b>　（目標 ${c.star.map((s,j)=>`<span class="${gdp>=s?'ok':''}">★${j+1} ${s}</span>`).join('・')}）</p>
+    <div class="btns"><button class="go" type="button" data-chal="${c.id}">もう一度</button>${next&&n>=1?`<button class="ghost" type="button" data-chal="${next.id}">次のチャレンジへ</button>`:''}<button class="ghost" type="button" id="toChal">チャレンジ一覧</button></div></div>`;
+}
+
+/* ---------- ホーム画面 ---------- */
+function showHome(){
+  S.homeOpen=true;
+  let cont='';
+  if(S.game&&S.game.tiles.length){
+    const keep=S.mode; S.mode='local'; syncEL();
+    const R=replay(S.game.tiles,S.game.seed), e=Math.floor(R.n/ERA);
+    if(R.n<ERA*NE()){const ev=H(e);cont=`<button class="cont" type="button" data-h="cont"><span class="big">つづきから</span><span>${ev.y}年代「${esc(ev.n)}」・${R.n}手目<small>${S.game.players.filter(p=>!p.cpu).map(p=>`${TY[p.ty].face} ${esc(p.nick)}`).join('・')}${S.game.daily?' ・ 今日の街':''}${S.game.short?' ・ ショート':''}</small></span><span class="arrow">→</span></button>`}
+    S.mode=keep; syncEL();
+  }
+  const sky=[]; const pat='ho en ma tr re ho fi me ho sc in re ho ma en ho re tr me fi ho ma ho re in sc'.split(' ');
+  for(let i=0;i<26;i++){const k=pat[i];sky.push(i%7===3&&i>13?'<span class="empty" style="animation-delay:'+(i*60)+'ms"></span>':`<span class="k-${k}" style="animation-delay:${i*60}ms">${ic(k)}</span>`)}
+  const first=!store.get('azakei-city-readbook');
+  $('home').innerHTML=`<div class="home-in">
+    <div class="hero">
+      <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 21 17H3Z"/><path d="M12 22 3 7h18Z"/></svg>
+      <div class="logo">AZAKEI CITY</div>
+      <div class="tag">1964→2022。60年の経済を、街ごと生き抜け。</div>
+      <p class="tag2">建物を建てて、となりどうしで稼ぎを増やす。オイルショックもバブルもリーマン・ショックも、街ごと乗りこえろ。</p>
+      <div class="skyline" aria-hidden="true">${sky.join('')}</div>
+      <div class="years">${HIST.map((h,i)=>i%2===0?`<span><b>${h.y}</b> ${esc(h.n)}</span>`:'').join('')}</div>
+    </div>
+    ${cont}
+    <div class="menu${HASCLAUDE?"":" n6"}">
+      <button class="mbtn main" type="button" data-h="new"><span class="mi">🏙️</span><b>新しい街をつくる</b><small>ひとりでCPUと／友だちと2〜4人で</small></button>
+      <button class="mbtn" type="button" data-h="short"><span class="mi">⏱️</span><b>ショートで遊ぶ</b><small>大事件の6時代だけ。サクッと1ゲーム</small></button>
+      <button class="mbtn" type="button" data-h="chal"><span class="mi">🏆</span><b>チャレンジ</b><small>歴史の一場面をひとりで攻略。★を集めよう（★${CHAL.reduce((s,c)=>s+(chalBest()[c.id]||0),0)}/${CHAL.length*3}）</small></button>
+      <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
+      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる10ページ）':'絵でわかる10ページ'}</small></button>
+      ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
+      <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
+    </div>
+    <p class="homefoot">AZAKEI（麻経）・麻布中学校・高等学校 経済系同好会</p>
+  </div>`;
+  $('home').hidden=false;
+  const f=$('home').querySelector('.cont,.mbtn.main'); if(f) f.focus();
+}
+function hideHome(){S.homeOpen=false;$('home').hidden=true}
+$('home').addEventListener('click',e=>{
+  const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
+  const a=b.dataset.h; sfx.pick();
+  if(a==='cont'){hideHome();if(S.mode!=='local')setMode('local');else{render();advance()}return}
+  if(a==='new'||a==='short'||a==='daily'){SU.daily=a==='daily';SU.short=a==='short';showSetup();return}
+  if(a==="book"){showRulebook(0);return}
+  if(a==="chal"){showChallenges();return}
+  if(a==='notebook'){showBook();return}
+  if(a==='shared'){hideHome();setMode('shared');return}
+});
+$('toHome').onclick=showHome;
+
+/* ---------- shared town (db) ---------- */
+function sortShared(){S.sharedTiles.sort((a,b)=>(a.t-b.t)||(a.id<b.id?-1:1))}
+if(!HASCLAUDE) document.querySelector(".tabs").hidden=true;
+$('mShared').disabled=true; $('mShared').title='共有の街に接続中…';
+legend(); paintSound(); setTab(store.get('azakei-city-tab')||'rank');
+if(S.game){const tp=turnPlayer();S.viewer=tp&&!tp.cpu?tp.key:(humans()[0]||{}).key}
+render();
+showHome();
+if(!store.get('azakei-city-seen-rules')){$('rulesBox').open=true;store.set('azakei-city-seen-rules',true)}
+(async()=>{
+  if(!window.claude||!window.claude.use){$('mShared').title='この画面では使えません';return}
+  try{
+    const[db,user]=await Promise.all([claude.use('db'),claude.use('user')]);
+    if(!db){$('mShared').title='この画面では使えません';return}
+    NET.db=db;
+    if(user){
+      NET.uid=await user.id().catch(()=>null);
+      NET.owner=!!(await Promise.resolve(user.isOwner()).catch(()=>false));
+      const cw=await Promise.resolve(user.can?user.can('data.write'):null).catch(()=>null);
+      if(cw===false) NET.canWrite=false;
+    }
+    db.collection('cells').onSnapshot(snap=>{
+      S.sharedTiles=snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>T[t.k]); sortShared();
+      if(S.mode==='shared'&&!S.busy) render();
+    },()=>{NET.err='共有の街との接続が切れました。ページを開き直してください。';if(S.mode==='shared')render()});
+    NET.ready=true; $('mShared').disabled=false; $('mShared').title=''; if(S.homeOpen) showHome();
+  }catch(e){$('mShared').title='この画面では使えません'}
+})();
+</script>
+</body>
+</html>
