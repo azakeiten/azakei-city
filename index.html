@@ -473,6 +473,20 @@ ol.rules b{color:var(--ink)}
   .side>.tools{order:5}
 }
 
+/* town look: the gaps between lots are streets, buildings sit up off the ground */
+.board{gap:4px;background:#2b2f5e;background-image:repeating-linear-gradient(90deg,transparent 0 6px,rgba(255,255,255,.035) 6px 9px)}
+.cell{background:#1d2148}
+.cell.t{background-image:linear-gradient(180deg,rgba(255,255,255,.13),transparent 48%);box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--c) 70%,transparent),0 3px 0 rgba(0,0,0,.4)}
+.cell.t svg{filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}
+.cell.lv2{box-shadow:inset 0 -3px 0 var(--c),0 0 0 1px color-mix(in srgb,var(--c) 60%,transparent),0 4px 0 rgba(0,0,0,.45)}
+.cell.lv3{box-shadow:inset 0 -3px 0 var(--c),0 0 12px color-mix(in srgb,var(--c) 60%,transparent),0 5px 0 rgba(0,0,0,.5)}
+.k-river{--c:#4aa3ff}.k-sta{--c:#d9dcf2}
+.cell.terr.k-river{background:linear-gradient(135deg,#1c4f8f,#2a6bb5 55%,#1c4f8f);color:#9fd0ff}
+.cell.terr.k-river svg{width:70%;height:70%;opacity:.8;animation:flow 3s ease-in-out infinite}
+@keyframes flow{50%{transform:translateX(2px)}}
+.cell.terr.k-sta{background:linear-gradient(180deg,#e9ebfa,#b9bde0);color:#2a2f5e;box-shadow:0 3px 0 rgba(0,0,0,.4)}
+.cell.hall{box-shadow:0 0 14px color-mix(in srgb,var(--gold) 40%,transparent),0 3px 0 rgba(0,0,0,.4)}
+
 /* challenge mode */
 .menu .mbtn:first-child{grid-column:span 2}
 .menu.n6 .mbtn:first-child{grid-column:auto}
@@ -700,7 +714,9 @@ const T={
   ho:{name:'住宅',tag:'家計',rule:'1 ＋ 隣の産業・役所1つにつき＋1（エネルギーは−1）'},
   in:{name:'保険',tag:'仕組み',rule:'周り8マスの産業をNEWSのマイナスから守る。稼ぎ＝守る産業の数÷2'},
   sc:{name:'学校',tag:'仕組み',rule:'隣の産業の稼ぎ＋2。稼ぎ＝隣の住宅の数'},
-  buy:{name:'買収',tag:'作戦',rule:'ライバルの産業で稼ぎ3以下の会社を、自分のものにする'}
+  buy:{name:'買収',tag:'作戦',rule:'ライバルの産業で稼ぎ3以下の会社を、自分のものにする'},
+  river:{name:'川',tag:'地形',rule:'建てられない。となりの住宅＋1、エネルギー＋2（水力）、運輸＋1（港）'},
+  sta:{name:'駅',tag:'地形',rule:'ここからも街を広げられる。となりの小売＋2、運輸＋2、住宅は通勤できる（＋1）'}
 };
 const KEYS=['ho','en','fi','ma','re','tr','me','in','sc','buy'];
 const W={ho:4,en:2,fi:2,ma:2,re:2,tr:2,me:2,in:1.2,sc:1.2,buy:1};
@@ -734,7 +750,9 @@ const ICON={
   in:'<path d="M12 3 4.5 6v6c0 4.6 3.2 7.8 7.5 9 4.3-1.2 7.5-4.4 7.5-9V6z"/><path d="m8.8 12 2.2 2.2 4.4-4.4"/>',
   sc:'<path d="m2 9.5 10-5 10 5-10 5z"/><path d="M6 11.5v4.7c3.4 2.3 8.6 2.3 12 0v-4.7M22 9.5v5"/>',
   hall:'<path d="M12 2 21 17H3Z"/><path d="M12 22 3 7h18Z"/>',
-  buy:'<rect x="3" y="7.5" width="18" height="12.5" rx="2"/><path d="M9 7.5V5h6v2.5M3 13h18M11 13v2h2v-2"/>'
+  buy:'<rect x="3" y="7.5" width="18" height="12.5" rx="2"/><path d="M9 7.5V5h6v2.5M3 13h18M11 13v2h2v-2"/>',
+  river:'<path d="M2 8c2.5-2 4.5 2 7 0s4.5-2 7 0 4.5 2 6 0M2 13c2.5-2 4.5 2 7 0s4.5-2 7 0 4.5 2 6 0M2 18c2.5-2 4.5 2 7 0s4.5-2 7 0 4.5 2 6 0"/>',
+  sta:'<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l2-4M15 21l-2-4"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/>'
 };
 const ic=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 const $=id=>document.getElementById(id);
@@ -750,7 +768,22 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 /* ---------- rules engine ---------- */
 const D4=[[1,0],[-1,0],[0,1],[0,-1]], D8=[...D4,[1,1],[1,-1],[-1,1],[-1,-1]];
 const inb=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
-function grid0(){const g=[];for(let r=0;r<N;r++)g.push(Array(N).fill(null));g[MID][MID]={k:'hall'};return g}
+// 地形：ゲームごとにちがう地図（川が1本、駅が2つ）。同じシードなら同じ地図
+const TERR={river:1,sta:1};
+function grid0(seed){
+  const g=[];for(let r=0;r<N;r++)g.push(Array(N).fill(null));
+  g[MID][MID]={k:'hall'};
+  if(seed==null) return g;
+  const rnd=mulberry((seed^0x9e3779b9)>>>0);
+  // 川：上から下へ、中心から離れた帯（左か右）を流れる
+  const left=rnd()<.5, lo=left?1:8, hi=left?2:9; let x=lo+Math.floor(rnd()*2);
+  for(let r=0;r<N;r++){g[r][x]={k:'river'};if(r<N-1&&rnd()<.35){const nx=Math.max(lo,Math.min(hi,x+(rnd()<.5?-1:1)));if(nx!==x){g[r][nx]={k:'river'};x=nx}}}
+  // 駅：役所から3〜4マス離れた場所に2つ
+  const cand=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++){const d=Math.abs(r-MID)+Math.abs(c-MID);if(d>=3&&d<=4&&!g[r][c])cand.push([r,c])}
+  const placed=[];
+  for(let t=0;t<40&&placed.length<2&&cand.length;t++){const[r,c]=cand[Math.floor(rnd()*cand.length)];if(placed.every(([a,b])=>Math.abs(a-r)+Math.abs(b-c)>=5)){g[r][c]={k:'sta'};placed.push([r,c])}}
+  return g;
+}
 function around(g,r,c,D){const a=[];for(const[dr,dc]of D){const R=r+dr,C=c+dc;if(inb(R,C)&&g[R][C])a.push(g[R][C].k)}return a}
 const cnt=(a,f)=>a.reduce((s,x)=>s+(f(x)?1:0),0);
 function newsOf(g,r,c,era){
@@ -781,14 +814,14 @@ function parts(g,r,c,era){
   const t=g[r][c]; if(!t) return [];
   const k=t.k, n4=around(g,r,c,D4), n8=around(g,r,c,D8), P=[], add=(l,v,keep)=>{if(v||keep)P.push([l,v])};
   switch(k){
-    case 'ho':{const a=cnt(n4,x=>(isInd(x)&&x!=='en')||x==='hall'),b=cnt(n4,x=>x==='en');add('基本',1,1);add(`隣の産業・役所 ${a}`,a);add(`隣のエネルギー ${b}`,-b);if(t.ty==='rabbit')add('🐰 ウサギ',2);polAdd(add,k,era);return P}
+    case 'ho':{const a=cnt(n4,x=>(isInd(x)&&x!=='en')||x==='hall'||x==='sta'),b=cnt(n4,x=>x==='en');add('基本',1,1);add(`隣の産業・役所・駅 ${a}`,a);add(`隣のエネルギー ${b}`,-b);add('川のそば（ながめ）',n4.includes('river')?1:0);if(t.ty==='rabbit')add('🐰 ウサギ',2);polAdd(add,k,era);return P}
     case 'in':{const a=cnt(n8,isInd);add(`守る産業 ${a}÷2`,Math.floor(a/2),1);polAdd(add,k,era);return P}
     case 'sc':{const a=cnt(n4,x=>x==='ho');add(`隣の住宅 ${a}`,a,1);polAdd(add,k,era);return P}
-    case 'en':{const a=cnt(n4,x=>x==='ma');add('基本',1,1);add(`隣の製造 ${a}×2`,2*a);break}
+    case 'en':{const a=cnt(n4,x=>x==='ma');add('基本',1,1);add(`隣の製造 ${a}×2`,2*a);add('川のそば（水力）',n4.includes('river')?2:0);break}
     case 'fi':{const a=cnt(n8,isInd);add(`周りの産業 ${a}`,a,1);break}
     case 'ma':{const a=cnt(n4,x=>x==='en'),b=cnt(n4,x=>x==='tr');add('基本',1,1);add(`隣のエネルギー ${a}×2`,2*a);add(`隣の運輸 ${b}`,b);break}
-    case 're':{const a=cnt(n4,x=>x==='ho'),b=cnt(n4,x=>x==='re');add(`隣の住宅 ${a}×2`,2*a,1);add(`隣の小売 ${b}`,-b);break}
-    case 'tr':{const a=new Set(n4.filter(x=>x==='ho'||isInd(x))).size;add(`隣の種類 ${a}×2`,2*a,1);break}
+    case 're':{const a=cnt(n4,x=>x==='ho'),b=cnt(n4,x=>x==='re');add(`隣の住宅 ${a}×2`,2*a,1);add(`隣の小売 ${b}`,-b);add('駅前',2*cnt(n4,x=>x==='sta'));break}
+    case 'tr':{const a=new Set(n4.filter(x=>x==='ho'||isInd(x))).size;add(`隣の種類 ${a}×2`,2*a,1);add('駅（乗りかえ）',2*cnt(n4,x=>x==='sta'));add('川（港）',n4.includes('river')?1:0);break}
     case 'me':{const a=cnt(n8,x=>x==='ho');add(`周りの住宅 ${a}`,a,1);break}
     default: return P;
   }
@@ -798,9 +831,9 @@ function parts(g,r,c,era){
   add(`NEWS（${H(era).y}）`,newsOf(g,r,c,era),1);
   return P;
 }
-function out(g,r,c,era){const t=g[r][c];if(!t||t.k==='hall')return 0;return Math.max(0,parts(g,r,c,era).reduce((s,x)=>s+x[1],0))}
+function out(g,r,c,era){const t=g[r][c];if(!t||t.k==='hall'||TERR[t.k])return 0;return Math.max(0,parts(g,r,c,era).reduce((s,x)=>s+x[1],0))}
 function gdp(g,era){let s=0;for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(g[r][c])s+=out(g,r,c,era);return s}
-function valid(g,r,c){return !g[r][c]&&D4.some(([dr,dc])=>inb(r+dr,c+dc)&&g[r+dr][c+dc])}
+function valid(g,r,c){return !g[r][c]&&D4.some(([dr,dc])=>inb(r+dr,c+dc)&&g[r+dr][c+dc]&&g[r+dr][c+dc].k!=='river')}
 function validCells(g){const a=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(valid(g,r,c))a.push([r,c]);return a}
 const canBust=t=>t&&isInd(t.k)&&t.ty!=='turtle';
 const lionx=(ty,v)=>ty==='lion'?v*2:v;
@@ -911,7 +944,7 @@ function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):
   return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
 function replay(tiles,seed,onStep){
   POLMAP={};
-  const g=grid0(), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, D=deck(seed); let n=0, ruins=[], di=0, mk=[];
+  const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, D=deck(seed); let n=0, ruins=[], di=0, mk=[];
   const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
   refill();
   const O=(k,nick,ty)=>{const o=own[k]||(own[k]={key:k,nick:'',ty:'',score:0,build:0,settle:0,built:0,bust:0,grow:0,buys:0,lm:0,mq:0,kinds:{}});if(nick)o.nick=nick;if(ty)o.ty=ty;return o};
@@ -1015,12 +1048,12 @@ const selCard=()=>S.sel==null?null:(choices(S.R,myTy())[S.sel]||null);
 /* ---------- 図で見るルール ---------- */
 // 各建物の稼ぎの式：[数える相手, 1つあたり, 範囲(4=上下左右 / 8=周り8マス)]
 const FX={
-  ho:{b:1,t:[['ind',1,4],['hall',1,4],['en',-1,4]],note:'産業はエネルギー以外'},
-  en:{b:1,t:[['ma',2,4]]},
+  ho:{b:1,t:[['ind',1,4],['hall',1,4],['sta',1,4],['river',1,4],['en',-1,4]],note:'産業はエネルギー以外。川は1つまで'},
+  en:{b:1,t:[['ma',2,4],['river',2,4]],note:'川は1つまで（水力）'},
   fi:{b:0,t:[['ind',1,8]]},
   ma:{b:1,t:[['en',2,4],['tr',1,4]]},
-  re:{b:0,t:[['ho',2,4],['re',-1,4]]},
-  tr:{b:0,t:[['kind',2,4]],note:'住宅・産業の「種類」の数'},
+  re:{b:0,t:[['ho',2,4],['sta',2,4],['re',-1,4]]},
+  tr:{b:0,t:[['kind',2,4],['sta',2,4],['river',1,4]],note:'住宅・産業の「種類」の数。川は1つまで（港）'},
   me:{b:0,t:[['ho',1,8]]},
   in:{b:0,t:[['ind',.5,8]],note:'周り8マスの産業をNEWSの▼から守る'},
   sc:{b:0,t:[['ho',1,4]],note:'隣の産業の稼ぎ＋2'},
@@ -1126,7 +1159,7 @@ function render(){
   document.documentElement.dataset.age=fin?'reiwa':ev.age;
   $('gdp').textContent=fin?R.hist.at(-1):cur;
   $('era').innerHTML=fin?`<b>2022</b>60年が終わりました`:`<b>${ev.y}</b>${esc(ev.n)}<span class="gengo">${ev.w}</span>${cyc?`<small style="font-family:var(--body);font-size:11px;color:var(--muted);margin-left:6px">${cyc+1}周目</small>`:''}`;
-  let alive=0;for(const row of R.g)for(const x of row)if(x&&x.k!=='hall')alive++;
+  let alive=0;for(const row of R.g)for(const x of row)if(x&&x.k!=='hall'&&!TERR[x.k])alive++;
   $('count').textContent=`建物 ${alive}`;
   $('countSub').textContent=`建設 ${R.n} 手 ・ 倒産 ${R.eras.reduce((s,x)=>s+x.bust.length,0)} 社`;
   const done=R.n%ERA;
@@ -1202,6 +1235,7 @@ function renderBoard(){
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){
     const t=g[r][c], id=r+'_'+c, here=S.cell&&S.cell[0]===r&&S.cell[1]===c, insp=S.insp&&S.insp[0]===r&&S.insp[1]===c;
     const badge=id in nb?`<span class="nb ${nb[id]>0?'p':'n'}">${sg(nb[id])}</span>`:'';
+    if(t&&TERR[t.k]){h+=`<button class="cell terr k-${t.k}${insp?' insp':''}${src[id]?' src':''}" data-r="${r}" data-c="${c}" aria-label="${T[t.k].name}">${ic(t.k)}${badge}</button>`;continue}
     if(t&&t.k==='hall'){h+=`<button class="cell hall${insp?' insp':''}${src[id]?' src':''}" data-r="${r}" data-c="${c}" aria-label="役所（街の中心）">${ic('hall')}${badge}</button>`;continue}
     if(t){const v=out(g,r,c,e), lv=t.lv||1, risk=S.risk&&canBust(t)&&out(g,r,c,e+1)<=BUST, b=bt&&bt[id];
       const tg=b?` target${(b.fut*2+b.score)===best?' best':''}${here?' insp':''}`:'';
@@ -1245,6 +1279,7 @@ function renderPre(){
   if(S.mode==='shared'&&!NET.canWrite){$('pre').innerHTML=`<h2><span>みんなの街</span></h2><p class="hint">閲覧のみです。街が育っていく様子はリアルタイムで見られます。</p>`;return}
   if(S.insp){
     const[r,c]=S.insp,t=g[r][c];
+    if(t&&TERR[t.k]){$('pre').innerHTML=`<h2><span>${T[t.k].name}</span><em>地形</em></h2><p class="hint">${T[t.k].rule}</p><p class="sub">地形は持ち主がいません。うまく使った社長が得をします。</p>`;return}
     if(t&&t.k==='hall'){$('pre').innerHTML=`<h2><span>役所</span></h2><p class="hint">街の中心。ここから街が広がります。隣の住宅は役所で働けます。</p>`;return}
     if(t){const P=parts(g,r,c,e),v=out(g,r,c,e),nv=out(g,r,c,e+1);
       $('pre').innerHTML=`<h2><span>${T[t.k].name}${(t.lv||1)>1?' '+'★'.repeat(t.lv-1):''}</span><em>稼ぎ ${v}</em></h2>
@@ -1380,7 +1415,7 @@ function spark(vals){
   const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   $('spark').innerHTML=vals.length<2?'':`<polyline points="${x(0)},${h} ${pts} ${x(vals.length-1)},${h}" fill="rgba(255,200,58,.12)" stroke="none"/><polyline points="${pts}" fill="none" stroke="#ffc83a" stroke-width="2" vector-effect="non-scaling-stroke"/><circle cx="${x(vals.length-1)}" cy="${y(vals.at(-1))}" r="3" fill="#ffc83a"/>`;
 }
-function legend(){$('legend').innerHTML=['ho',...KEYS.slice(1,9)].map(k=>`<span class="k-${k}" style="color:var(--c)">${ic(k)}<span style="color:var(--muted)">${T[k].name}</span></span>`).join('')+'<span>◤ 左上の色＝持ち主 ・ ★ 成長 ・ ◆ 名所</span>'}
+function legend(){$('legend').innerHTML=['ho',...KEYS.slice(1,9),'river','sta'].map(k=>`<span class="k-${k}" style="color:var(--c)">${ic(k)}<span style="color:var(--muted)">${T[k].name}</span></span>`).join('')+'<span>◤ 左上の色＝持ち主 ・ ★ 成長 ・ ◆ 名所</span>'}
 let toastTimer=null;
 function toast(html){
   const old=document.querySelector('.toast'); if(old) old.remove();
@@ -1445,7 +1480,7 @@ function titleFor(o,rank){
   return top?`${T[top[0]].name}の顔役`:'街の新人社長';
 }
 // 結果画面：1964年から最後まで、街が育つ様子を早送りで再生
-const TCOL={en:'#ff7a3d',fi:'#eab520',ma:'#5f86ff',re:'#ff5c9a',tr:'#20c6d1',me:'#a77bff',ho:'#e9dcc0',in:'#ffc83a',sc:'#ffc83a',hall:'#ffc83a'};
+const TCOL={river:'#2c6bb0',sta:'#c9cbe0',en:'#ff7a3d',fi:'#eab520',ma:'#5f86ff',re:'#ff5c9a',tr:'#20c6d1',me:'#a77bff',ho:'#e9dcc0',in:'#ffc83a',sc:'#ffc83a',hall:'#ffc83a'};
 let tlTimer=null;
 function playTimelapse(){
   const cv=$('tlc'); if(!cv) return;
@@ -1848,13 +1883,14 @@ function mini(rows){
     if(!s) return '<span class="cell"></span>';
     if(s==='x') return '<span class="cell ruin"></span>';
     if(s==='hall') return `<span class="cell hall">${ic('hall')}</span>`;
+    if(s==='river'||s==='sta') return `<span class="cell terr k-${s}">${ic(s)}</span>`;
     if(s[0]==='?'){const best=s.endsWith('*'),v=s.slice(1).replace('*','');return `<span class="cell valid${best?' best':''}"><span class="pv ${v.startsWith('-')?'n':'p'}">${v}</span></span>`}
     const[k,v,tag]=s.split(':'), lv=k.endsWith('2')?2:1, kk=k.replace('2','');
     return `<span class="cell t k-${kk}${lv>1?' lv2':''}">${ic(kk)}${lv>1?'<span class="st">★</span>':''}${v!=null&&v!==''?`<span class="v${v==='0'?' z':''}">${v}</span>`:''}${tag?`<span class="tagx${tag.startsWith('-')?' n':''}">${tag}</span>`:''}</span>`;
   }).join('')}</div>`;
 }
 
-/* ---------- ルールブック（絵でわかる10ページ） ---------- */
+/* ---------- ルールブック（絵でわかる11ページ） ---------- */
 const BOOK=[
   {t:'ようこそ、社長',h:()=>`
     <p>1964年の東京オリンピックから、2022年まで。あなたは街の社長です。建物を建てて稼ぎ、<b>最後にいちばんスコアが高い社長</b>が勝ち。</p>
@@ -1887,6 +1923,14 @@ const BOOK=[
     <p>9種類の建物と、作戦カード「買収」。組み合わせを考えよう。</p>
     <div class="bk-grid">${['ho','en','fi','ma','re','tr','me','in','sc','buy'].map(k=>`<div class="bk-card">${ruleCard(k)}</div>`).join('')}</div>
     <div class="bk-box">ゲーム中は、市場のカードに乗せるだけでこの図が出ます。</div>`},
+  {t:'地形：川と駅',h:()=>`
+    <p>街の地図は、ゲームごとにちがいます。<b>川</b>が1本流れ、<b>駅</b>が2つあります。</p>
+    <div class="bk-row"><div class="vs">${mini([['river','ho:3:+1',''],['river','en:5:+2',''],['','','']])}${mini([['','re:4:+2',''],['ho','sta','tr:6:+2'],['','','']])}</div>
+      <ul class="bk-cap">
+        <li><b>川</b>には建てられない。となりの住宅＋1（ながめ）、エネルギー＋2（水力）、運輸＋1（港）。</li>
+        <li><b>駅</b>のとなりからも街を広げられる。となりの小売＋2、運輸＋2。住宅は駅に通勤できる。</li>
+      </ul></div>
+    <div class="bk-box">駅は、役所から離れた「第2の街の中心」。早めに駅まで街をのばすと、駅前の一等地をとれます。</div>`},
   {t:'時代とNEWS',h:()=>`
     <p><b>8手ごとに時代が進みます</b>（1964→2022の12時代）。時代ごとのNEWSで、産業の稼ぎが上下します。</p>
     <div class="bk-box"><b>例：1973年 第一次オイルショック</b>${windRows(HIST[1].r)}</div>
@@ -1966,11 +2010,11 @@ $('openBook2').onclick=()=>showRulebook(0);
 /* ---------- チャレンジ（歴史シナリオ・ひとりで★を集める） ---------- */
 // star：最後の街のGDPの目標（★1 / ★2 / ★3）
 const CHAL=[
-  {id:'c1',name:'東京オリンピック',yr:'1964',eras:[0],star:[36,44,55],d:'新幹線と首都高の時代。8手で、街の土台をつくれ。',hint:'運輸と製造が追い風。運輸を2つ並べると、時代のお題も達成。'},
-  {id:'c2',name:'オイルショックを乗り切れ',yr:'1964→1973',eras:[0,1],star:[70,80,88],d:'高度成長から、突然の石油危機へ。',hint:'1973年は運輸−3・製造−2。エネルギーに乗り換えるか、保険で守ろう。'},
-  {id:'c3',name:'バブルの宴と崩壊',yr:'1988→1991',eras:[3,4],star:[62,78,92],d:'株と土地が急上昇。そして、はじける。',hint:'1988年は金融とメディアが+3。でも1991年、金融は−3。'},
-  {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[80,100,115],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
-  {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[100,125,145],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'}
+  {id:'c1',name:'東京オリンピック',yr:'1964',eras:[0],star:[37,47,60],d:'新幹線と首都高の時代。8手で、街の土台をつくれ。',hint:'運輸と製造が追い風。運輸を2つ並べると、時代のお題も達成。'},
+  {id:'c2',name:'オイルショックを乗り切れ',yr:'1964→1973',eras:[0,1],star:[70,87,94],d:'高度成長から、突然の石油危機へ。',hint:'1973年は運輸−3・製造−2。エネルギーに乗り換えるか、保険で守ろう。'},
+  {id:'c3',name:'バブルの宴と崩壊',yr:'1988→1991',eras:[3,4],star:[65,79,88],d:'株と土地が急上昇。そして、はじける。',hint:'1988年は金融とメディアが+3。でも1991年、金融は−3。'},
+  {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[82,96,112],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
+  {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[108,140,160],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'}
 ];
 const chalBest=()=>store.get('azakei-city-chal')||{};
 const starsOf=(c,gdp)=>c.star.filter(s=>gdp>=s).length;
@@ -2042,7 +2086,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="short"><span class="mi">⏱️</span><b>ショートで遊ぶ</b><small>大事件の6時代だけ。サクッと1ゲーム</small></button>
       <button class="mbtn" type="button" data-h="chal"><span class="mi">🏆</span><b>チャレンジ</b><small>歴史の一場面をひとりで攻略。★を集めよう（★${CHAL.reduce((s,c)=>s+(chalBest()[c.id]||0),0)}/${CHAL.length*3}）</small></button>
       <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
-      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる10ページ）':'絵でわかる10ページ'}</small></button>
+      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる11ページ）':'絵でわかる11ページ'}</small></button>
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
     </div>
