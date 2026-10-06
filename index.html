@@ -222,8 +222,34 @@ details.rules ol b{color:var(--ink)}
 .ghost.warn{border-color:var(--down);color:var(--down)}
 .note{font-size:12px;color:var(--muted);background:#191c3c;border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
 
+/* era race: who is growing fastest this era */
+.race{margin:0 0 10px;padding:7px 12px;border-radius:14px;background:var(--night2);border:1px solid color-mix(in srgb,var(--gold) 35%,var(--line))}
+.race .rh{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:11.5px;color:var(--muted);margin-bottom:5px}
+.race .rh b{color:var(--gold);font-size:13.5px}
+.race .rh em{font-style:normal;margin-left:auto;color:var(--ink);font-weight:800}
+.race .rb{display:grid;gap:4px 12px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.race .rr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 6px;align-items:center;font-size:12px}
+.race .rr .bar{grid-column:1/-1;height:6px}
+.race .rr.me .rn{color:var(--gold);font-weight:800}
+.race .rn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.race .bar{height:10px;border-radius:5px;background:#191c3c;overflow:hidden}
+.race .bar i{display:block;height:100%;border-radius:5px;transition:width .4s ease}
+.race .rv{font-family:var(--mono);text-align:right}
+.side .race{margin:0}.side .race .rb{grid-template-columns:1fr}
+.h-me .hrace{color:var(--gold);font-weight:800;display:block}
+/* your town, always visible and growing */
+.h-gdp{min-height:96px}
+.minicity{position:absolute;right:0;top:0;bottom:0;width:62%;height:100%;opacity:.95;-webkit-mask-image:linear-gradient(90deg,transparent,#000 30%);mask-image:linear-gradient(90deg,transparent,#000 30%)}
+.h-gdp .lab,.h-gdp b,.h-gdp .gdpl{position:relative;z-index:1}
+.h-gdp .gdpl{display:block;font-size:11px;color:var(--muted)}
+.h-gdp .spark{display:none}
+.mbtn.play{background:linear-gradient(135deg,var(--gold),#ff9f3a);color:var(--gold-ink);border-color:var(--gold)}
+.mbtn.play small{color:#4a3300}
+.mbtn.play .mi{font-family:var(--display);font-size:26px}
+.mbtn.play b{font-size:19px}
+
 /* simple rules: hide what is switched off */
-body.simple .quest,body.simple .polnow{display:none}
+body.simple .polnow{display:none}
 @media (max-width:640px){#sound{font-size:0;width:34px;height:30px;padding:0}#sound::before{content:"♪";font-size:15px}#sound[aria-pressed="false"]{opacity:.45}}
 
 /* newspaper: a bar shows it will move on by itself */
@@ -538,7 +564,7 @@ ol.rules b{color:var(--ink)}
 
 /* challenge mode */
 .menu .mbtn:first-child{grid-column:span 2}
-.menu.n6 .mbtn:first-child{grid-column:auto}
+.menu.n6 .mbtn:first-child{grid-column:1/-1}
 @media (max-width:640px){.menu.n6 .mbtn:first-child{grid-column:span 2}}
 .chl{display:grid;gap:8px;max-height:52vh;overflow:auto}
 .chc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;text-align:left;border:1px solid var(--line);background:#191c3c;border-radius:12px;padding:10px 12px}
@@ -667,9 +693,9 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
   </header>
 
   <div class="hud" aria-label="いまの状況">
-    <div class="h-cell h-gdp"><span class="lab">街のGDP</span><b id="gdp">0</b><svg class="spark" id="spark" viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    <div class="h-cell h-gdp"><canvas class="minicity" id="miniCity" aria-hidden="true"></canvas><span class="lab">あなたの街</span><b id="gdp">0</b><span class="small gdpl">街のGDP</span><svg class="spark" id="spark" viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true"></svg></div>
     <div class="h-cell h-era"><span class="lab">いまの時代</span><div class="era" id="era"></div><div class="settle" id="settle"></div></div>
-    <div class="h-cell h-me"><span class="lab" id="hudMeLab">あなたのスコア</span><b id="hudMe">0</b><span class="small" id="myRank"></span></div>
+    <div class="h-cell h-me"><span class="lab" id="hudMeLab">あなたのスコア</span><b id="hudMe">0</b><span class="small" id="myRank"></span><span class="small hrace" id="hudRace"></span></div>
   </div>
   <div class="timeline" id="timeline" aria-label="時代の進み"></div>
 
@@ -687,6 +713,7 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
     </section>
 
     <aside class="side">
+      <div class="race" id="race" hidden></div>
       <div class="panel turnP" id="turnP">
         <div class="stepbar"><ol class="steps" id="steps" aria-label="手順"><li>カード</li><li>場所</li><li>建てる</li></ol><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
         <div class="cardrule" id="cardrule"></div>
@@ -945,6 +972,7 @@ const TIPS=[
   "東京オリンピックは1年延期され、2021年に開かれた。",
   "円相場は一時1ドル＝150円台に。約32年ぶりの円安だった。"
 ];
+const CROWN=20; // 時代の覇者のボーナス
 const MQ=15, mqPts=ty=>ty==='fox'?MQ*2:MQ;
 const MQT=[
   '運輸を2つ隣り合わせて建てる（新幹線開通）',
@@ -961,7 +989,7 @@ const MQT=[
   '稼ぎ8以上の製造を建てる（円安で輸出が好調）'
 ];
 function missionHit(e,g,r,c,k,v,isBuy){
-  if(SIMPLE) return false; // かんたんルールでは、時代のお題はお休み
+  // 時代のお題は、かんたんルールでも出る（短い目標になるので）
   const n4=around(g,r,c,D4), n8=around(g,r,c,D8);
   switch(HI(e)){
     case 0: return k==='tr'&&n4.includes('tr');
@@ -1003,10 +1031,10 @@ function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):
   return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
 function replay(tiles,seed,onStep){
   POLMAP={};
-  const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, D=deck(seed); let n=0, ruins=[], di=0, mk=[];
+  const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, D=deck(seed); let n=0, ruins=[], di=0, mk=[], lastPay={};
   const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
   refill();
-  const O=(k,nick,ty)=>{const o=own[k]||(own[k]={key:k,nick:'',ty:'',score:0,build:0,settle:0,built:0,bust:0,grow:0,buys:0,lm:0,mq:0,kinds:{}});if(nick)o.nick=nick;if(ty)o.ty=ty;return o};
+  const O=(k,nick,ty)=>{const o=own[k]||(own[k]={key:k,nick:'',ty:'',score:0,build:0,settle:0,built:0,bust:0,grow:0,crown:0,buys:0,lm:0,mq:0,kinds:{}});if(nick)o.nick=nick;if(ty)o.ty=ty;return o};
   const quest=(e,r,c,k,isBuy,t,o)=>{if(mq[e]||!missionHit(e,g,r,c,k,out(g,r,c,e),isBuy))return;mq[e]={ok:t.ok,nick:t.nick,n};o.score+=mqPts(t.ty);o.mq++;log.push({type:'q',e,nick:t.nick,ok:t.ok,n})};
   for(const t of tiles){
     if(n>=ERA*ERAS*9) break;
@@ -1050,6 +1078,10 @@ function replay(tiles,seed,onStep){
         else if(v>=GROW&&isInd(x.k)&&(x.lv||1)<3){x.lv=(x.lv||1)+1;rep.grow.push({k:x.k,ok:x.ok,nick:x.nick,lv:x.lv,name:x.name});O(x.ok).grow++;rep.cells.push([r,c,v,'grow'])}
         else rep.cells.push([r,c,v,''])
       }
+      // 時代の覇者：前の時代より一番「稼ぎを伸ばした」社長に +20（下位からでも狙える）
+      const gains=Object.entries(rep.pay).map(([k,v])=>[k,v-(lastPay[k]||0)]);
+      if(gains.length>1){const mx=Math.max(...gains.map(x=>x[1])),w=gains.filter(x=>x[1]===mx);if(mx>0&&w.length===1){const o=O(w[0][0]);o.score+=CROWN;o.crown++;rep.crown={ok:w[0][0],nick:o.nick,gain:mx};log.push({type:"c",ok:w[0][0],nick:o.nick,gain:mx,y:rep.y,n})}}
+      lastPay={...rep.pay};
       hist.push(rep.gdp); eras.push(rep);
       log.push({type:'e',rep});
       refill();
@@ -1057,7 +1089,7 @@ function replay(tiles,seed,onStep){
     }
     if(onStep&&n%ERA!==0) onStep(g,n,Math.floor(n/ERA),false);
   }
-  return {g,own,log,hist,eras,n,ruins,claimed,mq,market:mk,peek:[D(di),D(di+1),D(di+2)]};
+  return {g,own,log,hist,eras,n,ruins,claimed,mq,lastPay,market:mk,peek:[D(di),D(di+1),D(di+2)]};
 }
 
 /* ---------- sound ---------- */
@@ -1294,6 +1326,7 @@ function render(){
   $('timeline').style.gridTemplateColumns=`repeat(${NE()},minmax(0,1fr))`;$('timeline').innerHTML=EL.map(hi=>HIST[hi]).map((h,i)=>`<span class="${i<ce||fin?'done':i===ce?'now':''}" title="${h.y} ${esc(h.n)}">${i===ce&&!fin?`<i style="width:${(R.n%ERA)/ERA*100}%"></i>`:''}<b>${String(h.y).slice(2)}</b></span>`).join('');
   spark(fin?R.hist:R.hist.concat(cur));
   if(cityOn) setTimeout(drawCity,0);
+  setTimeout(drawMini,0); renderRace();
   renderTurn(); renderEra(); renderBoard(); renderMarket(); renderPre(); renderRank(); renderLog(); renderLms(); renderTools(); renderMe(); renderCoach();
   const prev=S.seen[S.mode];
   S.seen[S.mode]=R.n;
@@ -1365,13 +1398,13 @@ function renderBoard(){
     if(t&&TERR[t.k]){h+=`<button class="cell terr k-${t.k}${insp?' insp':''}${src[id]?' src':''}" data-r="${r}" data-c="${c}" aria-label="${T[t.k].name}">${ic(t.k)}${badge}</button>`;continue}
     if(t&&t.k==='hall'){h+=`<button class="cell hall${insp?' insp':''}${src[id]?' src':''}" data-r="${r}" data-c="${c}" aria-label="役所（街の中心）">${ic('hall')}${badge}</button>`;continue}
     if(t){const v=out(g,r,c,e), lv=t.lv||1, risk=S.risk&&canBust(t)&&out(g,r,c,e+1)<=BUST, b=bt&&bt[id];
-      const tg=b?` target${(b.fut*2+b.score)===best?' best':''}${here?' insp':''}`:'';
+      const tg=b?` target${here?' insp':''}`:'';
       h+=`<button class="cell t k-${t.k}${lv>1?' lv'+lv:''}${t.ok===mk?' mine':''}${insp?' insp':''}${src[id]?' src':''}${risk?' risk':''}${tg}" data-r="${r}" data-c="${c}" aria-label="${T[t.k].name} 稼ぎ${v} 持ち主 ${esc(t.nick)}${b?" 買収できる":""}"><span class="own" style="--oc:${ownerColor(t.ok)}"></span>${ic(t.k)}${badge}${lv>1?`<span class="st">${'★'.repeat(lv-1)}</span>`:''}${lmCell[id]?`<span class="lmk">◆</span>`:''}${b?`<span class="bv">${b.mq?'★':''}買収</span>`:`<span class="v${v||!isInd(t.k)?'':' z'}">${v}</span>`}</button>`;continue}
     const rc=ruin.has(id)?' ruin':'';
     if(pv&&id in pv){
       const s=pv[id], d=s.score, mark=s.lms.length?'◆':s.mq?'★':'';
       h+=here?`<button class="cell valid pick k-${k}" data-r="${r}" data-c="${c}" aria-label="ここに建てる予定 ${sg(d)}">${ic(k)}<span class="v">${pickOwn}</span></button>`
-             :`<button class="cell valid${rc}${d===best?' best':''}" data-r="${r}" data-c="${c}" aria-label="建てるとスコア ${sg(d)}"><span class="pv ${s.lms.length?'lmv':s.mq?'mqv':d>0?'p':d<0?'n':'zz'}">${mark}${sg(d)}</span></button>`;
+             :`<button class="cell valid${rc}" data-r="${r}" data-c="${c}" aria-label="建てるとスコア ${sg(d)}"><span class="pv ${s.lms.length?'lmv':s.mq?'mqv':d>0?'p':d<0?'n':'zz'}">${mark}${sg(d)}</span></button>`;
       continue;
     }
     h+=`<button class="cell${rc}" data-r="${r}" data-c="${c}" tabindex="-1" aria-label="${rc?'倒産した跡地':'空き地'}"></button>`;
@@ -1425,7 +1458,7 @@ function renderPre0(){
   const k=card.k;
   if(k==='buy'){
     const tg=buyTargets(g,e,myKey());
-    if(!S.cell){$('pre').innerHTML=`<h2><span>買収する</span></h2><p class="hint">${tg.length?`「買収」と出ているライバルの会社（稼ぎ3以下）を選んでください。次の決算から、その会社の稼ぎがあなたに入ります。<span style="color:var(--gold)">金色の枠</span>が一番お得。`:'いま買収できる会社がありません（ライバルの産業で稼ぎ3以下の会社が対象）。ほかのカードを選ぼう。'}</p>`;return}
+    if(!S.cell){$('pre').innerHTML=`<h2><span>買収する</span></h2><p class="hint">${tg.length?`「買収」と出ているライバルの会社（稼ぎ3以下）を選んでください。次の決算から、その会社の稼ぎがあなたに入ります。次の時代の見込みも見て選ぼう。`:'いま買収できる会社がありません（ライバルの産業で稼ぎ3以下の会社が対象）。ほかのカードを選ぼう。'}</p>`;return}
     const[r,c]=S.cell, s=simulateBuy(g,r,c,e,ty,R), t=g[r][c];
     $('pre').innerHTML=`<h2><span>${esc(s.from)}の${T[t.k].name}を買収</span><em>次の稼ぎ ${s.fut}</em></h2>
       <div class="rows">
@@ -1444,7 +1477,7 @@ function renderPre0(){
     $('go2').onclick=place;
     return;
   }
-  if(!S.cell){$('pre').innerHTML=`<h2><span>${T[k].name}を建てる</span></h2><p class="hint">数字の出ているマスを選んでください。<span style="color:var(--gold)">金色の枠</span>がいま一番スコアが伸びる場所。<span style="color:var(--gold)">◆</span>は名所、<span style="color:var(--glow)">★</span>はお題が達成できる場所です。</p>`;return}
+  if(!S.cell){$('pre').innerHTML=`<h2><span>${T[k].name}を建てる</span></h2><p class="hint">数字の出ているマスを選んでください。数字は「いま」増えるスコア。<span style="color:var(--gold)">◆</span>は名所、<span style="color:var(--glow)">★</span>はお題が達成できる場所です。</p>`;return}
   const[r,c]=S.cell, s=simulate(g,r,c,k,e,ty,R);
   const grp={};for(const x of s.changes){grp[x.k]=(grp[x.k]||0)+x.d}
   const sideTxt=Object.entries(grp).map(([kk,d])=>`${T[kk]?.name||'役所'} <span class="${cls(d)}">${sg(d)}</span>`).join('、');
@@ -1489,6 +1522,7 @@ function renderLog(){
   $('log').innerHTML=L.length?L.map(x=>x.type==='e'
     ?`<li class="ev">■ ${x.rep.y}年代の決算：GDP ${x.rep.gdp}${x.rep.bust.length?`・倒産 ${x.rep.bust.length}社`:''}${x.rep.grow.length?`・成長 ${x.rep.grow.length}社`:''}</li>`
     :x.type==='l'?`<li class="ev">◆ <b>${esc(x.nick)}</b> が名所「${LM.find(l=>l.id===x.id).name}」を完成 +${LMBONUS}</li>`
+    :x.type==='c'?`<li class="ev">👑 <b>${esc(sh(x.nick))}</b> が${x.y}年代の覇者（稼ぎ+${x.gain}）＋${CROWN}</li>`
     :x.type==='p'?`<li class="ev" style="color:var(--glow)">▣ <b>${esc(x.nick)}</b> が政策「${POLBY[x.p].name}」を決定（${polTxt(POLBY[x.p])}）</li>`
     :x.type==='q'?`<li class="ev" style="color:var(--glow)">★ <b>${esc(x.nick)}</b> が${H(x.e).y}年のお題を達成 +${MQ}</li>`
     :x.type==='m'?`<li><b>${esc(x.nick)||'名無し'}</b> が ${esc(x.from)} の「${esc(x.name||T[x.k].name)}」を<span class="n">買収</span></li>`
@@ -1514,6 +1548,26 @@ function renderMe(){
   }
 }
 // はじめの数手だけのガイド（ひとりモード）
+// 時代レース：この時代に「稼ぎを一番伸ばしている」社長がだれか、いつも見せる
+function renderRace(){
+  const el=$('race');
+  if(S.mode!=='local'||!S.game||S.game.players.length<2||finished()){el.hidden=true;$('hudRace').textContent='';return}
+  const R=S.R, e=eraNow(), cur={};
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=R.g[r][c];if(x&&x.ok)cur[x.ok]=(cur[x.ok]||0)+out(R.g,r,c,e)}
+  const rows=S.game.players.map(p=>({p,g:(cur[p.key]||0)-(R.lastPay[p.key]||0)})).sort((a,b)=>b.g-a.g);
+  const mx=Math.max(1,...rows.map(x=>x.g)), lead=rows[0].g>0&&(rows.length<2||rows[0].g>rows[1].g)?rows[0].p.key:null, left=ERA-(R.n%ERA);
+  const me=rows.find(x=>x.p.key===S.viewer);
+  const msg=!me?'':lead===me.p.key?'あなたが首位！ このまま決算までにげきろう':`首位まで あと${rows[0].g-me.g+1}`;
+  $('hudRace').textContent=me?(lead===me.p.key?`👑 時代レース首位（${sg(me.g)}）`:`👑 時代レース 首位まであと${rows[0].g-me.g+1}`):'';
+  el.hidden=false;
+  el.innerHTML=`<div class="rh"><b>👑 時代レース</b><span>この時代に一番「稼ぎを伸ばした」社長に＋${CROWN}・決算まであと${left}手</span><em>${msg}</em></div>
+    <div class="rb">${rows.map(x=>`<div class="rr${x.p.key===S.viewer?' me':''}"><span class="rn">${x.p.key===lead?'👑':TY[x.p.ty].face} ${esc(x.p.nick)}</span><span class="bar"><i style="width:${Math.max(0,x.g)/mx*100}%;background:${ownerColor(x.p.key)}"></i></span><span class="rv">${sg(x.g)}</span></div>`).join('')}</div>`;
+}
+function drawMini(){
+  const cv=$('miniCity'); if(!cv||!S.R) return;
+  const g=S.R.g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
+  isoDraw(cv,g,finished()?'reiwa':H(eraNow()).age,0);
+}
 // ①カードをえらぶ → ②場所をえらぶ → ③建てる（いまの段階を光らせる）
 function renderSteps(){
   const lk=locked(), card=selCard(), st=lk?0:!card?1:!S.cell?2:3, tp=turnPlayer();
@@ -1523,8 +1577,8 @@ function renderSteps(){
   $('hintBtn').disabled=lk;
   $('tray').dataset.wait=lk?'1':'';
   $('trayMsg').innerHTML=lk?esc($('steps').dataset.msg||'')
-    :!card?'<b>カード</b>を1枚えらぼう　→　盤面の数字が「増えるスコア」'
-    :!S.cell?(card.k==='buy'?'「買収」と出ている<b>会社</b>をタップ':'数字の出ている<b>マス</b>をタップ（金の枠がいちばんお得）')
+    :!card?'<b>カード</b>を1枚えらぼう'
+    :!S.cell?(card.k==='buy'?'「買収」と出ている<b>会社</b>をタップ':'数字の出ている<b>マス</b>をタップ（数字＝増えるスコア）')
     :'もう一度タップか<b>「ここに建てる」</b>';
 }
 $('dock').addEventListener('click',e=>{if(e.target.closest('[data-cancel]')){S.sel=null;S.cell=null;sfx.pick();render()}});
@@ -1569,7 +1623,7 @@ function spark(vals){
   const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   $('spark').innerHTML=vals.length<2?'':`<polyline points="${x(0)},${h} ${pts} ${x(vals.length-1)},${h}" fill="rgba(255,200,58,.12)" stroke="none"/><polyline points="${pts}" fill="none" stroke="#ffc83a" stroke-width="2" vector-effect="non-scaling-stroke"/><circle cx="${x(vals.length-1)}" cy="${y(vals.at(-1))}" r="3" fill="#ffc83a"/>`;
 }
-function legend(){$('legend').innerHTML='<details class="lgd"><summary>記号の見かた</summary><div class="lgdin">'+['ho',...KEYS.slice(1,9),'river','sta'].map(k=>`<span class="k-${k}" style="color:var(--c)">${ic(k)}<span style="color:var(--muted)">${T[k].name}</span></span>`).join('')+'<span>◤ 左上の色＝持ち主 ・ ★ 成長 ・ ◆ 名所 ・ 金の枠＝いちばんお得</span></div></details>'}
+function legend(){$('legend').innerHTML='<details class="lgd"><summary>記号の見かた</summary><div class="lgdin">'+['ho',...KEYS.slice(1,9),'river','sta'].map(k=>`<span class="k-${k}" style="color:var(--c)">${ic(k)}<span style="color:var(--muted)">${T[k].name}</span></span>`).join('')+'<span>◤ 左上の色＝持ち主 ・ ★ 成長 ・ ◆ 名所 ・ 迷ったら💡ヒント</span></div></details>'}
 let toastTimer=null;
 function toast(html){
   const old=document.querySelector('.toast'); if(old) old.remove();
@@ -1613,7 +1667,7 @@ function showPaper(){
       <div>${payLine}</div>
       <div>${rep.bust.length?`倒産 <b>${rep.bust.length}社</b>（${summarize(rep.bust)}）${names(rep.bust)?`<br><small>${esc(names(rep.bust))}</small>`:""}${!many&&myBust?` うちあなた ${myBust}社`:''}`:'倒産 なし'}</div>
       <div>${rep.grow.length?`成長 <span class="g">${rep.grow.length}社</span>（${summarize(rep.grow)}）${names(rep.grow)?`<br><small>${esc(names(rep.grow))}</small>`:""}${!many&&myGrow?` うちあなた ${myGrow}社`:''}`:'成長 なし'}</div>
-      ${fin||SIMPLE?"":`<div>次のお題：${MQT[HI(e)]}</div>`}
+      ${fin?"":`<div>次のお題：${MQT[HI(e)]}</div>`}${rep.crown?`<div>👑 時代の覇者：<b>${esc(sh(rep.crown.nick))}</b>（稼ぎを${rep.crown.gain}伸ばした）＋${CROWN}</div>`:""}
     </div>
     <div class="btns">${fin?`<button type="button" id="paperRes">結果を見る</button>`:`<button type="button" id="paperClose">街にもどる<i class="autobar"></i></button>`}</div></div>`;
   $('paperbg').hidden=false;
@@ -1761,7 +1815,7 @@ function drawSetup(){
     <div class="slab">モード</div>
     <div class="seg"><button type="button" data-daily="0" aria-pressed="${!SU.daily}">ふつうの街<small>毎回ちがう市場</small></button><button type="button" data-daily="1" aria-pressed="${SU.daily}">今日の街 ${today.slice(5).replace('-','/')}<small>今日はみんな同じ市場で点数勝負</small></button></div>
     <div class="slab">ルール${SU.daily?"（今日の街はぜんぶ）":""}</div>
-    <div class="seg"><button type="button" data-simple="1" aria-pressed="${!SU.daily&&SU.simple}"${SU.daily?" disabled":""}>かんたん<small>はじめての人に。買収・政策会議・お題はお休み</small></button><button type="button" data-simple="0" aria-pressed="${SU.daily||!SU.simple}">ぜんぶ<small>すべてのルールで遊ぶ</small></button></div>
+    <div class="seg"><button type="button" data-simple="1" aria-pressed="${!SU.daily&&SU.simple}"${SU.daily?" disabled":""}>かんたん<small>はじめての人に。買収と政策会議はお休み</small></button><button type="button" data-simple="0" aria-pressed="${SU.daily||!SU.simple}">ぜんぶ<small>すべてのルールで遊ぶ</small></button></div>
     <div class="slab">長さ${SU.daily?'（今日の街はフル）':''}</div>
     <div class="seg"><button type="button" data-short="0" aria-pressed="${SU.daily||!SU.short}">フル 12時代<small>1964→2022 ・ じっくり</small></button><button type="button" data-short="1" aria-pressed="${!SU.daily&&SU.short}"${SU.daily?' disabled':''}>ショート 6時代<small>大事件だけ ・ 約3分の1の長さ</small></button></div>
     <div class="slab">人数${SU.daily?'（今日の街は1人で挑戦）':'（1台を順番に回して遊ぶ）'}</div>
@@ -2054,7 +2108,7 @@ const BOOK=[
     <div class="bk-row">${'<div class="vs">'+mini([['','?+2',''],['?+4*','ho:2','?+2'],['','hall','']])+'<span class="arr">→</span>'+mini([['','',''],['re:3','ho:3:+1',''],['','hall','']])+'</div>'}
       <ol class="bk-cap">
         <li>画面の下の<b>手札（市場）</b>から1枚えらぶ（例：小売）。</li>
-        <li>建てられるマスに<b>増えるスコア</b>が出る。<b>金色の枠</b>が一番お得。</li>
+        <li>建てられるマスに<b>増えるスコア</b>が出る。どこが得かは、自分で見きわめよう。</li>
         <li>マスをえらんで<b>「ここに建てる」</b>。もう一度タップでもOK。</li>
         <li>迷ったら<b>💡ヒント</b>。いま一番よさそうな一手と、その理由を教えてくれる。</li>
       </ol></div>
@@ -2097,6 +2151,7 @@ const BOOK=[
         <li>稼ぎ<b>2以下</b>の産業は<b>倒産</b>して空き地に。</li>
         <li>稼ぎ<b>11以上</b>の産業は<b>成長</b>して★（ずっと＋1）。</li>
         <li>住宅・保険・学校は倒産しない。</li>
+        <li>👑 その時代に<b>一番稼ぎを伸ばした社長</b>は「時代の覇者」で＋20。</li>
       </ul></div>
     <div class="bk-box">マスを選ぶと、<b>この先の稼ぎ予想</b>が棒グラフで出ます。赤い棒は倒産の危険。</div>`},
   {t:'名所と、時代のお題',h:()=>`
@@ -2117,7 +2172,7 @@ const BOOK=[
     <div class="bk-grid">${TYK.map(k=>`<div class="bk-box" style="margin:0"><b>${TY[k].face} ${TY[k].name}タイプ（${TY[k].what}）</b><br>${TY[k].ab}</div>`).join('')}</div>`},
   {t:'勝つためのコツと、遊び方',h:()=>`
     <ul class="bk-cap">
-      <li><b>金色の枠</b>は「いま」一番。でも<b>次の時代の予報</b>も見よう。</li>
+      <li>マスの数字は「いま」の得点。<b>次の時代の予報</b>も見て、先を読もう。</li>
       <li>エネルギーと製造、住宅と小売…<b>相性のいい組み合わせ</b>を作る。</li>
       <li>暴落の前に<b>保険</b>を。周りの産業をNEWSの▼から守る。</li>
       <li>市場はライバルと共通。<b>相手がほしいカードを先にとる</b>のも作戦。</li>
@@ -2232,7 +2287,8 @@ function showHome(){
     </div>
     ${cont}
     <div class="menu${HASCLAUDE?"":" n6"}">
-      <button class="mbtn main" type="button" data-h="new"><span class="mi">🏙️</span><b>新しい街をつくる</b><small>ひとりでCPUと／友だちと2〜4人で</small></button>
+      <button class="mbtn main play" type="button" data-h="quick"><span class="mi">▶</span><b>すぐ遊ぶ</b><small>ひとりでCPU2人と、ショート（6時代）。設定なしで、いますぐ</small></button>
+      <button class="mbtn" type="button" data-h="new"><span class="mi">🏙️</span><b>くわしく設定して遊ぶ</b><small>友だちと2〜4人／フル12時代／ルールやCPUの強さ</small></button>
       <button class="mbtn" type="button" data-h="short"><span class="mi">⏱️</span><b>ショートで遊ぶ</b><small>大事件の6時代だけ。サクッと1ゲーム</small></button>
       <button class="mbtn" type="button" data-h="chal"><span class="mi">🏆</span><b>チャレンジ</b><small>歴史の一場面をひとりで攻略。★を集めよう（★${CHAL.reduce((s,c)=>s+(chalBest()[c.id]||0),0)}/${CHAL.length*3}）</small></button>
       <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
@@ -2245,6 +2301,15 @@ function showHome(){
   $('home').hidden=false;
   const f=$('home').querySelector('.cont,.mbtn.main'); if(f) f.focus();
 }
+// すぐ遊ぶ：設定画面をとばして、ひとり・ショートで始める（社長タイプは前回のもの、なければおまかせ）
+function quickStart(){
+  const ty=store.get('azakei-city-ty-local')||TYK[Math.floor(Math.random()*TYK.length)];
+  SU.daily=false; SU.short=true; SU.n=1; SU.cpu=store.get('azakei-city-cpu')||'normal';
+  SU.simple=!(store.get('azakei-city-badges')||{}).first;
+  SU.rows=[{nick:S.nick||'',ty},{nick:'',ty:null},{nick:'',ty:null},{nick:'',ty:null}];
+  startGame();
+  toast(`${TY[ty].face} <b>${TY[ty].name}社長</b>でスタート！ タイプは右上で変えられます`);
+}
 function hideHome(){S.homeOpen=false;$('home').hidden=true}
 $('home').addEventListener('click',e=>{
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
@@ -2253,6 +2318,7 @@ $('home').addEventListener('click',e=>{
   if(a==='new'||a==='short'||a==='daily'){SU.daily=a==='daily';SU.short=a==='short';showSetup();return}
   if(a==="book"){showRulebook(0);return}
   if(a==="chal"){showChallenges();return}
+  if(a==="quick"){quickStart();return}
   if(a==='notebook'){showBook();return}
   if(a==='shared'){hideHome();setMode('shared');return}
 });
