@@ -551,6 +551,11 @@ ol.rules b{color:var(--ink)}
 .lgdin span{display:inline-flex;align-items:center;gap:4px}
 .legend{display:block}
 
+/* 3D board: build directly on the 3D town */
+.board3d{display:none;width:100%;aspect-ratio:5/4;border-radius:14px;border:1px solid var(--line);cursor:pointer;touch-action:manipulation}
+body.v3d .board{display:none}
+body.v3d .board3d{display:block}
+@media (min-width:921px){body.v3d .boardbox{max-width:min(100%,max(420px,calc((100vh - 425px)*1.25)))}}
 /* 3D town view */
 .boardbox{position:relative}
 .cityWrap{position:absolute;inset:0;border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid var(--line);z-index:4}
@@ -704,7 +709,7 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
       <div class="turn" id="turn" hidden></div>
       <div class="talk" id="talk" hidden aria-live="polite"></div>
       <div class="coach" id="coach" hidden></div>
-      <div class="boardbox"><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><div class="cityWrap" id="cityWrap" hidden><canvas id="cityv" aria-label="立体で見た街"></canvas><span class="cityhint">タップで盤面にもどる</span></div><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 街ビュー</button></div>
+      <div class="boardbox"><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button></div>
       <div class="under">
         <span class="small" id="count"></span><span class="small" id="countSub"></span>
         <label for="riskT"><input type="checkbox" id="riskT"> 倒産しそうな建物に印</label>
@@ -1108,6 +1113,31 @@ const sfx={
   end(){[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',.06,i*.12))}
 };
 
+/* ---------- 時代のBGM（昭和はゆったり、平成はポップ、令和はシンセ） ---------- */
+const MUSIC={
+  showa:{root:220,scale:[0,2,4,7,9],ms:300,wave:'triangle',m:[0,-1,2,-1,4,-1,3,2,0,-1,2,-1,1,-1,-1,-1],b:[0,3,4,0]},
+  heisei:{root:261.6,scale:[0,2,4,5,7,9,11],ms:210,wave:'square',m:[0,2,4,2,5,4,2,-1,0,2,4,6,7,6,4,-1],b:[0,3,4,3]},
+  reiwa:{root:233,scale:[0,3,5,7,10],ms:190,wave:'sawtooth',m:[0,-1,2,3,4,-1,3,2,0,-1,2,3,1,0,-1,-1],b:[0,2,3,1]}
+};
+const BGM={timer:null,step:0,age:null,unlocked:false};
+const noteHz=(M,i)=>M.root*Math.pow(2,(M.scale[((i%M.scale.length)+M.scale.length)%M.scale.length]+12*Math.floor(i/M.scale.length))/12);
+function bgmAge(){return !S.R||S.homeOpen?'showa':finished()?'reiwa':H(eraNow()).age}
+function bgmTick(){
+  if(!S.sound||!BGM.unlocked||document.hidden) return;
+  const M=MUSIC[BGM.age]||MUSIC.showa, s=BGM.step%16, n=M.m[s];
+  if(n>=0) tone(noteHz(M,n+5),.16,M.wave,M.wave==='triangle'?.022:.009);
+  if(s%4===0) tone(noteHz(M,M.b[(s/4)|0])/2,.34,'sine',.028);
+  BGM.step++;
+}
+function bgmSync(){
+  const age=bgmAge();
+  if(age===BGM.age&&BGM.timer) return;
+  BGM.age=age; clearInterval(BGM.timer);
+  BGM.timer=setInterval(bgmTick,(MUSIC[age]||MUSIC.showa).ms);
+}
+// 音は、最初に画面にふれてから鳴らす（ブラウザのきまり）
+addEventListener('pointerdown',()=>{if(!BGM.unlocked){BGM.unlocked=true;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();AC.resume&&AC.resume()}catch(e){}bgmSync()}},{passive:true});
+
 /* ---------- state ---------- */
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const seedOf=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
@@ -1147,61 +1177,124 @@ const ISO={
 const SKY={showa:['#1d1233','#5a2d4a','#c8714a'],heisei:['#0a1433','#1d3a7a','#3f7fc4'],reiwa:['#0d0826','#3a1a6e','#a04fd0']};
 function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const m=x=>Math.max(0,Math.min(255,Math.round(f>1?x+(255-x)*(f-1):x*f)));return `rgb(${m(r)},${m(g)},${m(b)})`}
 // cells：11×11の {k,lv,ok} / age：時代の空の色
-function isoDraw(cv,cells,age,t){
+// opt（立体の盤面で遊ぶとき）:
+//  valid {id:スコア}… 建てられるマス / pick [r,c,k] … 建てる予定 / deltas {id:増減} / insp [r,c] / hover [r,c]
+//  ghost … 建設中は建物を半透明に / grow {id:0..1} … 建った直後の伸びるアニメ / floats [{r,c,text,neg,p}] … 浮かぶ数字
+function isoDraw(cv,cells,age,t,opt){
+  opt=opt||{};
   const dpr=window.devicePixelRatio||1, W=cv.clientWidth||cv.width, Hh=cv.clientHeight||cv.height;
-  if(cv.width!==Math.round(W*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(Hh*dpr)}
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(Hh*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(Hh*dpr)}
   const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
   const sky=SKY[age]||SKY.showa, gr=ctx.createLinearGradient(0,0,0,Hh);
   gr.addColorStop(0,sky[0]);gr.addColorStop(.6,sky[1]);gr.addColorStop(1,sky[2]);
   ctx.fillStyle=gr; ctx.fillRect(0,0,W,Hh);
   // 星
-  ctx.fillStyle='rgba(255,255,255,.7)';
-  for(let i=0;i<40;i++){const x=(i*97.3%1)*W, y=((i*53.7)%37)/37*Hh*.35;ctx.globalAlpha=.3+.5*((i*7)%10)/10;ctx.fillRect((i*131)%W,y,1.5,1.5)} ctx.globalAlpha=1;
-  const tw=Math.min(W/(N+1.2),(Hh*.92)/(N*.5+3.2)), th=tw/2, x0=W/2, y0=Hh-(N*th)-th*.6;
+  for(let i=0;i<46;i++){ctx.globalAlpha=.25+.5*((i*7)%10)/10;ctx.fillStyle='#fff';ctx.fillRect((i*131+17)%W,((i*53.7)%37)/37*Hh*.38,1.5,1.5)} ctx.globalAlpha=1;
+  let tw=Math.min(W/(N+.6),(Hh*.94)/(N*.5+2.6)), th=tw/2, x0=W/2, y0=Hh-(N*th)-th*.4;
+  // カメラ：opt.focus のマスがちょうど入るように寄る（街が小さいうちは大きく見える）
+  if(opt.focus&&opt.focus.length){
+    let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
+    for(const[r,c]of opt.focus){const a=c-r,b=c+r;a0=Math.min(a0,a);a1=Math.max(a1,a);b0=Math.min(b0,b);b1=Math.max(b1,b)}
+    const pad=2.2; if(a1-a0<6){const m=(a0+a1)/2;a0=m-3;a1=m+3} if(b1-b0<6){const m=(b0+b1)/2;b0=m-3;b1=m+3}
+    tw=Math.min(2*W/(a1-a0+pad*2),Hh/((b1-b0+pad*2)/4+1.9),W/4.5); th=tw/2;
+    x0=W/2-((a0+a1)/2)*tw/2; y0=Hh-th*(.5+pad*.5)-(b1+1)*th/2;
+  }
+  const geo={tw,th,x0,y0};
   const pt=(r,c)=>[x0+(c-r)*tw/2, y0+(c+r)*th/2];
-  const poly=(p,fill)=>{ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill()};
-  // 地面（道と区画）
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const[x,y]=pt(r,c);
-    poly([[x,y],[x+tw/2,y+th/2],[x,y+th],[x-tw/2,y+th/2]],'#262a55');
-    const s=.86;poly([[x,y+th*(1-s)/2],[x+tw/2*s,y+th/2],[x,y+th*(1+s)/2],[x-tw/2*s,y+th/2]],'#1b1f44')}
+  const poly=(p,fill,stroke,lw)=>{ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.5;ctx.stroke()}};
+  const dia=(x,y,s)=>{s=s||1;return [[x,y+th*(1-s)/2],[x+tw/2*s,y+th/2],[x,y+th*(1+s)/2],[x-tw/2*s,y+th/2]]};
+  const valid=opt.valid||{};
+  // 地面（道と区画）。建てられるマスは光る
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const[x,y]=pt(r,c),id=r+'_'+c;
+    poly(dia(x,y),'#262a55');
+    poly(dia(x,y,.86),id in valid?(valid[id]>0?'rgba(58,210,131,.38)':valid[id]<0?'rgba(255,107,94,.32)':'rgba(155,161,204,.25)'):'#1b1f44');
+    if(id in valid) poly(dia(x,y,.86),null,valid[id]>0?'rgba(58,210,131,.9)':'rgba(155,161,204,.6)',1.2);
+  }
+  if(opt.hover){const[x,y]=pt(opt.hover[0],opt.hover[1]);poly(dia(x,y,.92),null,'rgba(255,255,255,.8)',1.5)}
+  if(opt.insp){const[x,y]=pt(opt.insp[0],opt.insp[1]);poly(dia(x,y,.98),null,'#fff',2)}
   const block=(x,y,w,h,col,o)=>{
     const hw=tw/2*w, hh=th/2*w, cy=y+th/2, top=[[x,cy-hh-h],[x+hw,cy-h],[x,cy+hh-h],[x-hw,cy-h]];
     poly([[x-hw,cy-h],[x,cy+hh-h],[x,cy+hh],[x-hw,cy]],shade(col,.62));
     poly([[x,cy+hh-h],[x+hw,cy-h],[x+hw,cy],[x,cy+hh]],shade(col,.45));
     poly(top,shade(col,1.08));
-    // 窓の明かり
     if(h>th*.5&&!o.noWin){const rows=Math.floor(h/(th*.32));ctx.fillStyle='rgba(255,226,140,.85)';
       for(let i=0;i<rows;i++){const yy=cy-h+th*.22+i*th*.32;for(let j=1;j<=2;j++){const f=j/3;
         if(((i*3+j+(o.seed||0))%4)!==0){ctx.fillRect(x-hw+hw*f-1,yy+hh*f-1,2,2.4);ctx.fillRect(x+hw*f-1,yy+hh*(1-f)-1,2,2.4)}}}}
     return top;
   };
-  for(let s=0;s<=2*(N-1);s++)for(let r=0;r<N;r++){const c=s-r;if(c<0||c>=N)continue;
-    const t2=cells[r][c]; if(!t2) continue; const[x,y]=pt(r,c);
-    if(t2.k==='river'){const sh=Math.sin(((t||0)/600)+r*.8)*.08;poly([[x,y],[x+tw/2,y+th/2],[x,y+th],[x-tw/2,y+th/2]],shade('#2c6bb0',1+sh));continue}
-    const S2=ISO[t2.k]; if(!S2) continue;
-    const lv=t2.lv||1, h=th*S2.h*2*(1+.4*(lv-1)), top=block(x,y,S2.w,h,S2.col,{seed:r*7+c});
+  const drawBuilding=(r,c,t2,alpha,growP)=>{
+    const[x,y]=pt(r,c);
+    if(t2.k==='river'){const sh=Math.sin(((t||0)/600)+r*.8)*.08;poly(dia(x,y),shade('#2c6bb0',1+sh));return null}
+    const S2=ISO[t2.k]; if(!S2) return null;
+    ctx.globalAlpha=alpha;
+    const lv=t2.lv||1, h=th*S2.h*2*(1+.4*(lv-1))*(growP==null?1:Math.max(.05,growP)), top=block(x,y,S2.w,h,S2.col,{seed:r*7+c,noWin:growP!=null&&growP<1});
     if(S2.roof){const cy=y+th/2-h, hw=tw/2*S2.w;poly([[x-hw,cy],[x,cy-th*.55],[x,cy+th/2*S2.w]],shade(S2.col,.8));poly([[x,cy-th*.55],[x+hw,cy],[x,cy+th/2*S2.w]],shade(S2.col,.6))}
     if(S2.chim){ctx.fillStyle=shade(S2.col,.5);ctx.fillRect(x+tw*.08,y+th/2-h-th*.7,tw*.07,th*.7)}
     if(S2.ant){ctx.strokeStyle=shade(S2.col,1.2);ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,y+th/2-h-th*S2.w/2);ctx.lineTo(x,y+th/2-h-th*S2.w/2-th*.9);ctx.stroke();ctx.fillStyle='#ff6b5e';ctx.fillRect(x-1.5,y+th/2-h-th*S2.w/2-th*.9-1.5,3,3)}
     if(S2.awn){ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(x-tw/2*S2.w*.9,y+th/2-h*.45,tw*S2.w*.45,2)}
     if(lv>1){ctx.fillStyle='#ffc83a';ctx.font=`${Math.round(th*.7)}px sans-serif`;ctx.textAlign='center';ctx.fillText('★'.repeat(lv-1),x,top[0][1]-3)}
     if(t2.ok){ctx.fillStyle=ownerColor(t2.ok);const[a,b]=top[3];ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(a+tw*.14,b-th*.07);ctx.lineTo(a+tw*.14,b+th*.07);ctx.closePath();ctx.fill()}
+    ctx.globalAlpha=1;
+    return top;
+  };
+  const tops={};
+  for(let s=0;s<=2*(N-1);s++)for(let r=0;r<N;r++){const c=s-r;if(c<0||c>=N)continue;
+    const id=r+'_'+c, t2=cells[r][c];
+    if(opt.pick&&opt.pick[0]===r&&opt.pick[1]===c&&!t2){tops[id]=drawBuilding(r,c,{k:opt.pick[2],lv:1},.82,null);continue}
+    if(!t2) continue;
+    const top=drawBuilding(r,c,t2,opt.ghost&&t2.k!=='river'&&t2.k!=='hall'?.42:1,opt.grow&&id in opt.grow?opt.grow[id]:null);
+    if(top) tops[id]=top;
   }
+  // 文字は最後に（建物にかくれないように）
+  const label=(x,y,text,col,size,bg)=>{ctx.font=`800 ${size}px "DM Mono",ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+    if(bg){const w=ctx.measureText(text).width+8;ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(x-w/2,y-size*.7,w,size*1.4,4);ctx.fill()}
+    ctx.fillStyle=col;ctx.fillText(text,x,y)};
+  const fs=Math.max(9,Math.round(th*.62));
+  for(const id in valid){const[r,c]=id.split('_').map(Number);if(opt.pick&&opt.pick[0]===r&&opt.pick[1]===c)continue;const[x,y]=pt(r,c);const v=valid[id];label(x,y+th/2,sg(v),v>0?'#3ad283':v<0?'#ff6b5e':'#9ba1cc',fs,'rgba(10,12,32,.7)')}
+  if(opt.deltas)for(const id in opt.deltas){const top=tops[id];const[r,c]=id.split('_').map(Number);const[x,y]=pt(r,c);const yy=top?top[0][1]-fs*.6:y;const d=opt.deltas[id];label(x,yy,sg(d),d>0?'#3ad283':'#ff6b5e',fs,'rgba(10,12,32,.85)')}
+  if(opt.pick&&opt.pickScore!=null){const r=opt.pick[0],c=opt.pick[1];const top=tops[r+'_'+c];const[x,y]=pt(r,c);label(x,(top?top[0][1]:y)-fs,sg(opt.pickScore),'#2a1d00',Math.round(fs*1.25),'#ffc83a')}
+  if(opt.floats)for(const f of opt.floats){const[x,y]=pt(f.r,f.c);const top=tops[f.r+'_'+f.c];ctx.globalAlpha=Math.max(0,1-f.p);label(x,(top?top[0][1]:y)-fs-f.p*th*2.2,f.text,f.neg?'#ff6b5e':'#ffc83a',Math.round(fs*(f.big?1.35:1)),'rgba(10,12,32,.75)');ctx.globalAlpha=1}
+  return geo;
 }
-let cityOn=false, cityAnim=null;
-function drawCity(){
-  const cv=$('cityv'); if(!cv||!cityOn||!S.R) return;
-  const g=S.R.g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
-  const age=finished()?'reiwa':H(eraNow()).age;
-  cancelAnimationFrame(cityAnim);
-  const loop=ts=>{isoDraw(cv,g,age,ts);if(cityOn&&!reduced())cityAnim=requestAnimationFrame(loop)};
-  loop(0);
+// 立体の盤面：クリックしたマス（地面の高さで判定）
+function isoPick(geo,x,y){
+  const A=(x-geo.x0)/(geo.tw/2), B=(y-geo.y0-geo.th/2)/(geo.th/2);
+  const r=Math.round((B-A)/2), c=Math.round((A+B)/2);
+  return inb(r,c)?[r,c]:null;
 }
-function toggleCity(on){
-  cityOn=on==null?!cityOn:on; $('cityWrap').hidden=!cityOn; $('cityBtn').setAttribute('aria-pressed',cityOn);
-  $('cityBtn').textContent=cityOn?'▦ 盤面にもどる':'🏙 街ビュー';
-  if(cityOn) drawCity(); else cancelAnimationFrame(cityAnim);
+const V3={geo:null,hover:null,anims:[],raf:null};
+const view3d=()=>S.view==='3d';
+function drawBoard3d(){
+  const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
+  const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
+  const opt={hover:V3.hover,insp:S.insp,focus:[]};
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
+  if(k&&!lk){
+    opt.ghost=true; opt.valid={};
+    if(k==='buy'){for(const[r,c]of buyTargets(g,e,mk)){opt.valid[r+'_'+c]=simulateBuy(g,r,c,e,ty,R).fut}}
+    else for(const[r,c]of validCells(g)) opt.valid[r+'_'+c]=simulate(g,r,c,k,e,ty,R).score;
+    if(S.cell&&k!=='buy'){const s=simulate(g,S.cell[0],S.cell[1],k,e,ty,R);opt.pick=[S.cell[0],S.cell[1],k];opt.pickScore=s.score;opt.deltas={};for(const x of s.changes)opt.deltas[x.r+'_'+x.c]=x.d}
+  }
+  const now=performance.now();
+  V3.anims=V3.anims.filter(a=>now-a.t0<a.dur);
+  opt.grow={}; opt.floats=[];
+  for(const a of V3.anims){const p=(now-a.t0)/a.dur;if(a.type==='grow')opt.grow[a.r+'_'+a.c]=1-Math.pow(1-p,3);else opt.floats.push({r:a.r,c:a.c,text:a.text,neg:a.neg,big:a.big,p})}
+  const cells=g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
+  V3.geo=isoDraw(cv,cells,finished()?'reiwa':H(e).age,0,opt);
+  cancelAnimationFrame(V3.raf);
+  if(V3.anims.length&&!reduced()) V3.raf=requestAnimationFrame(drawBoard3d);
 }
+function anim3d(list){if(!view3d())return;const t0=performance.now();for(const a of list)V3.anims.push({t0,dur:a.type==='grow'?450:1300,...a});drawBoard3d()}
+function setView(v){
+  S.view=v; store.set('azakei-city-view',v);
+  document.body.classList.toggle('v3d',v==='3d');
+  $('cityBtn').textContent=v==='3d'?'▦ 平面で見る':'🏙 立体で見る';
+  $('cityBtn').setAttribute('aria-pressed',v==='3d');
+  if(S.R){renderBoard();drawBoard3d()}
+}
+// 以前の「街ビュー」ボタン（結果画面の「街をながめる」）は、立体表示に切りかえる
+function toggleCity(on){setView(on===false?'2d':'3d')}
+function drawCity(){drawBoard3d()}
 
 /* ---------- 図で見るルール ---------- */
 // 各建物の稼ぎの式：[数える相手, 1つあたり, 範囲(4=上下左右 / 8=周り8マス)]
@@ -1325,7 +1418,8 @@ function render(){
   const ce=e%NE();
   $('timeline').style.gridTemplateColumns=`repeat(${NE()},minmax(0,1fr))`;$('timeline').innerHTML=EL.map(hi=>HIST[hi]).map((h,i)=>`<span class="${i<ce||fin?'done':i===ce?'now':''}" title="${h.y} ${esc(h.n)}">${i===ce&&!fin?`<i style="width:${(R.n%ERA)/ERA*100}%"></i>`:''}<b>${String(h.y).slice(2)}</b></span>`).join('');
   spark(fin?R.hist:R.hist.concat(cur));
-  if(cityOn) setTimeout(drawCity,0);
+  if(view3d()) setTimeout(drawBoard3d,0);
+  bgmSync();
   setTimeout(drawMini,0); renderRace();
   renderTurn(); renderEra(); renderBoard(); renderMarket(); renderPre(); renderRank(); renderLog(); renderLms(); renderTools(); renderMe(); renderCoach();
   const prev=S.seen[S.mode];
@@ -1636,6 +1730,7 @@ function settleFx(rep){
   if(!rep) return;
   S.pause=true;
   const board=$('board'), wait=reduced()?0:1100;
+  if(view3d()) anim3d(rep.cells.filter(x=>x[2]>0&&x[3]!=='bust').map(([r,c,v])=>({type:'f',r,c,text:'+'+v})));
   if(!reduced()){
     let i=0;
     for(const[r,c,v,f]of rep.cells){
@@ -1874,6 +1969,7 @@ $('meChip').onclick=()=>{
 
 /* ---------- turns ---------- */
 function floatAt(r,c,d){
+  if(view3d()){anim3d([{type:"grow",r,c},{type:"f",r,c,text:sg(d),neg:d<0,big:1}]);return}
   const el=$('board').querySelector(`[data-r="${r}"][data-c="${c}"]`); if(!el) return;
   el.classList.add('flash');
   const f=document.createElement('span'); f.className='float'+(d<0?' neg':''); f.textContent=sg(d); el.appendChild(f);
@@ -1980,6 +2076,7 @@ async function place(){
 }
 // 建てた建物のまわりで、稼ぎが変わった建物を光らせて「＋1」を出す
 function rippleAt(ch){
+  if(view3d()){if(ch&&ch.length)anim3d(ch.map(x=>({type:"f",r:x.r,c:x.c,text:sg(x.d),neg:x.d<0})));return}
   if(!ch||!ch.length) return;
   ch.forEach((x,i)=>setTimeout(()=>{const el=$("board").querySelector(`[data-r="${x.r}"][data-c="${x.c}"]`);if(!el)return;el.classList.add("ripple");const f=document.createElement("span");f.className="float side"+(x.d<0?" neg":"");f.textContent=sg(x.d);el.appendChild(f)},reduced()?0:180+i*90));
 }
@@ -2033,7 +2130,15 @@ async function resetShared(){
 }
 $('board').addEventListener('click',e=>{
   const b=e.target.closest('.cell'); if(!b||!S.R) return;
-  const r=+b.dataset.r,c=+b.dataset.c,g=S.R.g, card=selCard();
+  cellClick(+b.dataset.r,+b.dataset.c);
+});
+// 立体の盤面：タップしたマスを地面の位置から求める。マウスなら、乗せたマスを白い枠で示す
+const xy3d=e=>{const rc=$('board3d').getBoundingClientRect();return [e.clientX-rc.left,e.clientY-rc.top]};
+$('board3d').addEventListener('click',e=>{if(!V3.geo||!S.R)return;const p=isoPick(V3.geo,...xy3d(e));if(p)cellClick(p[0],p[1])});
+$('board3d').addEventListener('mousemove',e=>{if(!V3.geo)return;const p=isoPick(V3.geo,...xy3d(e));const k=p?p.join('_'):'';if(k!==(V3.hover||[]).join('_')){V3.hover=p;drawBoard3d()}});
+$('board3d').addEventListener('mouseleave',()=>{V3.hover=null;drawBoard3d()});
+function cellClick(r,c){
+  const g=S.R.g, card=selCard();
   const isBuy=card&&card.k==='buy';
   if(isBuy&&!locked()&&buyable(g,r,c,eraNow(),myKey())){
     S.insp=null;
@@ -2045,7 +2150,7 @@ $('board').addEventListener('click',e=>{
   S.insp=null;
   if(S.cell&&S.cell[0]===r&&S.cell[1]===c){place();return}
   S.cell=[r,c]; sfx.pick(); render();
-});
+}
 $('market').addEventListener('click',e=>{
   const b=e.target.closest('.mcard'); if(!b||b.disabled) return;
   const j=+b.dataset.j; S.sel=S.sel===j?null:j; S.insp=null;
@@ -2111,6 +2216,7 @@ const BOOK=[
         <li>建てられるマスに<b>増えるスコア</b>が出る。どこが得かは、自分で見きわめよう。</li>
         <li>マスをえらんで<b>「ここに建てる」</b>。もう一度タップでもOK。</li>
         <li>迷ったら<b>💡ヒント</b>。いま一番よさそうな一手と、その理由を教えてくれる。</li>
+        <li>盤面の右上のボタンで<b>立体</b>と<b>平面</b>を切りかえられる。立体では、街の上に直接建てられる。</li>
       </ol></div>
     <div class="bk-box">この例：小売の稼ぎ <b>3</b> ＋ となりの住宅が <b>+1</b> ＝ スコア <b>+4</b>。<br>市場はライバルと共通。ほしいカードは先にとられるかも。</div>`},
   {t:'ルールの図の読み方',h:()=>`
@@ -2323,14 +2429,14 @@ $('home').addEventListener('click',e=>{
   if(a==='shared'){hideHome();setMode('shared');return}
 });
 $('toHome').onclick=showHome;
-$("cityBtn").onclick=()=>{sfx.pick();toggleCity()};
-$("cityWrap").onclick=()=>toggleCity(false);
+$("cityBtn").onclick=()=>{sfx.pick();setView(view3d()?"2d":"3d")};
 
 /* ---------- shared town (db) ---------- */
 function sortShared(){S.sharedTiles.sort((a,b)=>(a.t-b.t)||(a.id<b.id?-1:1))}
 if(!HASCLAUDE) document.querySelector(".tabs").hidden=true;
 $('mShared').disabled=true; $('mShared').title='共有の街に接続中…';
 legend(); paintSound(); setTab(store.get('azakei-city-tab')||'rank');
+setView(store.get('azakei-city-view')||(innerWidth>=921?'3d':'2d'));
 if(S.game){const tp=turnPlayer();S.viewer=tp&&!tp.cpu?tp.key:(humans()[0]||{}).key}
 render();
 showHome();
