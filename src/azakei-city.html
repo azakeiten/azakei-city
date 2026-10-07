@@ -229,10 +229,11 @@ details.rules ol b{color:var(--ink)}
 .h-gdp .lab,.h-gdp b,.h-gdp .gdpl{position:relative;z-index:1}
 .h-gdp .gdpl{display:block;font-size:11px;color:var(--muted)}
 .h-gdp .spark{display:none}
-.mbtn.play{background:linear-gradient(135deg,var(--gold),#ff9f3a);color:var(--gold-ink);border-color:var(--gold)}
-.mbtn.play small{color:#4a3300}
-.mbtn.play .mi{font-family:var(--display);font-size:26px}
-.mbtn.play b{font-size:19px}
+.menu .mbtn.play{background:linear-gradient(135deg,var(--gold),#ff9f3a);color:var(--gold-ink);border-color:var(--gold);box-shadow:0 10px 30px rgba(255,170,60,.25)}
+.menu .mbtn.play:hover{transform:translateY(-2px) scale(1.01)}
+.menu .mbtn.play small{color:#4a3300}
+.menu .mbtn.play .mi{font-family:var(--display);font-size:26px}
+.menu .mbtn.play b{font-size:19px}
 
 /* simple rules: hide what is switched off */
 body.simple .polnow{display:none}
@@ -665,6 +666,81 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .vs{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
 .vs .arr{font-family:var(--display);font-size:22px;color:var(--paper-red)}
 
+/* ===== simple game screen: board on stage, thin top bar, hand at the bottom, everything else in the ☰ drawer ===== */
+body.playing .top{display:none}
+body.playing .timeline{display:none}
+body.playing .wrap{padding-block-start:10px}
+.hud{position:sticky;top:calc(8px + env(safe-area-inset-top,0px));z-index:12;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;align-items:center;gap:6px;
+  padding:6px;margin-bottom:12px;border-radius:16px;background:rgba(20,22,48,.86);border:1px solid var(--line);backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.hud .h-cell{background:none;border:0;padding:2px 10px;min-height:0;box-shadow:none;border-radius:10px}
+.hud .h-cell .lab{display:none}
+.hud .minicity{display:none}
+.hud .h-gdp{min-height:0;display:flex;flex-direction:column;align-items:flex-start;border-right:1px solid var(--line);border-radius:0;padding-right:14px}
+.hud .h-gdp b{font-size:22px;line-height:1}
+.hud .h-gdp .gdpl{order:-1;font-size:10px;letter-spacing:.1em;font-weight:800}
+.hud .h-era{cursor:pointer}
+.hud .h-era .era{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .h-era .era b{font-size:15px}
+.hud .h-era .gengo{vertical-align:2px}
+.hud .settle{margin-top:2px;font-size:11px}
+.hud .settle i{width:9px;height:5px}
+.hud .h-me{text-align:right;cursor:pointer}
+.hud .h-me b{font-size:24px;line-height:1}
+.hud .h-me .small{font-size:11px;line-height:1.35}
+.hud .h-me .hrace{font-size:11px}
+.tb-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:#191c3c;color:var(--gold);display:grid;place-items:center;font-size:18px;font-weight:800;padding:0}
+.tb-btn svg{width:22px;height:22px}
+.tb-btn:hover{border-color:var(--gold)}
+.tb-btn.info{color:var(--ink)}
+@media (max-width:640px){
+  .hud{grid-template-columns:auto minmax(0,1fr) auto auto;gap:4px;padding:5px}
+  .hud .h-gdp{display:none}
+  .hud .h-era{padding:2px 6px;grid-column:auto!important;order:0!important}
+  .hud .h-era .era{font-size:13.5px}
+  .hud .h-me .hrace{display:none}
+  .hud .h-era .era,.hud .settle{white-space:nowrap}
+  .minirace{flex-direction:row!important;flex-wrap:wrap;gap:2px 10px!important;min-width:0!important;max-width:calc(100% - 140px);padding:5px 9px!important}
+  .minirace .mt{width:100%}
+  .minirace .mr{grid-template-columns:auto auto;gap:3px}
+  .minirace .mr span{display:none}
+  .hud .h-era .gengo{display:none}
+  .hud .h-me{padding:2px 6px}
+  .hud .h-me b{font-size:20px}
+  .hud .h-me #myRank{display:none}
+  .tb-btn{width:36px;height:36px}
+}
+/* stage */
+.app{grid-template-columns:1fr!important}
+section.left{position:relative}
+.under,.legend{display:none}
+.boardbox{max-width:min(100%,calc(100vh - 290px))!important}
+body.v3d .boardbox{max-width:min(100%,calc((100vh - 290px)*1.25))!important}
+@media (max-width:640px){.boardbox,body.v3d .boardbox{max-width:100%!important}}
+section.left>.turn,section.left>.talk{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;max-width:min(92%,460px);margin:0;white-space:nowrap}
+section.left>.talk{top:58px}
+/* race on the board, small */
+.minirace{position:absolute;left:10px;top:10px;z-index:5;display:flex;flex-direction:column;gap:3px;padding:6px 8px;border-radius:12px;background:rgba(12,14,36,.72);backdrop-filter:blur(4px);font-size:11.5px;cursor:pointer;min-width:120px}
+.minirace .mt{font-size:10px;letter-spacing:.08em;color:var(--gold);font-weight:800}
+.minirace .mr{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:5px;align-items:center}
+.minirace .mr.me b{color:var(--gold)}
+.minirace .mr span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:6.5em}
+.minirace .mr i{font-style:normal;font-family:var(--mono)}
+/* drawer */
+body .side{position:fixed!important;top:0;right:0;bottom:0;width:min(400px,92vw);max-height:none!important;z-index:22;background:var(--night);border-left:1px solid var(--line);
+  padding:14px 14px calc(20px + env(safe-area-inset-bottom,0px));overflow:auto;transform:translateX(105%);transition:transform .25s ease;box-shadow:-20px 0 60px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:12px}
+body.drawer .side{transform:none}
+.drawer-bg{position:fixed;inset:0;background:rgba(4,5,16,.5);z-index:21}
+.drawer-head{display:flex;align-items:center;justify-content:space-between}
+.drawer-head b{font-family:var(--display);font-weight:400;font-size:18px}
+.drawer-me{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.side .race{order:0}
+.side .turnP{border-color:var(--line);box-shadow:none}
+.side .turnP .stepbar{display:none}
+/* hand tray: one line of guidance + hint, cards, build bar */
+.tray-top{display:flex;align-items:center;gap:8px}
+.tray-top .tray-msg{flex:1;text-align:left;padding-left:4px}
+.tray .hintbtn{padding:5px 10px}
+.tray-in{max-width:760px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -674,19 +750,14 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 21 17H3Z"/><path d="M12 22 3 7h18Z"/></svg>
       <span><span class="h1">AZAKEI CITY</span><span class="sub2">1964→2022。60年の経済を、街ごと生き抜け。</span></span>
     </button>
-    <div class="tabs" role="group" aria-label="遊ぶ街">
-      <button id="mShared" type="button" aria-pressed="false">みんなの街</button>
-      <button id="mLocal" type="button" aria-pressed="true">ひとり・友だち</button>
-    </div>
-    <button class="me-chip" id="meChip" type="button" aria-label="社長タイプを変える"></button>
-    <label class="nick" for="nick">社長名 <input id="nick" maxlength="12" placeholder="なまえ" autocomplete="off"></label>
-    <button class="icon-btn" id="sound" type="button" aria-pressed="true">音 ON</button>
   </header>
 
   <div class="hud" aria-label="いまの状況">
+    <button class="tb-btn" id="tbHome" type="button" aria-label="ホーム画面へ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 21 17H3Z"/><path d="M12 22 3 7h18Z"/></svg></button>
     <div class="h-cell h-gdp"><canvas class="minicity" id="miniCity" aria-hidden="true"></canvas><span class="lab">あなたの街</span><b id="gdp">0</b><span class="small gdpl">街のGDP</span><svg class="spark" id="spark" viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true"></svg></div>
     <div class="h-cell h-era"><span class="lab">いまの時代</span><div class="era" id="era"></div><div class="settle" id="settle"></div></div>
     <div class="h-cell h-me"><span class="lab" id="hudMeLab">あなたのスコア</span><b id="hudMe">0</b><span class="small" id="myRank"></span><span class="small hrace" id="hudRace"></span></div>
+    <button class="tb-btn info" id="tbInfo" type="button" aria-label="くわしい情報（NEWS・番付・名所・ルール）" aria-expanded="false"><span aria-hidden="true">☰</span></button>
   </div>
   <div class="timeline" id="timeline" aria-label="時代の進み"></div>
 
@@ -695,7 +766,7 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
       <div class="turn" id="turn" hidden></div>
       <div class="talk" id="talk" hidden aria-live="polite"></div>
       <div class="coach" id="coach" hidden></div>
-      <div class="boardbox"><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button></div>
+      <div class="boardbox"><div class="minirace" id="miniRace" hidden></div><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button></div>
       <div class="under">
         <span class="small" id="count"></span><span class="small" id="countSub"></span>
         <label for="riskT"><input type="checkbox" id="riskT"> 倒産しそうな建物に印</label>
@@ -703,10 +774,17 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
       <div class="legend" id="legend"></div>
     </section>
 
-    <aside class="side">
+    <aside class="side" id="drawer" aria-label="くわしい情報">
+      <div class="drawer-head"><b>くわしい情報</b><button class="tb-btn" id="drawerClose" type="button" aria-label="とじる">✕</button></div>
+      <div class="drawer-me">
+        <button class="me-chip" id="meChip" type="button" aria-label="社長タイプを変える"></button>
+        <button class="icon-btn" id="sound" type="button" aria-pressed="true">音 ON</button>
+        <div class="tabs" role="group" aria-label="遊ぶ街"><button id="mShared" type="button" aria-pressed="false">みんなの街</button><button id="mLocal" type="button" aria-pressed="true">ひとり・友だち</button></div>
+        <label class="nick" for="nick">社長名 <input id="nick" maxlength="12" placeholder="なまえ" autocomplete="off"></label>
+      </div>
       <div class="race" id="race" hidden></div>
       <div class="panel turnP" id="turnP">
-        <div class="stepbar"><ol class="steps" id="steps" aria-label="手順"><li>カード</li><li>場所</li><li>建てる</li></ol><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
+        <div class="stepbar"><ol class="steps" id="steps" aria-label="手順"><li>カード</li><li>場所</li><li>建てる</li></ol></div>
         <div class="cardrule" id="cardrule"></div>
         <div class="deckline" id="deckline"></div><em id="mkNote" hidden></em>
         <div class="pre" id="pre" aria-live="polite"></div>
@@ -738,11 +816,12 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 </div>
 <div class="tray" id="tray" aria-label="手札（市場のカード）">
   <div class="tray-in">
-    <div class="tray-msg" id="trayMsg"></div>
+    <div class="tray-top"><div class="tray-msg" id="trayMsg"></div><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
     <div class="mk" id="market"></div>
     <div class="dock" id="dock" hidden></div>
   </div>
 </div>
+<div class="drawer-bg" id="drawerBg" hidden></div>
 <div class="ov" id="paperbg" hidden></div>
 <div class="ov" id="typebg" hidden></div>
 <div class="ov" id="resultbg" hidden></div>
@@ -1182,7 +1261,7 @@ function isoDraw(cv,cells,age,t,opt){
     let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
     for(const[r,c]of opt.focus){const a=c-r,b=c+r;a0=Math.min(a0,a);a1=Math.max(a1,a);b0=Math.min(b0,b);b1=Math.max(b1,b)}
     const pad=2.2; if(a1-a0<6){const m=(a0+a1)/2;a0=m-3;a1=m+3} if(b1-b0<6){const m=(b0+b1)/2;b0=m-3;b1=m+3}
-    tw=Math.min(2*W/(a1-a0+pad*2),Hh/((b1-b0+pad*2)/4+1.9),W/4.5); th=tw/2;
+    tw=Math.min(2*W/(a1-a0+pad*2),Hh/((b1-b0+pad*2)/4+1.9),W/7.5); th=tw/2;
     x0=W/2-((a0+a1)/2)*tw/2; y0=Hh-th*(.5+pad*.5)-(b1+1)*th/2;
   }
   const geo={tw,th,x0,y0};
@@ -1235,7 +1314,7 @@ function isoDraw(cv,cells,age,t,opt){
   const label=(x,y,text,col,size,bg)=>{ctx.font=`800 ${size}px "DM Mono",ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
     if(bg){const w=ctx.measureText(text).width+8;ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(x-w/2,y-size*.7,w,size*1.4,4);ctx.fill()}
     ctx.fillStyle=col;ctx.fillText(text,x,y)};
-  const fs=Math.max(9,Math.round(th*.62));
+  const fs=Math.max(9,Math.min(15,Math.round(th*.55)));
   for(const id in valid){const[r,c]=id.split('_').map(Number);if(opt.pick&&opt.pick[0]===r&&opt.pick[1]===c)continue;const[x,y]=pt(r,c);const v=valid[id];label(x,y+th/2,sg(v),v>0?'#3ad283':v<0?'#ff6b5e':'#9ba1cc',fs,'rgba(10,12,32,.7)')}
   if(opt.deltas)for(const id in opt.deltas){const top=tops[id];const[r,c]=id.split('_').map(Number);const[x,y]=pt(r,c);const yy=top?top[0][1]-fs*.6:y;const d=opt.deltas[id];label(x,yy,sg(d),d>0?'#3ad283':'#ff6b5e',fs,'rgba(10,12,32,.85)')}
   if(opt.pick&&opt.pickScore!=null){const r=opt.pick[0],c=opt.pick[1];const top=tops[r+'_'+c];const[x,y]=pt(r,c);label(x,(top?top[0][1]:y)-fs,sg(opt.pickScore),'#2a1d00',Math.round(fs*1.25),'#ffc83a')}
@@ -1631,7 +1710,7 @@ function renderMe(){
 // 時代レース：この時代に「稼ぎを一番伸ばしている」社長がだれか、いつも見せる
 function renderRace(){
   const el=$('race');
-  if(S.mode!=='local'||!S.game||S.game.players.length<2||finished()){el.hidden=true;$('hudRace').textContent='';return}
+  if(S.mode!=='local'||!S.game||S.game.players.length<2||finished()){el.hidden=true;$('miniRace').hidden=true;$('hudRace').textContent='';return}
   const R=S.R, e=eraNow(), cur={};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=R.g[r][c];if(x&&x.ok)cur[x.ok]=(cur[x.ok]||0)+out(R.g,r,c,e)}
   const rows=S.game.players.map(p=>({p,g:(cur[p.key]||0)-(R.lastPay[p.key]||0)})).sort((a,b)=>b.g-a.g);
@@ -1640,6 +1719,8 @@ function renderRace(){
   const msg=!me?'':lead===me.p.key?'あなたが首位！ このまま決算までにげきろう':`首位まで あと${rows[0].g-me.g+1}`;
   $('hudRace').textContent=me?(lead===me.p.key?`👑 時代レース首位（${sg(me.g)}）`:`👑 時代レース 首位まであと${rows[0].g-me.g+1}`):'';
   el.hidden=false;
+  $('miniRace').hidden=false;
+  $('miniRace').innerHTML=`<span class="mt">👑 時代レース +${CROWN}・あと${left}手</span>${rows.map(x=>`<span class="mr${x.p.key===S.viewer?' me':''}"><b>${x.p.key===lead?'👑':TY[x.p.ty].face}</b><span>${esc(x.p.nick)}</span><i style="color:${ownerColor(x.p.key)}">${sg(x.g)}</i></span>`).join('')}`;
   el.innerHTML=`<div class="rh"><b>👑 時代レース</b><span>この時代に一番「稼ぎを伸ばした」社長に＋${CROWN}・決算まであと${left}手</span><em>${msg}</em></div>
     <div class="rb">${rows.map(x=>`<div class="rr${x.p.key===S.viewer?' me':''}"><span class="rn">${x.p.key===lead?'👑':TY[x.p.ty].face} ${esc(x.p.nick)}</span><span class="bar"><i style="width:${Math.max(0,x.g)/mx*100}%;background:${ownerColor(x.p.key)}"></i></span><span class="rv">${sg(x.g)}</span></div>`).join('')}</div>`;
 }
@@ -2203,6 +2284,7 @@ const BOOK=[
         <li>マスをえらんで<b>「ここに建てる」</b>。もう一度タップでもOK。</li>
         <li>迷ったら<b>💡ヒント</b>。いま一番よさそうな一手と、その理由を教えてくれる。</li>
         <li>盤面の右上のボタンで<b>立体</b>と<b>平面</b>を切りかえられる。立体では、街の上に直接建てられる。</li>
+        <li>NEWS・番付・名所・できごと・ルールは、右上の<b>☰</b>にまとめてある。</li>
       </ol></div>
     <div class="bk-box">この例：小売の稼ぎ <b>3</b> ＋ となりの住宅が <b>+1</b> ＝ スコア <b>+4</b>。<br>市場はライバルと共通。ほしいカードは先にとられるかも。</div>`},
   {t:'ルールの図の読み方',h:()=>`
@@ -2415,6 +2497,17 @@ $('home').addEventListener('click',e=>{
   if(a==='shared'){hideHome();setMode('shared');return}
 });
 $('toHome').onclick=showHome;
+// ☰ ドロワー：NEWS・レース・番付・名所・ルールはここにまとめる（画面はすっきり）
+function setDrawer(on){document.body.classList.toggle('drawer',on);$('drawerBg').hidden=!on;$('tbInfo').setAttribute('aria-expanded',on);if(on){$('drawer').scrollTop=0;sfx.pick()}}
+$('tbInfo').onclick=()=>setDrawer(!document.body.classList.contains('drawer'));
+$('drawerClose').onclick=()=>setDrawer(false);
+$('drawerBg').onclick=()=>setDrawer(false);
+$('tbHome').onclick=()=>{setDrawer(false);showHome()};
+document.querySelector('.hud .h-era').onclick=()=>setDrawer(true);
+document.querySelector('.hud .h-me').onclick=()=>{setDrawer(true);setTab('rank')};
+$('miniRace').onclick=()=>setDrawer(true);
+addEventListener('keydown',e=>{if(e.key==='Escape')setDrawer(false)});
+document.body.classList.add('playing');
 $("cityBtn").onclick=()=>{sfx.pick();setView(view3d()?"2d":"3d")};
 
 /* ---------- shared town (db) ---------- */
