@@ -1974,7 +1974,7 @@ async function shareImage(btn){
   // 共有できないときは、画面に表示（長押しやドラッグで保存できる）＋ダウンロードも試す
   const url=URL.createObjectURL(blob);
   let box=$('shareBox'); if(!box){box=document.createElement('div');box.id='shareBox';box.className='sharebox';btn.closest('.sheet').appendChild(box)}
-  box.innerHTML=`<img src="${url}" alt="結果の画像"><p>画像を長押し（右クリック）でも保存できます。</p><a class="go savebtn" href="${url}" download="azakei-city.png">画像を保存</a>`;
+  box.innerHTML=`<img src="${url}" alt="結果の画像"><p>画像を長押し（右クリック）でも保存できます。</p>${HASCLAUDE?"":`<a class="go savebtn" href="${url}" download="azakei-city.png">画像を保存</a>`}`;
   btn.textContent='画像を作りました';
 }
 function showResult(){
