@@ -741,6 +741,22 @@ body.drawer .side{transform:none}
 .tray-top .tray-msg{flex:1;text-align:left;padding-left:4px}
 .tray .hintbtn{padding:5px 10px}
 .tray-in{max-width:760px}
+/* first-game guide: a bubble above the hand + a pulsing ring on what to touch next */
+.tutor{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(178px + env(safe-area-inset-bottom,0px));z-index:16;width:min(560px,calc(100% - 24px));display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:10px 14px;border-radius:16px;background:var(--paper);color:var(--paper-ink);box-shadow:0 12px 40px rgba(0,0,0,.45);animation:pop .35s ease}
+.tutor::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-bottom:0;border-top-color:var(--paper)}
+.tutor .tn{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--paper-red)}
+.tutor .tt{flex:1;min-width:14em;font-weight:800;font-size:14px;line-height:1.5}
+.tutor .tt b{color:var(--paper-red)}
+.tutor .tx{border:1px solid #cdbb8d;background:none;border-radius:8px;padding:5px 10px;font-size:12px;color:#6a5a3a}
+.tutor .go{width:auto;padding:8px 16px;font-size:14px}
+.pulse{position:relative;animation:pulsering 1.4s ease-in-out infinite;border-radius:14px}
+@keyframes pulsering{0%,100%{box-shadow:0 0 0 0 rgba(255,200,58,.0)}50%{box-shadow:0 0 0 6px rgba(255,200,58,.55)}}
+.tray .hintbtn.undo{border-color:var(--line);background:#191c3c}
+.sharebox{margin-top:12px;text-align:center}
+.sharebox img{width:min(320px,100%);border-radius:14px;border:1px solid var(--line)}
+.sharebox p{font-size:12px;color:var(--muted);margin-top:6px}
+.sharebox .savebtn{display:inline-block;width:auto;margin-top:8px;padding:9px 20px;text-decoration:none}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -814,9 +830,10 @@ body.drawer .side{transform:none}
     </aside>
   </div>
 </div>
+<div class="tutor" id="tutor" hidden role="status" aria-live="polite"></div>
 <div class="tray" id="tray" aria-label="手札（市場のカード）">
   <div class="tray-in">
-    <div class="tray-top"><div class="tray-msg" id="trayMsg"></div><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
+    <div class="tray-top"><div class="tray-msg" id="trayMsg"></div><button class="hintbtn undo" id="undoBtn" type="button" hidden>↶ 1手もどす</button><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
     <div class="mk" id="market"></div>
     <div class="dock" id="dock" hidden></div>
   </div>
@@ -1730,7 +1747,47 @@ function drawMini(){
   isoDraw(cv,g,finished()?'reiwa':H(eraNow()).age,0);
 }
 // ①カードをえらぶ → ②場所をえらぶ → ③建てる（いまの段階を光らせる）
+/* ---------- はじめての街：遊びながら覚えるガイド（指さしで次にさわる場所を教える） ---------- */
+function tutorOn(){return S.mode==='local'&&!!S.game&&humans().length===1&&!S.game.daily&&!S.game.chal&&!store.get('azakei-city-tut2')}
+function renderTutor(){
+  const el=$('tutor');
+  document.querySelectorAll('.pulse').forEach(x=>x.classList.remove('pulse'));
+  if(!tutorOn()||finished()||S.homeOpen){el.hidden=true;return}
+  const me=humans()[0].key, built=S.game.tiles.filter(t=>t.ok===me&&t.k!=='pol'&&t.k!=='pass').length;
+  const card=selCard(), lk=locked();
+  let step, text, target=null;
+  if(built>=3){step=4;text='決算は8手ごと。稼ぎがスコアに入って、稼ぎ2以下の会社は<b>倒産</b>。左上の<b>👑時代レース</b>で、この時代に一番稼ぎを伸ばすと＋20！'}
+  else if(lk){step=built?3:1;text=built?'ナイス！ <b>となりの建物</b>しだいで稼ぎが変わります。ライバルの番が終わったら、また手札から。':'ライバルの番です。少し待ってね。'}
+  else if(!card){step=1;text='① 下の<b>手札</b>から、カードを1枚タップ';target=$('market')}
+  else if(!S.cell){step=2;text=`② 盤面の<b>光っているマス</b>をタップ。数字は「増えるスコア」。${card.k==='buy'?'':'迷ったら💡ヒント'}`;target=view3d()?$('board3d'):$('board')}
+  else{step=3;text='③ <b>「ここに建てる」</b>をタップ！';target=document.querySelector('#dock .go')}
+  el.hidden=false;
+  el.innerHTML=`<span class="tn">はじめての街 ${Math.min(step,4)}/4</span><span class="tt">${text}</span>${step===4?'<button type="button" class="go" id="tutDone">わかった！</button>':'<button type="button" class="tx" id="tutSkip">ガイドを閉じる</button>'}`;
+  if(target) target.classList.add("pulse");
+  const ti=document.querySelector(".tray-in"); if(ti) el.style.bottom=Math.round(innerHeight-ti.getBoundingClientRect().top+14)+"px";
+  const done=()=>{store.set('azakei-city-tut2',1);el.hidden=true;document.querySelectorAll('.pulse').forEach(x=>x.classList.remove('pulse'));sfx.end()};
+  const b=$('tutDone')||$('tutSkip'); if(b) b.onclick=done;
+}
+/* ---------- 1手もどす（ひとりのゲームだけ。今日の街はなし） ---------- */
+function canUndo(){
+  if(S.mode!=='local'||!S.game||humans().length!==1||S.game.daily||finished()) return false;
+  if(S.busy||S.pause||S.policy) return false;
+  const me=humans()[0].key;
+  return S.game.tiles.some(t=>t.ok===me&&t.k!=='pol'&&t.k!=='pass');
+}
+$('undoBtn').onclick=()=>{
+  if(!canUndo()) return;
+  const me=humans()[0].key, T2=S.game.tiles; let i=T2.length-1;
+  while(i>=0&&!(T2[i].ok===me&&T2[i].k!=='pol'&&T2[i].k!=='pass')) i--;
+  if(i<0) return;
+  S.game.tiles=T2.slice(0,i); S.game.badged=false; saveGame();
+  syncEL(); S.seen.local=replay(S.game.tiles,S.game.seed).n; // もどしたときは、決算の演出をくり返さない
+  S.sel=null; S.cell=null; S.insp=null; S.viewer=me; V3.anims=[];
+  sfx.pick(); render(); toast('1手もどしました');
+};
 function renderSteps(){
+  $('undoBtn').hidden=!canUndo();
+  setTimeout(renderTutor,0);
   const lk=locked(), card=selCard(), st=lk?0:!card?1:!S.cell?2:3, tp=turnPlayer();
   [...$('steps').children].forEach((li,i)=>{li.className=i+1<st?'done':i+1===st?'now':''});
   $('turnP').dataset.wait=lk?'1':'';
@@ -1869,6 +1926,43 @@ function playTimelapse(){
   const step=()=>{if(i>=frames.length||$('resultbg').hidden)return;const f=frames[i++];draw(f);tlTimer=setTimeout(step,f.settled?480:60)};
   tlTimer=setTimeout(step,400);
 }
+// 結果を1枚の画像に（街の立体図＋スコア＋称号）。スマホは共有メニュー、PCは保存
+async function shareImage(btn){
+  const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey(), mi=arr.findIndex(o=>o.key===mk), me=arr[mi]||arr[0];
+  const W=1080,Hh=1350, cv=document.createElement('canvas'); cv.width=W; cv.height=Hh;
+  const ctx=cv.getContext('2d');
+  // 街の立体図（別のキャンバスに描いてから貼る）
+  const city=document.createElement('canvas'); city.width=1000; city.height=760; city.style.width='1000px';
+  const cells=R.g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
+  const focus=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=R.g[r][c];if(x&&x.k!=='river'&&x.k!=='sta')focus.push([r,c])}
+  isoDraw(city,cells,'reiwa',0,{focus});
+  const sky=ctx.createLinearGradient(0,0,0,Hh);sky.addColorStop(0,'#0d0826');sky.addColorStop(.55,'#2a1a5e');sky.addColorStop(1,'#12142b');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,Hh);
+  ctx.drawImage(city,0,0,city.width,city.height,40,250,1000,760);
+  ctx.textAlign='center';
+  ctx.fillStyle='#ffc83a';ctx.font='96px "Dela Gothic One", sans-serif';ctx.fillText('AZAKEI CITY',W/2,130);
+  ctx.fillStyle='#eef0ff';ctx.font='800 34px "Shippori Mincho B1", serif';
+  const modeTxt=S.game&&S.game.chal?'チャレンジ':S.game&&S.game.daily?`今日の街 ${S.game.daily}`:S.game&&S.game.short?'ショート（6時代）':'1964→2022 の60年';
+  ctx.fillText(modeTxt,W/2,190);
+  // スコアカード
+  ctx.fillStyle='rgba(18,20,43,.88)';ctx.beginPath();ctx.roundRect(70,1030,940,250,28);ctx.fill();
+  ctx.strokeStyle='rgba(255,200,58,.6)';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#9ba1cc';ctx.font='800 30px "M PLUS Rounded 1c", sans-serif';
+  ctx.fillText(`${TY[me.ty]?.face||''} ${me.nick}社長 ・ ${arr.length}人中 ${mi+1}位`,W/2,1085);
+  ctx.fillStyle='#ffc83a';ctx.font='110px "Dela Gothic One", sans-serif';ctx.fillText(String(me.score),W/2,1195);
+  ctx.fillStyle='#eef0ff';ctx.font='800 34px "Shippori Mincho B1", serif';ctx.fillText(titleFor(me,mi),W/2,1250);
+  ctx.fillStyle='#9ba1cc';ctx.font='26px "DM Mono", monospace';
+  ctx.fillText(`GDP ${R.hist.at(-1)||0} ・ 名所 ${me.lm} ・ 👑 ${me.crown||0} ・ 倒産 ${me.bust}`,W/2,1320);
+  const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+  if(!blob){btn.textContent='画像を作れませんでした';return}
+  const file=new File([blob],'azakei-city.png',{type:'image/png'});
+  try{ if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text:'AZAKEI CITY で街をつくった！ https://azakeiten.github.io/azakei-city/'});btn.textContent='共有しました';return} }catch(e){}
+  // 共有できないときは、画面に表示（長押しやドラッグで保存できる）＋ダウンロードも試す
+  const url=URL.createObjectURL(blob);
+  let box=$('shareBox'); if(!box){box=document.createElement('div');box.id='shareBox';box.className='sharebox';btn.closest('.sheet').appendChild(box)}
+  box.innerHTML=`<img src="${url}" alt="結果の画像"><p>画像を長押し（右クリック）でも保存できます。</p><a class="go savebtn" href="${url}" download="azakei-city.png">画像を保存</a>`;
+  btn.textContent='画像を作りました';
+}
 function showResult(){
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey();
   const hs=S.mode==='local'?humans():[], many=hs.length>1;
@@ -1891,7 +1985,7 @@ function showResult(){
     </tbody></table></div>
     ${daily?`<div class="daily" id="dailyBox"><div class="slab">今日の街ランキング</div><p class="empty">読み込み中…</p></div>`:''}
     ${(()=>{if(S.mode!=='local')return '';checkBadges();const fr=(S.game&&S.game.fresh)||[];return fr.length?`<div class="newbadge"><div class="slab">社長手帳に新しいバッジ</div>${fr.map(id=>{const b=BADGES.find(x=>x.id===id);return `<span class="nb2">★ ${b.name}</span>`}).join('')}</div>`:''})()}
-    <div class="btns"><button class="go" type="button" id="again">新しい街をつくる</button><button class="ghost" type="button" id="openBook">社長手帳</button><button class="ghost" type="button" id="copyRes">結果をコピー</button><button class="ghost" type="button" id="closeRes">街をながめる</button></div>
+    <div class="btns"><button class="go" type="button" id="again">新しい街をつくる</button><button class="ghost" type="button" id="openBook">社長手帳</button><button class="ghost" type="button" id="shareImg">📷 結果を画像に</button><button class="ghost" type="button" id="copyRes">結果をコピー</button><button class="ghost" type="button" id="closeRes">街をながめる</button></div>
   </div>`;
   $('resultbg').hidden=false; sfx.end();
   $('again').onclick=()=>{$('resultbg').hidden=true;showSetup()};
@@ -1899,6 +1993,7 @@ function showResult(){
   playTimelapse(); $('tlPlay').onclick=playTimelapse;
   $('openBook').onclick=()=>{$('resultbg').hidden=true;showBook()};
   renderTools();
+  $('shareImg').onclick=e=>{const b=e.currentTarget;b.textContent='作成中…';shareImage(b).catch(()=>{b.textContent='画像を作れませんでした'})};
   $('copyRes').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(text);b.textContent='コピーしました'}catch(err){b.textContent='コピーできませんでした'}};
   $('again').focus();
   if(daily&&me) dailyBoard(daily,me);
@@ -2285,6 +2380,7 @@ const BOOK=[
         <li>迷ったら<b>💡ヒント</b>。いま一番よさそうな一手と、その理由を教えてくれる。</li>
         <li>盤面の右上のボタンで<b>立体</b>と<b>平面</b>を切りかえられる。立体では、街の上に直接建てられる。</li>
         <li>NEWS・番付・名所・できごと・ルールは、右上の<b>☰</b>にまとめてある。</li>
+        <li>ひとりで遊ぶときは<b>↶ 1手もどす</b>で、やり直せる（今日の街はのぞく）。</li>
       </ol></div>
     <div class="bk-box">この例：小売の稼ぎ <b>3</b> ＋ となりの住宅が <b>+1</b> ＝ スコア <b>+4</b>。<br>市場はライバルと共通。ほしいカードは先にとられるかも。</div>`},
   {t:'ルールの図の読み方',h:()=>`
