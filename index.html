@@ -573,6 +573,8 @@ body.v3d .board3d{display:block}
 .citybtn{position:absolute;right:10px;top:10px;z-index:5;border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);background:rgba(18,20,43,.85);color:var(--gold);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;backdrop-filter:blur(4px)}
 .goalchip{position:absolute;left:10px;bottom:10px;z-index:5;border:1px solid var(--line);background:rgba(12,14,36,.78);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;backdrop-filter:blur(4px);max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .goalchip b{color:var(--gold)}
+.mcard .gmark{position:absolute;top:4px;right:4px;font-size:13px;line-height:1;padding:3px;border-radius:999px;background:rgba(12,14,36,.75);box-shadow:0 0 0 1.5px var(--gold);animation:gmk 2.4s ease-in-out infinite}
+@keyframes gmk{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
 .goalchip.pop{animation:gpop .9s ease}
 @keyframes gpop{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.95)}100%{transform:scale(1)}}
@@ -1480,7 +1482,7 @@ const view3d=()=>S.view==='3d';
 function fit3d(cv){
   if(innerWidth>640||!document.body.classList.contains('playing')){cv.style.height='';cv.style.aspectRatio='';return}
   const tray=$('tray'), w=cv.clientWidth||innerWidth, top=cv.getBoundingClientRect().top+scrollY;
-  const h=Math.round(Math.max(w*.8,Math.min(w*1.6,innerHeight-top-(tray&&!tray.hidden?tray.offsetHeight:0)-14)));
+  const h=Math.round(Math.max(w*.8,Math.min(w*1.9,innerHeight-top-(tray&&!tray.hidden?tray.offsetHeight:0)-14)));
   if(cv.style.height!==h+'px'){cv.style.aspectRatio='auto';cv.style.height=h+'px'}
 }
 addEventListener('resize',()=>{clearTimeout(fit3d.t);fit3d.t=setTimeout(drawBoard3d,120)});
@@ -1755,8 +1757,10 @@ function renderBoard(){
 function renderMarket(){
   const R=S.R, ty=myTy(), lk=locked(), ch=ty?choices(R,ty):R.market.map((k,j)=>({k,src:'m',j}));
   $('market').style.setProperty('--cols',ch.length);
-  $('market').innerHTML=ch.map((x,j)=>`<button type="button" class="mcard k-${x.k}${T[x.k].tag==='仕組み'||x.k==='buy'?' sys':''}${x.src==='d'?' deck':''}" data-j="${j}" aria-pressed="${S.sel===j}"${lk?' disabled':''} aria-label="${T[x.k].name}：${T[x.k].rule}">
-    <span class="ic">${ic(x.k)}</span><span class="tg">${T[x.k].tag}</span><span class="nm">${T[x.k].name}</span></button>`).join('');
+  // 🎯 自分の目標に近づくカードに印（種類を集める目標のときだけ）
+  const gp=goalOn()&&S.R.own?goalProg(R.g,R.own[myKey()]||{key:myKey(),kinds:{},lm:0,bust:0},S.game.seed):null, gk=gp&&!gp.met&&humans().length<2&&gp.G.k;
+  $('market').innerHTML=ch.map((x,j)=>`<button type="button" class="mcard k-${x.k}${T[x.k].tag==='仕組み'||x.k==='buy'?' sys':''}${x.src==='d'?' deck':''}" data-j="${j}" aria-pressed="${S.sel===j}"${lk?' disabled':''} aria-label="${T[x.k].name}：${T[x.k].rule}${gk===x.k?"（目標に近づく）":""}">
+    <span class="ic">${ic(x.k)}</span><span class="tg">${T[x.k].tag}</span><span class="nm">${T[x.k].name}</span>${gk===x.k?`<span class="gmark" title="目標「${gp.G.name}」に近づく">🎯</span>`:""}</button>`).join('');
   const c=selCard(), tp=turnPlayer();
   $('cardrule').innerHTML=c?ruleCard(c.k):(S.busy&&S.mode==='local'&&tp?`${esc(sh(tp.nick))}が市場から選んでいます…`:'カードに乗せるか選ぶと、ルールが図で出ます。ライバルも同じ市場から選びます。');
   $('mkNote').textContent=S.busy?'ライバルの番':`時代が変わると総入れ替え`;
@@ -1899,13 +1903,14 @@ function renderGoal(){
   // 達成した瞬間・くずれた瞬間を知らせる（読みこみ直後や、もどしたときは知らせない）
   const prev=S.goalSeen;
   if(prev&&prev.id===S.game.seed+'/'+o.key&&prev.n<S.game.tiles.length&&prev.met!==p.met){
-    if(p.met){sfx.goal();toast(`🎯 <b>ひみつの目標「${p.G.name}」達成！</b><br>このまま最後まで守れば ＋${goalPts()}`);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}
-    else toast(`🎯 目標「${p.G.name}」の条件がくずれた…<br>まだ間に合う。もう一度ねらおう`);
+    if(p.met){sfx.goal();toast(`🎯 <b>ひみつの目標${humans().length>1?"":`「${p.G.name}」`}達成！</b><br>このまま最後まで守れば ＋${goalPts()}`);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}
+    else toast(`🎯 目標${humans().length>1?"":`「${p.G.name}」`}の条件がくずれた…<br>まだ間に合う。もう一度ねらおう`);
   }
   S.goalSeen={id:S.game.seed+'/'+o.key,n:S.game.tiles.length,met:p.met};
-  el.hidden=false; el.classList.toggle('met',p.met);
-  el.innerHTML=`🎯 <b>${p.G.name}</b> <i>${p.G.id==='safe'?(p.met?'達成中':`産業 ${Object.entries(o.kinds||{}).reduce((s,[k,v])=>s+(isInd(k)?v:0),0)}/5${o.bust?'・倒産あり':''}`):`${Math.min(p.cur,p.G.need)}/${p.G.need}`}</i>${p.met?' ✓':''}`;
-  el.onclick=()=>toast(`🎯 ひみつの目標「${p.G.name}」<br>${p.G.d}。ゲームの最後に達成していたら <b>＋${goalPts()}</b>${p.met?'（いま達成中！ 最後まで守ろう）':''}`);
+  const shared=humans().length>1; // 1台をみんなで回すときは、目標をふせておく（タップで本人だけ見る）
+  el.hidden=false; el.classList.toggle("met",p.met&&!shared);
+  el.innerHTML=shared?`🎯 <b>${esc(sh(viewerP().nick))}の目標</b> <i>タップで見る</i>`:`🎯 <b>${p.G.name}</b> <i>${p.G.id==='safe'?(p.met?'達成中':`産業 ${Object.entries(o.kinds||{}).reduce((s,[k,v])=>s+(isInd(k)?v:0),0)}/5${o.bust?'・倒産あり':''}`):`${Math.min(p.cur,p.G.need)}/${p.G.need}`}</i>${p.met?' ✓':''}`;
+  el.onclick=()=>toast(`🎯 ひみつの目標「${p.G.name}」${shared?`（${p.G.need>1?`${Math.min(p.cur,p.G.need)}/${p.G.need}`:p.met?"達成中":"まだ"}）`:""}<br>${p.G.d}。ゲームの最後に達成していたら <b>＋${goalPts()}</b>${p.met?"（いま達成中！ 最後まで守ろう）":""}`);
 }
 // 時代レース：この時代に「稼ぎを一番伸ばしている」社長がだれか、いつも見せる
 function renderRace(){
@@ -2272,7 +2277,7 @@ function readNames(){for(let i=0;i<SU.n;i++){const el=$('pn'+i);if(el)SU.rows[i]
 function startGame(){
   readNames();
   const n=SU.n, today=todayStr(), seed=SU.daily?seedOf('azakei-'+today):Math.floor(Math.random()*1e9);
-  const players=SU.rows.slice(0,n).map((r,i)=>({key:'h'+(i+1),nick:(r.nick||'').trim()||(n>1?`${i+1}P`:'あなた'),ty:r.ty,cpu:false}));
+  const players=SU.rows.slice(0,n).map((r,i)=>({key:"h"+(i+1),nick:(r.nick||"").trim()||(n>1?`${i+1}P`:"あなた"),ty:r.ty||TYK[i%TYK.length],cpu:false}));
   const rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
   for(let i=0;i<Math.max(0,3-n);i++) players.push({key:'cpu'+(i+1),nick:CPUN[i],ty:cp[i],cpu:true});
   S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,simple:!SU.daily&&SU.simple,cpu:SU.daily?'normal':SU.cpu,players,tiles:[]}; store.set('azakei-city-cpu',SU.cpu);
@@ -2496,10 +2501,18 @@ const TALK={
   rabbit:{b:['楽しくいこう！','街をにぎやかに！','今が一番！','みんなで住もう〜'],buy:['一緒にがんばろう！'],lm:['名所できた〜！'],big:['やった、大もうけ！'],mq:['お題クリア〜！']}
 };
 let talkTimer=null;
+// CPU社長が、ときどき自分の目標のヒントをもらす（何を集めているか読めると、邪魔もできる）
+const GHINT={me:'メディアを、もう少し集めたいな…',tr:'運輸の会社が、もっとほしい…',fi:'金融の会社を、増やしたいところ',ma:'工場を、もっと建てたいな',re:'商店街を、にぎやかにしたい…',en:'エネルギーは、いくつあってもいい',ho:'住宅を、どんどん建てたい',star:'★の会社を育てたい…',lm:'名所が、ほしくてたまらない',safe:'倒産だけは、出したくない…'};
+function goalTalk(p,best){
+  if(!goalOn()||Math.random()>.35) return null;
+  const G=goalOf(S.game.seed,p.key);
+  const hit=G.k?best.k===G.k:G.id==='lm'?best.lms&&best.lms.length:G.id==='star'?best.fut>=GROW:G.id==='safe'?Math.random()<.4:false;
+  return hit?GHINT[G.id]:null;
+}
 function cpuTalk(p,best){
   if(!best||reduced()) return;
   const t=TALK[p.ty]||TALK.lion, pick=a=>a[Math.floor(Math.random()*a.length)];
-  const line=best.k==='buy'?pick(t.buy):best.lms&&best.lms.length?pick(t.lm):best.mq?pick(t.mq):best.d>=15?pick(t.big):Math.random()<.45?pick(t.b):null;
+  const line=goalTalk(p,best)||(best.k==='buy'?pick(t.buy):best.lms&&best.lms.length?pick(t.lm):best.mq?pick(t.mq):best.d>=15?pick(t.big):Math.random()<.45?pick(t.b):null);
   if(!line) return;
   const el=$('talk'); el.hidden=false;
   el.innerHTML=`<span class="face" style="--tc:var(--${p.ty})">${TY[p.ty].face}</span><b>${esc(p.nick)}</b><span class="line">「${line}」</span>`;
@@ -2656,7 +2669,7 @@ const BOOK=[
   {t:'🎯 ひみつの目標',h:()=>`
     <p>ゲームの最初に、社長ごとに<b>ひみつの目標</b>が2枚配られ、<b>1つを選びます</b>（ひとり・友だちと遊ぶとき）。ゲームの最後に達成していたら<b>＋100</b>（ショートは＋50）。</p>
     <div class="bk-grid">${GOALS.map(G=>`<div class="bk-box" style="margin:0"><b>${G.name}</b><br>${G.d}</div>`).join('')}</div>
-    <div class="bk-box">盤面の左下の🎯に、進み具合（2/4など）がいつも出ます。ライバルの目標は、結果画面までひみつ。目標を追うか、目の前の点数をとるか。それも作戦です。</div>`},
+    <div class="bk-box">盤面の左下の🎯に、進み具合（2/4など）がいつも出ます。目標に近づくカードには、手札に🎯の印が付きます。ライバルの目標は結果画面までひみつ。でも、CPU社長はときどき「メディアを集めたいな…」とヒントをもらします。目標を追うか、目の前の点数をとるか。それも作戦です。</div>`},
   {t:'買収',h:()=>`
     <div class="bk-row"><div class="vs">${mini([['fi:2','ho:3'],['me:5','']])}<span class="arr">→</span>${mini([['fi:2','ho:3'],['me:5','']])}</div>
       <ul class="bk-cap">
