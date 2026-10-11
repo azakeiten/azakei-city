@@ -600,7 +600,7 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 .fastbtn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
 .yearflip{position:fixed;inset:0;z-index:28;display:grid;place-content:center;justify-items:center;gap:10px;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(12,10,40,.82),rgba(4,5,16,.55) 70%)}
-.yf-in{display:flex;align-items:center;gap:18px;font-family:var(--display);font-size:clamp(48px,12vw,110px);line-height:1;color:var(--ink)}
+.yf-in{display:flex;align-items:center;gap:clamp(8px,2.5vw,18px);font-family:var(--display);font-size:clamp(30px,8.5vw,110px);line-height:1;color:var(--ink)}
 .yf-old{opacity:.45}
 .yf-arr{font-size:.5em;color:var(--gold)}
 .yf-new{color:var(--gold);text-shadow:0 0 30px rgba(255,200,58,.5)}
@@ -613,6 +613,16 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 @keyframes yfold{0%{transform:translateY(0);opacity:.9}35%{transform:translateY(-12px);opacity:.45}100%{opacity:.45}}
 @keyframes yfnew{0%,25%{transform:rotateX(90deg);opacity:0}50%{transform:rotateX(0) scale(1.12);opacity:1}62%{transform:scale(1)}100%{opacity:1}}
 @keyframes yfname{0%,45%{opacity:0;transform:translateY(10px)}65%{opacity:1;transform:none}100%{opacity:1}}
+.cityname{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0 8px}
+.cityname span{font-size:20px}
+.cityname input{width:9.5em;font:inherit;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:20px;text-align:center;color:var(--gold);background:transparent;border:0;border-bottom:1.5px dashed var(--line);padding:2px 4px}
+.cityname input:focus{outline:none;border-bottom-color:var(--gold)}
+.cityname .ghost{padding:5px 10px;font-size:12px}
+.profjump{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:800}
+.profjump:hover{border-color:var(--gold)}
+.homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.homeprof .slab{justify-self:start}
+.homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
 .missions{width:min(420px,100%);display:grid;gap:6px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:left}
 .ms-head{display:flex;justify-content:space-between;align-items:center}
 .ms-head b{font-size:14px}
@@ -1147,6 +1157,8 @@ const inb=(r,c)=>r>=0&&c>=0&&r<N&&c<N;
 const TERR={river:1,sta:1};
 // 会社の名前：麻布のまわりの地名＋業種（同じゲームなら毎回同じ名前）
 const PLACES=["麻布","元麻布","西麻布","南麻布","東麻布","六本木","広尾","白金","青山","赤坂","有栖川","鳥居坂","仙台坂","狸穴","飯倉","芝浦"];
+// 街の名前：ゲームごとに地名から決まる（結果画面で変えられる）
+const cityName=()=>S.game?(S.game.city||PLACES[seedOf("city"+S.game.seed)%PLACES.length]+"市"):"AZAKEI CITY";
 const SUFFIX={en:["電力","ガス","エネルギー"],fi:["銀行","証券","信用金庫"],ma:["製作所","工業","重工"],re:["商店","百貨店","マート","ストア"],tr:["運輸","交通","物流"],me:["放送","新聞","出版","テレビ"],ho:["ハイツ","荘","団地","レジデンス"],in:["保険","生命"],sc:["学園","学院"]};
 function cname(seed,n,k){const s=SUFFIX[k];if(!s)return "";const rnd=mulberry(((seed>>>0)^Math.imul(n+1,2654435761))>>>0);return PLACES[Math.floor(rnd()*PLACES.length)]+s[Math.floor(rnd()*s.length)]}
 function grid0(seed){
@@ -2490,7 +2502,7 @@ async function shareImage(btn){
   ctx.fillStyle='#ffc83a';ctx.font='96px "Dela Gothic One", sans-serif';ctx.fillText('AZAKEI CITY',W/2,130);
   ctx.fillStyle='#eef0ff';ctx.font='800 34px "Shippori Mincho B1", serif';
   const modeTxt=S.game&&S.game.chal?'チャレンジ':S.game&&S.game.daily?`今日の街 ${S.game.daily}`:S.game&&S.game.short?'ショート（6時代）':'1964→2022 の60年';
-  ctx.fillText(modeTxt,W/2,180);
+  ctx.fillText(`${cityName()} ・ ${modeTxt}`,W/2,180);
   {const k=rankOf(+(store.get("azakei-city-xp")||0));ctx.fillStyle="#9ba1cc";ctx.font="800 26px \"M PLUS Rounded 1c\", sans-serif";ctx.fillText(`社長ランク Lv.${k.i+1} ${k.name}`,W/2,218)}
   shareChart(ctx,R,arr,mk,90,845,900,165);
   // スコアカード
@@ -2589,7 +2601,7 @@ const MISSIONS=[
   {id:'crown2',t:'時代レースで2回 首位（👑）になる',pts:15,chk:me=>(me.crown||0)>=2},
   {id:'full',t:'フル（12時代）を最後まで遊ぶ',pts:20,chk:()=>!S.game.short&&!S.game.daily},
   {id:'guess',t:'ライバルの目標を予想して当てる',pts:15,chk:me=>!!(me.guess&&me.guess.hit)},
-  {id:'buy',t:'買収を1回成功させる（「ぜんぶ」ルール）',pts:10,chk:me=>(me.buys||0)>=1}
+  {id:'hold',t:'★★の会社（ホールディングス）を育てる',pts:15,chk:(me,rank,arr,R)=>(R.cos||[]).some(x=>x.ok===me.key&&(x.lv||1)>=3)}
 ];
 function todayMis(){const d=todayStr();let h=seedOf('mis-'+d);const pool=MISSIONS.slice(),out=[];while(out.length<3){out.push(pool.splice(h%pool.length,1)[0]);h=Math.floor(h/7)+13}return out}
 function misState(){const d=todayStr();let s=store.get('azakei-city-mis');if(!s||s.date!==d)s={date:d,done:{},quiz:0};return s}
@@ -2665,6 +2677,7 @@ function showResult(){
     :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
   $('resultbg').innerHTML=`<div class="sheet result" role="dialog" aria-label="結果">
     <h3>${S.game&&S.game.chal?'チャレンジの結果':daily?`今日の街（${daily}）の結果`:S.game&&S.game.short?'ショート（6時代）の結果':'60年の結果'}</h3>
+    ${S.mode==="local"&&S.game?`<div class="cityname"><span>🏙️</span><input id="cityIn" maxlength="10" value="${esc(cityName())}" aria-label="街の名前"><button class="ghost" type="button" id="citySave">名前を変える</button></div>`:""}
     <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
     ${chalResultHTML()}
@@ -2687,6 +2700,7 @@ function showResult(){
   // ランクのゲージを、少し待ってから伸ばす（ランクアップなら、ファンファーレ）
   setTimeout(()=>{const bar=$('resultbg').querySelector('.rankres .rk-bar i');if(bar)bar.style.width=bar.dataset.to+'%';if($('resultbg').querySelector('.rankres.up'))sfx.goal()},700);
   $('again').onclick=()=>{$('resultbg').hidden=true;showSetup()};
+  if($('citySave')) $('citySave').onclick=()=>{const v=$('cityIn').value.trim().slice(0,10);if(!v)return;S.game.city=v;saveGame();$('citySave').textContent='変えました';toast(`🏙️ 街の名前は「${esc(v)}」`)};
   $('closeRes').onclick=()=>{$('resultbg').hidden=true;toggleCity(true)};
   playTimelapse(); $('tlPlay').onclick=playTimelapse;
   $('openBook').onclick=()=>{$('resultbg').hidden=true;showBook()};
@@ -3313,10 +3327,8 @@ function showHome(){
       <div class="logo">AZAKEI CITY</div>
       <div class="tag">1964→2022。60年の経済を、街ごと生き抜け。</div>
       <p class="tag2">建物を建てて、となりどうしで稼ぎを増やす。オイルショックもバブルもリーマン・ショックも、街ごと乗りこえろ。</p>
-      ${city?`<div class="homecity"><canvas id="homeCity" aria-label="あなたの街"></canvas><span class="hc-lab">${city.done?"前回の街（2022年）":`あなたの街（${city.y}年代）`}</span></div>`:`<div class="skyline" aria-hidden="true">${sky.join("")}</div>`}
-      ${rankChip(+(store.get("azakei-city-xp")||0))}
-      ${themePicker()}
-      ${missionsHTML()}
+      ${city?`<div class="homecity"><canvas id="homeCity" aria-label="あなたの街"></canvas><span class="hc-lab">${esc(cityName())}（${city.done?"2022年":`${city.y}年代`}）</span></div>`:`<div class="skyline" aria-hidden="true">${sky.join("")}</div>`}
+      <button class="profjump" type="button" data-h="prof">${(()=>{const k=rankOf(+(store.get('azakei-city-xp')||0)),s=misState(),n=todayMis().filter(m=>s.done[m.id]).length;return `Lv.${k.i+1} ${k.name} ・ 📋 今日のミッション ${n}/3`})()} ▼</button>
       <div class="years">${HIST.map((h,i)=>i%2===0?`<span><b>${h.y}</b> ${esc(h.n)}</span>`:'').join('')}</div>
     </div>
     ${cont}
@@ -3330,6 +3342,7 @@ function showHome(){
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
     </div>
+    <div class="homeprof"><div class="slab">社長の部屋</div>${rankChip(+(store.get("azakei-city-xp")||0))}${missionsHTML()}${themePicker()}</div>
     <p class="homefoot">AZAKEI（麻経）・麻布中学校・高等学校 経済系同好会</p>
   </div>`;
   $('home').hidden=false;
@@ -3361,6 +3374,7 @@ $('home').addEventListener('click',e=>{
   if(th){pickTheme(th);return}
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
+  if(a==='prof'){document.querySelector('.homeprof')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'});return}
   if(a==='cont'){hideHome();if(S.mode!=='local')setMode('local');else{render();advance()}return}
   if(a==='new'||a==='short'||a==='daily'){SU.daily=a==='daily';SU.short=a==='short';showSetup();return}
   if(a==="book"){showRulebook(0);return}
