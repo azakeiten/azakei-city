@@ -480,7 +480,15 @@ ol.rules b{color:var(--ink)}
 .daily ol{margin:6px 0 0;padding-left:1.4em;font-size:13px;display:grid;gap:2px}
 .daily li.me{color:var(--gold);font-weight:800}
 
-#typebg,#bookbg,#polbg{z-index:30}
+#typebg,#bookbg,#polbg,#goalbg{z-index:30}
+.goalpick{max-width:460px;text-align:center}
+.goalpick .gp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.gpc{display:flex;flex-direction:column;gap:6px;align-items:center;padding:16px 10px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);cursor:pointer;transition:transform .15s,border-color .15s}
+.gpc:hover,.gpc:focus-visible{border-color:var(--gold);transform:translateY(-3px)}
+.gpc b{font-size:18px;color:var(--gold)}
+.gpc span{font-size:13px;line-height:1.5}
+.gpc em{font-style:normal;font-family:var(--mono);font-weight:800;color:var(--gold)}
+#goalbg .go{margin-top:12px}
 .pol h3{font-family:var(--serif);font-weight:800;font-size:21px;margin:2px 0 6px}
 .polcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (max-width:520px){.polcards{grid-template-columns:1fr}}
@@ -873,6 +881,7 @@ body.drawer .side{transform:none}
 <div class="home" id="home" hidden></div>
 <div class="ov" id="bookbg" hidden></div>
 <div class="ov" id="polbg" hidden></div>
+<div class="ov" id="goalbg" hidden></div>
 
 <script>
 const N=11, MID=5, ERA=8, ERAS=12, MKT=5;
@@ -881,6 +890,8 @@ const FULL=[0,1,2,3,4,5,6,7,8,9,10,11], SHORT=[0,1,3,4,7,10];
 var EL=FULL;
 function HI(e){return EL[((e%EL.length)+EL.length)%EL.length]}
 function H(e){return HIST[HI(e)]}
+// 時代の天気：NEWSの合計が大きい好景気は花火、マイナスの不景気は雨
+function eraWeather(e){const s=H(e).r.reduce((a,b)=>a+b,0);return s>=8?'boom':s<=0?'rain':null}
 function NE(){return EL.length}
 var GROW=11, LVB=1, BUST=2; // 成長ライン・成長1段の上乗せ・倒産ライン（決算の稼ぎがこれ以下で倒産）
 const BUYMAX=3, LMBONUS=30, SHARED_SEED=19641010;
@@ -1086,7 +1097,9 @@ const GOALS=[
   {id:'lm',name:'名所ハンター',d:'名所を2つ完成させる',need:2},
   {id:'safe',name:'安全第一',d:'産業を5つ以上建てて、倒産ゼロで終える',need:1}
 ];
-function goalOf(seed,key){return GOALS[seedOf(String(seed)+'/'+key)%GOALS.length]}
+// 最初に2枚配られて、人間の社長は1つ選ぶ（選んだものは S.game.goals に記録。CPUと未選択は1枚目）
+function goalOffer(seed,key){const a=seedOf(String(seed)+'/'+key)%GOALS.length, b=(a+1+seedOf(String(seed)+'/'+key+'/2')%(GOALS.length-1))%GOALS.length;return [GOALS[a],GOALS[b]]}
+function goalOf(seed,key){const id=S.game&&S.game.seed===seed&&S.game.goals&&S.game.goals[key], o=goalOffer(seed,key);return o.find(G=>G.id===id)||o[0]}
 function goalProg(g,o,seed){
   const G=goalOf(seed,o.key); let cur=0;
   if(G.k){for(const row of g)for(const x of row)if(x&&x.ok===o.key&&x.k===G.k)cur++}
@@ -1349,8 +1362,15 @@ function isoDraw(cv,cells,age,t,opt){
   ctx.fillStyle=gr; ctx.fillRect(0,0,W,Hh);
   // 星
   if(night)for(let i=0;i<46;i++){ctx.globalAlpha=.25+.5*((i*7)%10)/10;ctx.fillStyle='#fff';ctx.fillRect((i*131+17)%W,((i*53.7)%37)/37*Hh*.38,1.5,1.5)} ctx.globalAlpha=1;
+  // 好景気の時代：夕方から花火が上がる
+  if(opt.amb&&opt.weather==='boom'&&tm!=null&&tm>=.6){const tt=(t||0)/1000,FC=['#ffc83a','#ff6b5e','#4aa8ff','#3ad283','#ff9ad5'];
+    for(let i=0;i<3;i++){const per=2.2, ph=(tt+i*.75)%per/per, k=Math.floor((tt+i*.75)/per)+i*13, cx=W*(.18+((k*37)%64)/100), cy=Hh*(.1+((k*17)%20)/100), col=FC[k%5];
+      if(ph<.25){ctx.fillStyle=col;ctx.globalAlpha=.8;ctx.fillRect(cx-1,cy+(1-ph/.25)*Hh*.25,2,6)}
+      else{const p=(ph-.25)/.75, rad=Math.min(W,Hh)*.13*Math.sqrt(p);ctx.globalAlpha=1-p;ctx.fillStyle=col;
+        for(let j=0;j<18;j++){const a=j/18*Math.PI*2;ctx.beginPath();ctx.arc(cx+Math.cos(a)*rad,cy+Math.sin(a)*rad+p*p*8,2.6,0,Math.PI*2);ctx.fill()}}
+      ctx.globalAlpha=1}}
   // 雲：昼の空をゆっくり流れる（opt.amb のときだけ）
-  if(opt.amb&&!night){const tt=(t||0)/1000;ctx.fillStyle='rgba(255,255,255,.75)';
+  if(opt.amb&&!night){const tt=(t||0)/1000;ctx.fillStyle=opt.weather==='rain'?'rgba(150,158,180,.9)':'rgba(255,255,255,.75)';
     for(let i=0;i<4;i++){const s=W*(.08+.03*(i%2)), y=Hh*(.06+.07*i), x=((i*W*.37+tt*(6+i*3))%(W+s*3))-s*1.5;
       ctx.beginPath();ctx.ellipse(x,y,s,s*.32,0,0,Math.PI*2);ctx.ellipse(x-s*.45,y+s*.06,s*.5,s*.26,0,0,Math.PI*2);ctx.ellipse(x+s*.4,y-s*.1,s*.55,s*.34,0,0,Math.PI*2);ctx.fill()}}
   let tw=Math.min(W/(N+.6),(Hh*.94)/(N*.5+2.6)), th=tw/2, x0=W/2, y0=Hh-(N*th)-th*.4;
@@ -1432,6 +1452,10 @@ function isoDraw(cv,cells,age,t,opt){
     const top=drawBuilding(r,c,t2,opt.ghost&&t2.k!=='river'&&t2.k!=='hall'?.42:1,opt.grow&&id in opt.grow?opt.grow[id]:null);
     if(top) tops[id]=top;
   }
+  // 不景気の時代：街に雨が降る
+  if(opt.weather==='rain'){ctx.fillStyle='rgba(40,50,80,.22)';ctx.fillRect(0,0,W,Hh);
+    if(opt.amb){const tt=(t||0)/1000;ctx.strokeStyle='rgba(210,222,255,.7)';ctx.lineWidth=1.4;ctx.beginPath();
+      for(let i=0;i<110;i++){const x=((i*97.3)%W+tt*40)%W, y=((i*53.1)%Hh+tt*(260+(i%5)*30))%Hh;ctx.moveTo(x,y);ctx.lineTo(x-3,y+11)}ctx.stroke()}}
   // 文字は最後に（建物にかくれないように）
   const label=(x,y,text,col,size,bg)=>{ctx.font=`800 ${size}px "DM Mono",ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
     if(bg){const w=ctx.measureText(text).width+8;ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(x-w/2,y-size*.7,w,size*1.4,4);ctx.fill()}
@@ -1464,7 +1488,7 @@ function drawBoard3d(){
   const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
   fit3d(cv);
   const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
-  const opt={amb:!reduced(),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
+  const opt={amb:!reduced(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
   if(k&&!lk){
     opt.ghost=true; opt.valid={};
@@ -1869,7 +1893,7 @@ function renderMe(){
 const goalOn=()=>S.mode==='local'&&!!S.game&&!S.game.chal;
 function renderGoal(){
   const el=$('goalChip'); if(!el) return;
-  const o=goalOn()&&S.R&&S.R.own[myKey()];
+  const o=goalOn()&&S.R&&(S.R.own[myKey()]||{key:myKey(),kinds:{},lm:0,bust:0});
   if(!o){el.hidden=true;return}
   const p=goalProg(S.R.g,o,S.game.seed);
   // 達成した瞬間・くずれた瞬間を知らせる（読みこみ直後や、もどしたときは知らせない）
@@ -2257,10 +2281,36 @@ function startGame(){
   saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false;
   S.viewer=players[0].key;
   hideHome();
-  setTimeout(()=>{if(S.game&&!tutorOn()){const G=goalOn()?goalOf(S.game.seed,myKey()):null;toast(G?`🎯 あなたのひみつの目標：<b>${G.name}</b><br>${G.d}で <b>＋${goalPts()}</b>（左下でいつでも確認）`:`🎓 麻経の先輩「${SENPAI[HI(0)]}」`)}},2600);
+  const senpai=()=>setTimeout(()=>{if(S.game&&!tutorOn())toast(`🎓 麻経の先輩「${SENPAI[HI(0)]}」`)},2600);
   $('typebg').hidden=true;
   if(S.mode!=='local') setMode('local'); else render();
-  advance();
+  // はじめての人（チュートリアル中）は1枚目の目標のまま。それ以外は2枚から選ぶ
+  if(goalOn()&&!tutorOn()) pickGoals(players.filter(p=>!p.cpu),()=>{render();advance();senpai()});
+  else {advance();senpai()}
+}
+// 🎯 目標えらび：人間の社長ごとに2枚から1つ（友だちと遊ぶときは、本人だけが見るように声をかける）
+function pickGoals(hs,done){
+  const bg=$('goalbg'), many=hs.length>1; let i=0;
+  const draw=()=>{
+    const p=hs[i], [A,B]=goalOffer(S.game.seed,p.key), pts=goalPts();
+    bg.innerHTML=`<div class="sheet goalpick" role="dialog" aria-label="ひみつの目標をえらぶ">
+      <div class="slab">🎯 ひみつの目標${many?`（${esc(p.nick)}さんだけ見てね）`:''}</div>
+      <h3>どっちを目指す？</h3>
+      <p class="lead">ゲームの最後に達成していたら <b>＋${pts}</b>。ライバルには最後までひみつ。</p>
+      <div class="gp">${[A,B].map(G=>`<button type="button" class="gpc" data-g="${G.id}"><b>${G.name}</b><span>${G.d}</span><em>＋${pts}</em></button>`).join('')}</div>
+      <p class="small" style="color:var(--muted);margin-top:8px">建物の種類を集める目標は、時代のNEWSとの相性も考えよう。</p>
+    </div>`;
+    bg.hidden=false; bg.querySelector('.gpc').focus();
+  };
+  bg.onclick=e=>{const b=e.target.closest('[data-g]'); if(!b) return;
+    S.game.goals=S.game.goals||{}; S.game.goals[hs[i].key]=b.dataset.g; saveGame(); sfx.goal();
+    if(++i<hs.length){bg.innerHTML=`<div class="sheet goalpick"><h3>${esc(hs[i].nick)}さんに渡してね</h3><button class="go" type="button" id="gpNext">${esc(hs[i].nick)}です、見る</button></div>`;$('gpNext').onclick=ev=>{ev.stopPropagation();draw()};return}
+    bg.hidden=true; bg.onclick=null;
+    const G=goalOf(S.game.seed,many?hs[0].key:myKey());
+    if(!many) toast(`🎯 目標は <b>${G.name}</b>！ 左下でいつでも確認できます`);
+    done();
+  };
+  draw();
 }
 $('typebg').addEventListener('click',e=>{
   const t=e.target;
@@ -2581,6 +2631,7 @@ const BOOK=[
   {t:'時代とNEWS',h:()=>`
     <p><b>8手ごとに時代が進みます</b>（1964→2022の12時代）。時代ごとのNEWSで、産業の稼ぎが上下します。立体の街では、時代は<b>朝に始まり、日が暮れて夜になると決算</b>です。</p>
     <div class="bk-box"><b>例：1973年 第一次オイルショック</b>${windRows(HIST[1].r)}</div>
+    <p class="bk-cap">立体の街では、時代の空気が天気になります。<b>不景気の時代は雨</b>、<b>好景気の時代は夜に花火</b>。</p>
     <ul class="bk-cap">
       <li>▲追い風の産業は稼ぎが増え、▼向かい風の産業は減る。</li>
       <li>次の時代の<b>予報</b>はいつでも見られる。先回りして建てるのがコツ。</li>
@@ -2603,7 +2654,7 @@ const BOOK=[
     <p style="margin-top:10px"><b>時代のお題</b>は、時代ごとに歴史にちなんだお題が1つ。その時代のうちに最初に達成すると<b>＋15</b>。</p>
     <div class="bk-box">例（1964年）：${MQT[0]}</div>`},
   {t:'🎯 ひみつの目標',h:()=>`
-    <p>ゲームの最初に、社長ごとに<b>ひみつの目標</b>が1つ配られます（ひとり・友だちと遊ぶとき）。ゲームの最後に達成していたら<b>＋100</b>（ショートは＋50）。</p>
+    <p>ゲームの最初に、社長ごとに<b>ひみつの目標</b>が2枚配られ、<b>1つを選びます</b>（ひとり・友だちと遊ぶとき）。ゲームの最後に達成していたら<b>＋100</b>（ショートは＋50）。</p>
     <div class="bk-grid">${GOALS.map(G=>`<div class="bk-box" style="margin:0"><b>${G.name}</b><br>${G.d}</div>`).join('')}</div>
     <div class="bk-box">盤面の左下の🎯に、進み具合（2/4など）がいつも出ます。ライバルの目標は、結果画面までひみつ。目標を追うか、目の前の点数をとるか。それも作戦です。</div>`},
   {t:'買収',h:()=>`
