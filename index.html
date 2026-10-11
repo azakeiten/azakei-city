@@ -578,6 +578,24 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 .mcard .gmark{position:absolute;top:4px;right:4px;font-size:13px;line-height:1;padding:3px;border-radius:999px;background:rgba(12,14,36,.75);box-shadow:0 0 0 1.5px var(--gold);animation:gmk 2.4s ease-in-out infinite}
 @keyframes gmk{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
+.bestco{display:grid;gap:8px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));background:linear-gradient(135deg,rgba(255,200,58,.08),rgba(255,255,255,.03));text-align:left}
+.bc-in{display:flex;align-items:center;gap:12px}
+.bc-main{flex:1;min-width:0}
+.bc-main b{display:block;font-size:17px;line-height:1.3}
+.bc-main small{color:var(--muted);font-size:12px}
+.bestco .n{color:#ff6b5e}
+.bc-in em{font-style:normal;font-family:var(--mono);font-weight:800;font-size:22px;color:var(--gold);text-align:right;line-height:1.1}
+.bc-in em small{display:block;font-family:var(--body);font-size:10px;color:var(--muted);font-weight:800}
+.fame{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px;width:100%}
+.fame li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);text-align:left}
+.fame li:first-child{border-color:var(--gold)}
+.fame li>span:nth-child(3){flex:1;min-width:0}
+.fame b{display:block;font-size:14px}
+.fame small{color:var(--muted);font-size:11px}
+.fame em{font-style:normal;font-family:var(--mono);font-weight:800;color:var(--gold)}
+.fm-no{font-family:var(--mono);font-weight:800;color:var(--muted);width:14px}
+.fame .cc-ic{width:30px;height:30px}
+.fame .cc-ic svg{width:18px;height:18px}
 .cocard{position:absolute;right:10px;top:52px;z-index:8;width:min(300px,calc(100% - 20px));padding:12px 14px;border-radius:16px;background:rgba(14,16,40,.94);border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.45);backdrop-filter:blur(8px);text-align:left;font-size:13px;display:grid;gap:8px;animation:ccin .2s ease}
 @keyframes ccin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .cc-x{position:absolute;right:8px;top:8px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);padding:0}
@@ -1301,7 +1319,7 @@ function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):
   return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
 function replay(tiles,seed,onStep){
   POLMAP={};
-  const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, D=deck(seed); let n=0, ruins=[], di=0, mk=[], lastPay={};
+  const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, cos=[], D=deck(seed); let n=0, ruins=[], di=0, mk=[], lastPay={};
   const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
   refill();
   const O=(k,nick,ty)=>{const o=own[k]||(own[k]={key:k,nick:'',ty:'',score:0,build:0,settle:0,built:0,bust:0,grow:0,goal:null,crown:0,buys:0,lm:0,mq:0,kinds:{}});if(nick)o.nick=nick;if(ty)o.ty=ty;return o};
@@ -1325,7 +1343,7 @@ function replay(tiles,seed,onStep){
       quest(e,t.r,t.c,x.k,true,t,o);
     }else{
       if(!valid(g,t.r,t.c)) continue;
-      g[t.r][t.c]={k:t.k,ok:t.ok,nick:t.nick,ty:t.ty,lv:1,name:cname(seed,n,t.k),y0:H(e).y,earn:0,age:0,story:[]};
+      g[t.r][t.c]={k:t.k,ok:t.ok,nick:t.nick,ty:t.ty,lv:1,name:cname(seed,n,t.k),y0:H(e).y,earn:0,age:0,story:[]}; if(isInd(t.k)) cos.push(g[t.r][t.c]);
       const sc=lionx(t.ty,gdp(g,e)-before), o=O(t.ok,t.nick,t.ty);
       o.score+=sc; o.build+=sc; o.built++; o.kinds[t.k]=(o.kinds[t.k]||0)+1;
       log.push({type:'b',nick:t.nick,k:t.k,d:sc,ok:t.ok,n,name:g[t.r][t.c].name});
@@ -1344,7 +1362,7 @@ function replay(tiles,seed,onStep){
       for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.ok!=null){const v=out(g,r,c,e);vals.push([r,c,v]);const oo=O(x.ok);if(isInd(x.k))rep.ind[x.ok]=(rep.ind[x.ok]||0)+1;oo.score+=v;oo.settle+=v;x.earn=(x.earn||0)+v;x.age=(x.age||0)+1;rep.pay[x.ok]=(rep.pay[x.ok]||0)+v}}
       ruins=[];
       for(const[r,c,v]of vals){const x=g[r][c];
-        if(v<=BUST&&canBust(x)){rep.bust.push({k:x.k,ok:x.ok,nick:x.nick,name:x.name});O(x.ok).bust++;g[r][c]=null;ruins.push([r,c]);rep.cells.push([r,c,v,'bust',x.k,x.lv||1])}
+        if(v<=BUST&&canBust(x)){if(x.story){x.story.push({y:rep.y,t:"倒産"});x.dead=rep.y}rep.bust.push({k:x.k,ok:x.ok,nick:x.nick,name:x.name});O(x.ok).bust++;g[r][c]=null;ruins.push([r,c]);rep.cells.push([r,c,v,'bust',x.k,x.lv||1])}
         else if(v>=GROW&&isInd(x.k)&&(x.lv||1)<3){x.lv=(x.lv||1)+1;if(x.name){x.base=x.base||x.name;x.name=x.base+(x.lv>=3?"ホールディングス":"本店")}if(x.story)x.story.push({y:rep.y,t:`★${x.lv-1}に成長${x.name?`（${x.name}）`:""}`});rep.grow.push({k:x.k,ok:x.ok,nick:x.nick,lv:x.lv,name:x.name});O(x.ok).grow++;rep.cells.push([r,c,v,'grow'])}
         else rep.cells.push([r,c,v,''])
       }
@@ -1364,7 +1382,7 @@ function replay(tiles,seed,onStep){
   if(goalOn()&&n>=ERA*NE()) for(const o of Object.values(own)){const gp=goalProg(g,o,seed);o.goal={id:gp.G.id,met:gp.met};if(gp.met)o.score+=goalPts()}
   // 🔍 ライバルの目標の予想：当たれば ＋30（ショート ＋15）
   if(goalOn()&&n>=ERA*NE()&&S.game.guess&&own[S.game.guess.by]){const gs=S.game.guess,o=own[gs.by];o.guess={...gs,hit:goalOf(seed,gs.target).id===gs.id};if(o.guess.hit)o.score+=guessPts()}
-  return {g,own,log,hist,eras,n,ruins,claimed,mq,lastPay,market:mk,peek:[D(di),D(di+1),D(di+2)]};
+  return {g,own,log,hist,eras,n,ruins,claimed,mq,lastPay,cos,market:mk,peek:[D(di),D(di+1),D(di+2)]};
 }
 
 /* ---------- sound ---------- */
@@ -1759,7 +1777,7 @@ function checkBadges(){
 }
 function showBook(){
   const got=store.get('azakei-city-badges')||{}, n=BADGES.filter(b=>got[b.id]).length;
-  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3>${rankChip(+(store.get("azakei-city-xp")||0))}<div class="slab" style="margin-top:12px">通算記録</div>${recordsHTML()}<div class="slab" style="margin-top:12px">バッジ</div><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p>
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3>${rankChip(+(store.get("azakei-city-xp")||0))}<div class="slab" style="margin-top:12px">通算記録</div>${recordsHTML()}<div class="slab" style="margin-top:12px">殿堂入り企業</div>${fameHTML()}<div class="slab" style="margin-top:12px">バッジ</div><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p>
     <div class="book">${BADGES.map(b=>`<div class="badge${got[b.id]?' got':''}"><span class="bm">${got[b.id]?'★':'？'}</span><span><b>${b.name}</b><small>${b.hint}${got[b.id]?`（${got[b.id]}）`:''}</small></span></div>`).join('')}</div>
     <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
   $('typebg').hidden=false;
@@ -1773,7 +1791,7 @@ function renderCoCard(){
   const el=$('coCard'); if(!el) return;
   const g=S.R&&S.R.g, at=S.insp, t=at&&g&&g[at[0]][at[1]];
   if(!t){el.hidden=true;return}
-  const[r,c]=at, e=eraNow();
+  const[r,c]=at, e=finished()?NE()-1:eraNow(); // ゲームが終わったあとは、最後の時代で数える
   if(TERR[t.k]||t.k==='hall'){el.innerHTML=`<button class="cc-x" type="button" aria-label="とじる">✕</button><div class="cc-top"><span class="cc-ic k-${t.k}">${ic(t.k)}</span><span><b>${t.k==='hall'?'役所':T[t.k].name}</b><small>${t.k==='hall'?'街の中心':'地形'}</small></span></div><p class="cc-p">${t.k==='hall'?'ここから街が広がります。となりの住宅は役所で働けます。':esc(T[t.k].rule)}</p>`;el.hidden=false;return}
   const v=out(g,r,c,e), nv=finished()?null:out(g,r,c,e+1), P=parts(g,r,c,e).filter(x=>x[1]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4);
   const old=(t.age||0)>=3, risk=isInd(t.k)&&canBust(t)&&nv!=null&&nv<=BUST, mine=t.ok===myKey();
@@ -2408,6 +2426,20 @@ function xpFor(me,rank,R){
   return parts;
 }
 // 通算記録と自己ベスト（この端末に保存）。awardXP と同じく、1ゲームに1回だけ記録する
+// あなたの最強企業：この試合でいちばん稼いだ、自分の会社（倒産した会社もふくむ）
+const myCos=(R,mk)=>(R.cos||[]).filter(x=>x.ok===mk&&(x.earn||0)>0).sort((a,b)=>b.earn-a.earn);
+function bestCoHTML(R,mk){
+  const x=myCos(R,mk)[0]; if(!x) return '';
+  return `<div class="bestco"><div class="slab">あなたの最強企業</div>
+    <div class="bc-in"><span class="cc-ic k-${x.k}">${ic(x.k)}</span><span class="bc-main"><b>${esc(x.name||T[x.k].name)}${(x.lv||1)>1?` <i class="cc-star">${'★'.repeat(x.lv-1)}</i>`:''}</b>
+      <small>${T[x.k].name} ・ ${x.y0}年創業 ・ 決算${x.age||0}回${x.dead?` ・ <span class="n">${x.dead}年に倒産</span>`:(x.age||0)>=3?' ・ <span class="cc-old">老舗</span>':''}</small></span>
+      <em>+${x.earn}<small>稼ぎの合計</small></em></div>
+    ${x.story&&x.story.length?`<ul class="cc-story">${x.story.map(s=>`<li><b>${s.y}</b> ${esc(s.t)}</li>`).join('')}</ul>`:''}</div>`;
+}
+function fameHTML(){
+  const f=(store.get('azakei-city-rec')||{}).fame||[];
+  return f.length?`<ol class="fame">${f.map((x,i)=>`<li><span class="fm-no">${i+1}</span><span class="cc-ic k-${x.k}">${ic(x.k)}</span><span><b>${esc(x.name)}${(x.lv||1)>1?` <i class="cc-star">${'★'.repeat(x.lv-1)}</i>`:''}</b><small>${x.y0}年創業 ・ ${MODEN[x.mode]||'チャレンジ'} ・ ${x.date}</small></span><em>+${x.earn}</em></li>`).join('')}</ol>`:'<p class="empty">1ゲーム遊ぶと、あなたの会社がここに残ります。</p>';
+}
 function recordGame(me,rank,arr){
   const rec=store.get('azakei-city-rec')||{games:0,wins:0,goals:0,goalsMet:0,guesses:0,hits:0,busts:0,lm:0,best:{}};
   rec.games++; if(rank===0&&arr.length>1) rec.wins++;
@@ -2420,6 +2452,8 @@ function recordGame(me,rank,arr){
   let pb=null;
   const mode=S.game.chal?null:S.game.daily?'daily':S.game.short?'short':'full';
   if(mode){const old=rec.best[mode];if(!old||me.score>old.score){pb={mode,prev:old?old.score:null,score:me.score};rec.best[mode]={score:me.score,date:todayStr()}}}
+  // 殿堂入り企業：これまでの全ゲームで、稼ぎの合計が多い自分の会社ベスト5
+  {const md=S.game.chal?null:S.game.daily?"daily":S.game.short?"short":"full";rec.fame=(rec.fame||[]).concat(myCos(S.R,me.key).slice(0,2).map(x=>({name:x.name||T[x.k].name,k:x.k,lv:x.lv||1,y0:x.y0,earn:x.earn,mode:md,date:todayStr()}))).sort((a,b)=>b.earn-a.earn).filter((x,i,a)=>a.findIndex(y=>y.name===x.name&&y.y0===x.y0&&y.date===x.date&&y.mode===x.mode)===i).slice(0,5)}
   store.set('azakei-city-rec',rec);
   return {pb,vs:vsNow};
 }
@@ -2506,6 +2540,7 @@ function showResult(){
     ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}${me&&me.guess?(()=>{const gs=me.guess,p=arr.find(o=>o.key===gs.target),G=GOALS.find(x=>x.id===gs.id);return `<div class="${gs.hit?"ok":""}"><span>🔍 あなたの予想：${p?esc(sh(p.nick)):""}は <b>${G.name}</b></span><em>${gs.hit?`的中！ ＋${guessPts()}`:"はずれ"}</em></div>`})():""}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
     ${recapHTML(R,arr,mk)}
+    ${bestCoHTML(R,mk)}
     <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div></div>
     <div class="tblwrap"><table class="eras"><thead><tr><th>年代</th><th>できごと</th><th>GDP</th><th>倒産</th><th>成長</th></tr></thead><tbody>
       ${R.eras.map(x=>`<tr${x===peak?' style="color:var(--gold)"':''}><td>${x.y}</td><td>${esc(H(x.e).n)}</td><td>${x.gdp}</td><td>${x.bust.length}</td><td>${x.grow.length}</td></tr>`).join('')}
