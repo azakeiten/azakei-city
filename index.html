@@ -578,6 +578,17 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 .mcard .gmark{position:absolute;top:4px;right:4px;font-size:13px;line-height:1;padding:3px;border-radius:999px;background:rgba(12,14,36,.75);box-shadow:0 0 0 1.5px var(--gold);animation:gmk 2.4s ease-in-out infinite}
 @keyframes gmk{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
+.ticker{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:7;pointer-events:none;text-align:center;white-space:nowrap;
+  padding:12px 26px;border-radius:16px;background:rgba(12,14,36,.86);border:1.5px solid var(--gold);color:var(--ink);font-weight:800;font-size:22px;line-height:1.3;box-shadow:0 12px 40px rgba(0,0,0,.45);backdrop-filter:blur(6px)}
+.ticker b{color:var(--gold)}
+.ticker small{display:block;font-size:13px;color:var(--muted);font-weight:700;margin-top:2px}
+.ticker.hot{border-color:#ff8a3a;background:linear-gradient(90deg,rgba(80,24,10,.92),rgba(60,20,40,.92))}
+.ticker.good{border-color:#3ad283}
+.ticker.go{animation:tick 2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tick{0%{opacity:0;transform:translate(-30%,-50%) scale(.9)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}20%{transform:translate(-50%,-50%) scale(1)}82%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-70%,-50%)}}
+@media (max-width:640px){.ticker{font-size:18px;padding:10px 18px}}
+.era.lastera{color:var(--gold);text-shadow:0 0 12px rgba(255,200,58,.55)}
+.lasttag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;background:linear-gradient(90deg,#ff8a3a,#ffc83a);color:#2a1d00;font-size:11px;font-weight:800;vertical-align:2px;animation:gmk 1.6s ease-in-out infinite}
 .guessbtn{position:absolute;left:10px;bottom:48px;z-index:5;border:1px dashed color-mix(in srgb,var(--gold) 70%,transparent);background:rgba(12,14,36,.78);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;backdrop-filter:blur(4px)}
 .guessbtn i{font-style:normal;color:var(--gold);font-family:var(--mono)}
 .guessbtn.done{border-style:solid;color:var(--muted)}
@@ -886,7 +897,7 @@ body.drawer .side{transform:none}
       <div class="turn" id="turn" hidden></div>
       <div class="talk" id="talk" hidden aria-live="polite"></div>
       <div class="coach" id="coach" hidden></div>
-      <div class="boardbox"><div class="minirace" id="miniRace" hidden></div><button type="button" class="goalchip" id="goalChip" hidden></button><button type="button" class="guessbtn" id="guessBtn" hidden></button><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button></div>
+      <div class="boardbox"><div class="minirace" id="miniRace" hidden></div><div class="ticker" id="ticker" aria-live="polite" hidden></div><button type="button" class="goalchip" id="goalChip" hidden></button><button type="button" class="guessbtn" id="guessBtn" hidden></button><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button></div>
       <div class="under">
         <span class="small" id="count"></span><span class="small" id="countSub"></span>
         <label for="riskT"><input type="checkbox" id="riskT"> 倒産しそうな建物に印</label>
@@ -1732,6 +1743,29 @@ function showBook(){
 /* ---------- render ---------- */
 function chipRow(r){return IND.map((n,i)=>`<span class="chip k-${KEYS[i+1]}"><i></i>${n}<b class="${cls(r[i])}">${r[i]>0?'▲':r[i]<0?'▼':''}${Math.abs(r[i])||'0'}</b></span>`).join('')}
 function syncEL(){SIMPLE=S.mode==="local"&&!!S.game&&!!S.game.simple;NOBUY=S.mode==="local"&&!!S.game&&(S.game.players.length===1||SIMPLE);document.body.classList.toggle("simple",SIMPLE);EL=S.mode==="local"&&S.game?(Array.isArray(S.game.eras)?S.game.eras:S.game.short?SHORT:FULL):FULL}
+// 実況テロップ：トップ交代・ラスト1時代・大接戦を、盤面の真ん中に大きく出す
+function ticker(html,kind){
+  const el=$('ticker'); if(!el) return;
+  // 決算の新聞やほかの画面が開いているあいだは、閉じるまで待つ
+  if(S.pause||!$('paperbg').hidden||!$('polbg').hidden||!$('resultbg').hidden){clearTimeout(ticker.w);ticker.w=setTimeout(()=>ticker(html,kind),700);return}
+  el.className='ticker '+(kind||''); el.innerHTML=html; el.hidden=false;
+  if(!reduced()){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
+  clearTimeout(ticker.t); ticker.t=setTimeout(()=>{el.hidden=true},reduced()?2200:2000);
+}
+function commentary(){
+  if(S.mode!=='local'||!S.game||!S.R||S.game.chal) {S.tick=null;return}
+  const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), lead=arr[0], id=S.game.seed;
+  const prev=S.tick; S.tick={id,n:R.n,lead:lead&&lead.key};
+  if(!prev||prev.id!==id||R.n<prev.n) S.tickAt=null; // 新しいゲーム・もどしたときは数えなおし
+  // 読みこみ直後・1手もどしたときは、実況しない
+  if(!prev||prev.id!==id||R.n<=prev.n||finished()||!lead) return;
+  const lastStart=ERA*(NE()-1);
+  if(NE()>1&&prev.n<lastStart&&R.n>=lastStart){ticker(`🔥 ラスト1時代！<small>最後の${ERA}手で、逆転をねらえ</small>`,'hot');return}
+  // トップ交代：最初の時代はしょっちゅう入れかわるので黙る。続けて出すのも4手あける
+  if(prev.lead&&lead.key!==prev.lead&&arr.length>1&&lead.score>arr[1].score&&R.n>=ERA&&R.n-(S.tickAt||-99)>=4){S.tickAt=R.n;const me=lead.key===myKey();ticker(`👑 ${me?'あなた':esc(sh(lead.nick))}が<b>トップ</b>に！<small>${me?'このまま逃げきろう':`2位と ${lead.score-arr[1].score}点差`}</small>`,me?'good':'');return}
+  // 大接戦：決算の直後、1位と2位が5点差以内
+  if(R.n%ERA===0&&arr.length>1&&lead.score-arr[1].score<=5&&R.n>=ERA) ticker(`⚡ 大接戦！<small>1位と2位の差は わずか${lead.score-arr[1].score}点</small>`,'hot');
+}
 function render(){
   syncEL();
   const R=S.R=replay(tiles(),seedNow()), e=eraNow(), ev=H(e), cyc=Math.floor(e/NE()), fin=finished();
@@ -1740,6 +1774,7 @@ function render(){
   document.documentElement.dataset.age=fin?'reiwa':ev.age;
   $('gdp').textContent=fin?R.hist.at(-1):cur;
   $('era').innerHTML=fin?`<b>2022</b>60年が終わりました`:`<b>${ev.y}</b>${esc(ev.n)}<span class="gengo">${ev.w}</span>${cyc?`<small style="font-family:var(--body);font-size:11px;color:var(--muted);margin-left:6px">${cyc+1}周目</small>`:''}`;
+  const last=!fin&&S.mode==="local"&&!!S.game&&NE()>1&&Math.floor(R.n/ERA)===NE()-1; $("era").classList.toggle("lastera",last); if(last) $("era").insertAdjacentHTML("beforeend",`<span class="lasttag">ラスト</span>`);
   let alive=0;for(const row of R.g)for(const x of row)if(x&&x.k!=='hall'&&!TERR[x.k])alive++;
   $('count').textContent=`建物 ${alive}`;
   $('countSub').textContent=`建設 ${R.n} 手 ・ 倒産 ${R.eras.reduce((s,x)=>s+x.bust.length,0)} 社`;
@@ -1750,7 +1785,7 @@ function render(){
   spark(fin?R.hist:R.hist.concat(cur));
   if(view3d()) setTimeout(drawBoard3d,0);
   bgmSync();
-  setTimeout(drawMini,0); renderRace(); renderGoal(); renderGuess();
+  setTimeout(drawMini,0); renderRace(); renderGoal(); renderGuess(); commentary();
   renderTurn(); renderEra(); renderBoard(); renderMarket(); renderPre(); renderRank(); renderLog(); renderLms(); renderTools(); renderMe(); renderCoach();
   const prev=S.seen[S.mode];
   S.seen[S.mode]=R.n;
