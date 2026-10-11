@@ -650,6 +650,13 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .homecity .hc-lab{position:absolute;left:12px;bottom:10px;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(12,14,36,.75);color:var(--gold)}
 .rankchip{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px;width:min(420px,100%);padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);text-align:left}
 .rankchip b{font-size:15px}
+@media (max-width:640px){.homecity canvas{aspect-ratio:2/1}.home .years,.home .tag2{display:none}.home-in{gap:16px}}
+.themes{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;width:min(620px,100%)}
+.themes .th-lab{font-size:12px;color:var(--muted);font-weight:800;margin-right:2px}
+.themes .th{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);font-size:12.5px;font-weight:800;cursor:pointer}
+.themes .th.on{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.themes .th[aria-disabled="true"]{opacity:.5}
+.themes .th small{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
 .rankchip .rk-bar,.rankchip small{grid-column:1/-1}
 .rankchip small,.rankres small{color:var(--muted);font-size:12px}
 .rk-lv{font-family:var(--mono);font-weight:800;font-size:12px;color:#2a1d00;background:var(--gold);border-radius:8px;padding:2px 8px}
@@ -1409,7 +1416,7 @@ function isoDraw(cv,cells,age,t,opt){
   // 地面（道と区画）。建てられるマスは光る
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const[x,y]=pt(r,c),id=r+'_'+c;
     poly(dia(x,y),night?'#262a55':'#8f97ae');
-    poly(dia(x,y,.86),id in valid?(valid[id]>0?'rgba(58,210,131,.38)':valid[id]<0?'rgba(255,107,94,.32)':'rgba(155,161,204,.25)'):(night?'#1b1f44':((r+c)%2?'#a9d98c':'#b5e09a')));
+    poly(dia(x,y,.86),id in valid?(valid[id]>0?'rgba(58,210,131,.38)':valid[id]<0?'rgba(255,107,94,.32)':'rgba(155,161,204,.25)'):(opt.theme==='snow'?(night?'#3a4170':((r+c)%2?'#e9eff6':'#dfe8f2')):night?'#1b1f44':((r+c)%2?'#a9d98c':'#b5e09a')));
     if(id in valid) poly(dia(x,y,.86),null,valid[id]>0?'rgba(58,210,131,.9)':'rgba(155,161,204,.6)',1.2);
   }
   if(opt.hover){const[x,y]=pt(opt.hover[0],opt.hover[1]);poly(dia(x,y,.92),null,'rgba(255,255,255,.8)',1.5)}
@@ -1439,6 +1446,7 @@ function isoDraw(cv,cells,age,t,opt){
     poly([[x-hw,cy-h],[x,cy+hh-h],[x,cy+hh],[x-hw,cy]],shade(col,.62));
     poly([[x,cy+hh-h],[x+hw,cy-h],[x+hw,cy],[x,cy+hh]],shade(col,.45));
     poly(top,shade(col,1.08));
+    if(opt.theme==='neon'&&h>th*.3){const nc=['#ff4fd8','#3ef0ff','#ffe14f','#7cff6b'][(o.seed||0)%4];ctx.save();ctx.shadowColor=nc;ctx.shadowBlur=10;poly(top,null,nc,1.6);ctx.beginPath();ctx.moveTo(x-hw,cy-h);ctx.lineTo(x-hw,cy);ctx.moveTo(x+hw,cy-h);ctx.lineTo(x+hw,cy);ctx.stroke();ctx.restore()}
     if(h>th*.5&&!o.noWin&&night){const rows=Math.floor(h/(th*.32));ctx.fillStyle='rgba(255,226,140,.85)';
       for(let i=0;i<rows;i++){const yy=cy-h+th*.22+i*th*.32;for(let j=1;j<=2;j++){const f=j/3;
         if(((i*3+j+(o.seed||0))%4)!==0){ctx.fillRect(x-hw+hw*f-1,yy+hh*f-1,2,2.4);ctx.fillRect(x+hw*f-1,yy+hh*(1-f)-1,2,2.4)}}}}
@@ -1465,6 +1473,13 @@ function isoDraw(cv,cells,age,t,opt){
   for(let s=0;s<=2*(N-1);s++)for(let r=0;r<N;r++){const c=s-r;if(c<0||c>=N)continue;
     const id=r+'_'+c, t2=cells[r][c];
     if(opt.pick&&opt.pick[0]===r&&opt.pick[1]===c&&!t2){tops[id]=drawBuilding(r,c,{k:opt.pick[2],lv:1},.82,null);continue}
+    // 空き地の木（カードを選んでいる間は、建てる場所が見やすいよう出さない）
+    if(!t2&&!opt.ghost&&!(opt.sinks&&opt.sinks[id])&&((r*73+c*151+r*c*7)%9===0)){const[x,y]=pt(r,c),cx=x+((r*31+c)%3-1)*tw*.12,cy=y+th*.55,s=th*.42,TH=opt.theme;
+      ctx.fillStyle='#7a5536';ctx.fillRect(cx-1.5,cy-s*.7,3,s*.7);
+      const leaf=TH==='sakura'?'#ffb3d1':TH==='snow'?'#f4f8ff':TH==='neon'?'#2a7f6b':night?'#2f6b45':'#4caf50';
+      ctx.fillStyle=shade(leaf,.8);ctx.beginPath();ctx.arc(cx,cy-s*.95,s*.62,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=leaf;ctx.beginPath();ctx.arc(cx-s*.15,cy-s*1.08,s*.45,0,Math.PI*2);ctx.fill();
+      continue}
     if(!t2){const sk=opt.sinks&&opt.sinks[id];if(sk){drawBuilding(r,c,{k:sk.k,lv:sk.lv},Math.max(0,1-sk.p),Math.max(.02,1-sk.p));const[x,y]=pt(r,c);ctx.fillStyle='rgba(180,170,160,'+(.5*(1-sk.p))+')';for(let i=0;i<6;i++){const a=i/6*Math.PI*2,d=tw*.25+sk.p*tw*.35;ctx.beginPath();ctx.arc(x+Math.cos(a)*d,y+th/2+Math.sin(a)*d*.5,th*.22*(1+sk.p),0,Math.PI*2);ctx.fill()}}continue}
     const top=drawBuilding(r,c,t2,opt.ghost&&t2.k!=='river'&&t2.k!=='hall'?.42:1,opt.grow&&id in opt.grow?opt.grow[id]:null);
     if(top) tops[id]=top;
@@ -1473,6 +1488,11 @@ function isoDraw(cv,cells,age,t,opt){
   if(opt.weather==='rain'){ctx.fillStyle='rgba(40,50,80,.22)';ctx.fillRect(0,0,W,Hh);
     if(opt.amb){const tt=(t||0)/1000;ctx.strokeStyle='rgba(210,222,255,.7)';ctx.lineWidth=1.4;ctx.beginPath();
       for(let i=0;i<110;i++){const x=((i*97.3)%W+tt*40)%W, y=((i*53.1)%Hh+tt*(260+(i%5)*30))%Hh;ctx.moveTo(x,y);ctx.lineTo(x-3,y+11)}ctx.stroke()}}
+  // 街のテーマ：桜は花びら、雪は雪が舞う（雨の時代は雨が優先）
+  if(opt.amb&&(opt.theme==='sakura'||opt.theme==='snow')&&opt.weather!=='rain'){const tt=(t||0)/1000,sk=opt.theme==='sakura';
+    ctx.fillStyle=sk?'rgba(255,183,213,.9)':'rgba(255,255,255,.9)';
+    for(let i=0;i<(sk?28:46);i++){const sp=sk?22+(i%4)*6:18+(i%5)*5, x=((i*83.7)%W+Math.sin(tt*.8+i)*14+tt*(sk?12:4))%W, y=((i*61.3)%Hh+tt*sp)%Hh;
+      ctx.beginPath(); if(sk) ctx.ellipse(x,y,3.2,1.8,tt*1.5+i,0,Math.PI*2); else ctx.arc(x,y,1.2+(i%3)*.6,0,Math.PI*2); ctx.fill()}}
   // 文字は最後に（建物にかくれないように）
   const label=(x,y,text,col,size,bg)=>{ctx.font=`800 ${size}px "DM Mono",ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
     if(bg){const w=ctx.measureText(text).width+8;ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(x-w/2,y-size*.7,w,size*1.4,4);ctx.fill()}
@@ -1505,7 +1525,7 @@ function drawBoard3d(){
   const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
   fit3d(cv);
   const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
-  const opt={amb:!reduced(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
+  const opt={amb:!reduced(),theme:themeNow(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
   if(k&&!lk){
     opt.ghost=true; opt.valid={};
@@ -2170,6 +2190,11 @@ async function shareImage(btn){
 const RANKS=[[0,'かけだし社長'],[80,'町工場の社長'],[200,'商店街の顔役'],[380,'地元の名士'],[620,'上場企業の社長'],[950,'財界の大物'],[1400,'経済界の重鎮'],[2000,'伝説の経営者']];
 function rankOf(xp){let i=0;while(i+1<RANKS.length&&xp>=RANKS[i+1][0])i++;const lo=RANKS[i][0],hi=RANKS[i+1]?RANKS[i+1][0]:null;return {i,name:RANKS[i][1],lo,hi,p:hi?(xp-lo)/(hi-lo):1,next:RANKS[i+1]?RANKS[i+1][1]:null}}
 function rankChip(xp){const k=rankOf(xp);return `<div class="rankchip"><span class="rk-lv">Lv.${k.i+1}</span><b>${k.name}</b><span class="rk-bar"><i style="width:${Math.round(k.p*100)}%"></i></span><small>${k.hi?`次の「${k.next}」まで あと${k.hi-xp}`:'最高ランク！'}</small></div>`}
+// 街のテーマ：社長ランクで解放（見た目だけ。点数は変わらない）
+const THEMES=[{id:'normal',name:'ふつう',ic:'🏙️',lv:1},{id:'sakura',name:'桜の街',ic:'🌸',lv:3},{id:'snow',name:'雪の街',ic:'❄️',lv:5},{id:'neon',name:'ネオンの街',ic:'🌃',lv:7}];
+const myLv=()=>rankOf(+(store.get('azakei-city-xp')||0)).i+1;
+function themeNow(){const id=store.get('azakei-city-theme')||'normal',T=THEMES.find(x=>x.id===id);return T&&myLv()>=T.lv?id:'normal'}
+function themePicker(){const lv=myLv(),cur=themeNow();return `<div class="themes" role="group" aria-label="街のテーマ"><span class="th-lab">街のテーマ</span>${THEMES.map(T=>`<button type="button" class="th${T.id===cur?' on':''}" data-theme="${T.id}"${lv<T.lv?' aria-disabled="true"':''} aria-pressed="${T.id===cur}"><span>${lv<T.lv?'🔒':T.ic}</span>${T.name}${lv<T.lv?`<small>Lv.${T.lv}</small>`:''}</button>`).join('')}</div>`}
 // 1ゲームでもらえる経験値：スコア（ゲームの長さでならす）＋順位＋目標＋名所
 function xpFor(me,rank,R){
   const base=Math.round(me.score/(NE()>=12?16:8));
@@ -2194,7 +2219,7 @@ function rankResultHTML(x){
     <div class="rr-top"><span class="rk-lv">Lv.${b.i+1}</span><b>${b.name}</b><em>＋${x.gain} 経験値</em></div>
     <span class="rk-bar"><i data-from="${up?0:Math.round(a.p*100)}" data-to="${Math.round(b.p*100)}" style="width:${up?0:Math.round(a.p*100)}%"></i></span>
     <small>${x.parts.map(p=>`${p[0]} +${p[1]}`).join('・')}</small>
-    ${up?`<div class="rr-up">🎉 ランクアップ！「${a.name}」→「${b.name}」</div>`:`<small>${b.hi?`次の「${b.next}」まで あと${b.hi-(x.before+x.gain)}`:'最高ランク！'}</small>`}</div>`;
+    ${up?`<div class="rr-up">🎉 ランクアップ！「${a.name}」→「${b.name}」${THEMES.filter(T=>T.lv>a.i+1&&T.lv<=b.i+1).map(T=>`<br>${T.ic} 街のテーマ「${T.name}」が使えるようになった！（ホーム画面で切りかえ）`).join("")}</div>`:`<small>${b.hi?`次の「${b.next}」まで あと${b.hi-(x.before+x.gain)}`:'最高ランク！'}</small>`}</div>`;
 }
 function showResult(){
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey();
@@ -2737,7 +2762,7 @@ const BOOK=[
       <li>暴落の前に<b>保険</b>を。周りの産業をNEWSの▼から守る。</li>
       <li>市場はライバルと共通。<b>相手がほしいカードを先にとる</b>のも作戦。</li>
       <li>名所とお題の<b>ボーナス</b>は大きい。早い者勝ち。</li>
-      <li>ゲームを終えるたびに<b>経験値</b>がたまり、<b>社長ランク</b>が上がる（かけだし社長 → … → 伝説の経営者）。スコア・1位・目標達成・名所で多くもらえる。</li>
+      <li>ゲームを終えるたびに<b>経験値</b>がたまり、<b>社長ランク</b>が上がる（かけだし社長 → … → 伝説の経営者）。スコア・1位・目標達成・名所で多くもらえる。Lv.3・5・7で<b>街のテーマ</b>（桜・雪・ネオン）が使えるようになる。</li>
     </ul>
     <div class="bk-grid">
       <div class="bk-box" style="margin:0"><b>ひとりで</b><br>CPUの社長2人と対戦。</div>
@@ -2847,6 +2872,7 @@ function showHome(){
       <p class="tag2">建物を建てて、となりどうしで稼ぎを増やす。オイルショックもバブルもリーマン・ショックも、街ごと乗りこえろ。</p>
       ${city?`<div class="homecity"><canvas id="homeCity" aria-label="あなたの街"></canvas><span class="hc-lab">${city.done?"前回の街（2022年）":`あなたの街（${city.y}年代）`}</span></div>`:`<div class="skyline" aria-hidden="true">${sky.join("")}</div>`}
       ${rankChip(+(store.get("azakei-city-xp")||0))}
+      ${themePicker()}
       <div class="years">${HIST.map((h,i)=>i%2===0?`<span><b>${h.y}</b> ${esc(h.n)}</span>`:'').join('')}</div>
     </div>
     ${cont}
@@ -2880,13 +2906,16 @@ function homeCityLoop(city){
   const cv=$('homeCity'); if(!cv) return;
   const focus=[[0,0],[0,N-1],[N-1,0],[N-1,N-1]]; // 高いビルが切れないよう、地図全体をうつす
   const tick=()=>{if(!S.homeOpen||!document.body.contains(cv)) return;
-    isoDraw(cv,city.cells,city.age,performance.now(),{amb:!reduced(),time:city.done?.9:.35,focus});
+    isoDraw(cv,city.cells,city.age,performance.now(),{amb:!reduced(),theme:themeNow(),time:city.done?.9:.35,focus});
     if(!reduced()) setTimeout(()=>document.hidden?tick():requestAnimationFrame(tick),document.hidden?600:66);
     else if(!cv.clientWidth||cv.width<cv.clientWidth) setTimeout(tick,300)}; // 見えないあいだは、ゆっくり待つ
   tick();
 }
 function hideHome(){S.homeOpen=false;$('home').hidden=true}
 $('home').addEventListener('click',e=>{
+  const th=e.target.closest('[data-theme]');
+  if(th){const T=THEMES.find(x=>x.id===th.dataset.theme);if(myLv()<T.lv){toast(`🔒 「${T.name}」は 社長ランク Lv.${T.lv} で使えるようになります`);return}
+    store.set('azakei-city-theme',T.id);sfx.pick();th.parentElement.outerHTML=themePicker();return}
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
   if(a==='cont'){hideHome();if(S.mode!=='local')setMode('local');else{render();advance()}return}
