@@ -576,6 +576,14 @@ body.v3d .board3d{display:block}
 .mcard .gmark{position:absolute;top:4px;right:4px;font-size:13px;line-height:1;padding:3px;border-radius:999px;background:rgba(12,14,36,.75);box-shadow:0 0 0 1.5px var(--gold);animation:gmk 2.4s ease-in-out infinite}
 @keyframes gmk{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
+.guessbtn{position:absolute;left:10px;bottom:48px;z-index:5;border:1px dashed color-mix(in srgb,var(--gold) 70%,transparent);background:rgba(12,14,36,.78);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;backdrop-filter:blur(4px)}
+.guessbtn i{font-style:normal;color:var(--gold);font-family:var(--mono)}
+.guessbtn.done{border-style:solid;color:var(--muted)}
+.goalpick.guess{max-width:560px}
+.goalpick .gp.g10{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));max-height:min(52vh,420px);overflow:auto;padding:2px}
+.gpc.sm{padding:10px 8px;gap:3px}
+.gpc.sm b{font-size:14px}
+.gpc.sm span{font-size:11.5px}
 .goalchip.pop{animation:gpop .9s ease}
 @keyframes gpop{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.95)}100%{transform:scale(1)}}
 .goalchip.met{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 30%,transparent)}
@@ -842,7 +850,7 @@ body.drawer .side{transform:none}
       <div class="turn" id="turn" hidden></div>
       <div class="talk" id="talk" hidden aria-live="polite"></div>
       <div class="coach" id="coach" hidden></div>
-      <div class="boardbox"><div class="minirace" id="miniRace" hidden></div><button type="button" class="goalchip" id="goalChip" hidden></button><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button></div>
+      <div class="boardbox"><div class="minirace" id="miniRace" hidden></div><button type="button" class="goalchip" id="goalChip" hidden></button><button type="button" class="guessbtn" id="guessBtn" hidden></button><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button></div>
       <div class="under">
         <span class="small" id="count"></span><span class="small" id="countSub"></span>
         <label for="riskT"><input type="checkbox" id="riskT"> 倒産しそうな建物に印</label>
@@ -1281,6 +1289,8 @@ function replay(tiles,seed,onStep){
   }
   // 秘密の目標：ゲームの最後に、達成していたら＋40（ひとり・友だちの街だけ）
   if(goalOn()&&n>=ERA*NE()) for(const o of Object.values(own)){const gp=goalProg(g,o,seed);o.goal={id:gp.G.id,met:gp.met};if(gp.met)o.score+=goalPts()}
+  // 🔍 ライバルの目標の予想：当たれば ＋30（ショート ＋15）
+  if(goalOn()&&n>=ERA*NE()&&S.game.guess&&own[S.game.guess.by]){const gs=S.game.guess,o=own[gs.by];o.guess={...gs,hit:goalOf(seed,gs.target).id===gs.id};if(o.guess.hit)o.score+=guessPts()}
   return {g,own,log,hist,eras,n,ruins,claimed,mq,lastPay,market:mk,peek:[D(di),D(di+1),D(di+2)]};
 }
 
@@ -1703,7 +1713,7 @@ function render(){
   spark(fin?R.hist:R.hist.concat(cur));
   if(view3d()) setTimeout(drawBoard3d,0);
   bgmSync();
-  setTimeout(drawMini,0); renderRace(); renderGoal();
+  setTimeout(drawMini,0); renderRace(); renderGoal(); renderGuess();
   renderTurn(); renderEra(); renderBoard(); renderMarket(); renderPre(); renderRank(); renderLog(); renderLms(); renderTools(); renderMe(); renderCoach();
   const prev=S.seen[S.mode];
   S.seen[S.mode]=R.n;
@@ -1930,6 +1940,39 @@ function renderMe(){
 // はじめの数手だけのガイド（ひとりモード）
 // 🎯 ひみつの目標：盤面の左下に、自分の目標と進み具合
 const goalOn=()=>S.mode==='local'&&!!S.game&&!S.game.chal;
+// 🔍 ライバルの目標を予想（ひとりで遊ぶとき、最後の時代が始まるまでに1回だけ）
+const guessPts=()=>Math.round(goalPts()*.3);
+const canGuess=()=>goalOn()&&humans().length===1&&!S.game.guess&&!finished()&&S.R&&S.R.n<ERA*(NE()-1);
+function renderGuess(){
+  const el=$('guessBtn'); if(!el) return;
+  const gs=goalOn()&&humans().length===1&&S.game.guess;
+  if(gs){const p=S.game.players.find(x=>x.key===gs.target),G=GOALS.find(x=>x.id===gs.id);el.hidden=false;el.classList.add('done');el.innerHTML=`🔍 予想済み`;el.onclick=()=>toast(`🔍 あなたの予想：${esc(sh(p.nick))}は「${G.name}」<br>答えは結果画面で。当たれば ＋${guessPts()}`);return}
+  el.classList.remove('done');
+  if(!canGuess()){el.hidden=true;return}
+  el.hidden=false; el.innerHTML=`🔍 ライバルの目標を予想 <i>＋${guessPts()}</i>`; el.onclick=showGuess;
+}
+function showGuess(){
+  if(!canGuess()) return;
+  const bg=$('goalbg'), rivals=S.game.players.filter(p=>p.cpu); let tgt=null;
+  const draw=()=>{
+    bg.innerHTML=`<div class="sheet goalpick guess" role="dialog" aria-label="ライバルの目標を予想">
+      <div class="slab">🔍 ライバルの目標を予想（1回だけ）</div>
+      ${!tgt?`<h3>だれの目標を当てる？</h3><p class="lead">集めている建物や、つぶやきがヒント。当たれば <b>＋${guessPts()}</b>。</p>
+        <div class="gp">${rivals.map(p=>`<button type="button" class="gpc" data-t="${p.key}"><b>${TY[p.ty].face} ${esc(sh(p.nick))}</b><span>${Object.entries((S.R.own[p.key]||{}).kinds||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${T[k].name}${v}`).join('・')||'まだ建物なし'}</span></button>`).join('')}</div>`
+      :`<h3>${esc(sh(S.game.players.find(p=>p.key===tgt).nick))}の目標は？</h3>
+        <div class="gp g10">${GOALS.map(G=>`<button type="button" class="gpc sm" data-gid="${G.id}"><b>${G.name}</b><span>${G.d}</span></button>`).join('')}</div>`}
+      <button class="ghost" type="button" data-x="1" style="margin-top:10px">${tgt?'もどる':'やめる'}</button></div>`;
+    bg.hidden=false;
+  };
+  bg.onclick=e=>{
+    const t=e.target.closest('[data-t]'),g=e.target.closest('[data-gid]'),x=e.target.closest('[data-x]');
+    if(t){tgt=t.dataset.t;sfx.pick();draw();return}
+    if(x){if(tgt){tgt=null;draw()}else{bg.hidden=true;bg.onclick=null}return}
+    if(g){S.game.guess={by:myKey(),target:tgt,id:g.dataset.gid,n:S.game.tiles.length};saveGame();sfx.goal();bg.hidden=true;bg.onclick=null;
+      toast(`🔍 予想しました。答えは結果画面で！`);render()}
+  };
+  draw();
+}
 function renderGoal(){
   const el=$('goalChip'); if(!el) return;
   const o=goalOn()&&S.R&&(S.R.own[myKey()]||{key:myKey(),kinds:{},lm:0,bust:0});
@@ -2047,12 +2090,14 @@ function renderCoach(){
   if($('tutOk'))$('tutOk').onclick=done; if($('tutSkip'))$('tutSkip').onclick=done;
 }
 let resetArm=false;
+$('tools').addEventListener('click',e=>{const th=e.target.closest('[data-theme]');if(th)pickTheme(th)});
 function renderTools(){
   let h='';
   {const got=store.get("azakei-city-badges")||{};h=`<button class="ghost" id="book" type="button">社長手帳 ${BADGES.filter(b=>got[b.id]).length}/${BADGES.length}</button>`;}
   if(S.mode==="local") h+=`<button class="ghost" id="newGame" type="button">新しい街をつくる（人数・モードを選ぶ）</button>`;
   else if(NET.owner) h+=`<button class="ghost${resetArm?' warn':''}" id="reset" type="button">${resetArm?'全員の建物を消します。もう一度押す':'みんなの街をリセット（オーナーのみ）'}</button>`;
   if(S.mode==='shared'&&NET.err) h+=`<p class="note">${esc(NET.err)}</p>`;
+  if(S.mode==='local') h+=themePicker();
   $('tools').innerHTML=h;
   const b=$('reset'); if(b) b.onclick=resetShared;
   const n=$("newGame"); if(n) n.onclick=showSetup;
@@ -2194,6 +2239,9 @@ function rankChip(xp){const k=rankOf(xp);return `<div class="rankchip"><span cla
 const THEMES=[{id:'normal',name:'ふつう',ic:'🏙️',lv:1},{id:'sakura',name:'桜の街',ic:'🌸',lv:3},{id:'snow',name:'雪の街',ic:'❄️',lv:5},{id:'neon',name:'ネオンの街',ic:'🌃',lv:7}];
 const myLv=()=>rankOf(+(store.get('azakei-city-xp')||0)).i+1;
 function themeNow(){const id=store.get('azakei-city-theme')||'normal',T=THEMES.find(x=>x.id===id);return T&&myLv()>=T.lv?id:'normal'}
+// テーマのボタンを押したとき（ホームと☰メニューの両方から）
+function pickTheme(th){const T=THEMES.find(x=>x.id===th.dataset.theme);if(myLv()<T.lv){toast(`🔒 「${T.name}」は 社長ランク Lv.${T.lv} で使えるようになります`);return}
+  store.set('azakei-city-theme',T.id);sfx.pick();th.parentElement.outerHTML=themePicker();drawBoard3d()}
 function themePicker(){const lv=myLv(),cur=themeNow();return `<div class="themes" role="group" aria-label="街のテーマ"><span class="th-lab">街のテーマ</span>${THEMES.map(T=>`<button type="button" class="th${T.id===cur?' on':''}" data-theme="${T.id}"${lv<T.lv?' aria-disabled="true"':''} aria-pressed="${T.id===cur}"><span>${lv<T.lv?'🔒':T.ic}</span>${T.name}${lv<T.lv?`<small>Lv.${T.lv}</small>`:''}</button>`).join('')}</div>`}
 // 1ゲームでもらえる経験値：スコア（ゲームの長さでならす）＋順位＋目標＋名所
 function xpFor(me,rank,R){
@@ -2238,7 +2286,7 @@ function showResult(){
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
     ${chalResultHTML()}
     ${rankResultHTML(xp)}
-    ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}</div>`:""}
+    ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}${me&&me.guess?(()=>{const gs=me.guess,p=arr.find(o=>o.key===gs.target),G=GOALS.find(x=>x.id===gs.id);return `<div class="${gs.hit?"ok":""}"><span>🔍 あなたの予想：${p?esc(sh(p.nick)):""}は <b>${G.name}</b></span><em>${gs.hit?`的中！ ＋${guessPts()}`:"はずれ"}</em></div>`})():""}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
     <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div></div>
     <div class="tblwrap"><table class="eras"><thead><tr><th>年代</th><th>できごと</th><th>GDP</th><th>倒産</th><th>成長</th></tr></thead><tbody>
@@ -2743,7 +2791,7 @@ const BOOK=[
   {t:'🎯 ひみつの目標',h:()=>`
     <p>ゲームの最初に、社長ごとに<b>ひみつの目標</b>が2枚配られ、<b>1つを選びます</b>（ひとり・友だちと遊ぶとき）。ゲームの最後に達成していたら<b>＋100</b>（ショートは＋50）。</p>
     <div class="bk-grid">${GOALS.map(G=>`<div class="bk-box" style="margin:0"><b>${G.name}</b><br>${G.d}</div>`).join('')}</div>
-    <div class="bk-box">盤面の左下の🎯に、進み具合（2/4など）がいつも出ます。目標に近づくカードには、手札に🎯の印が付きます。ライバルの目標は結果画面までひみつ。でも、CPU社長はときどき「メディアを集めたいな…」とヒントをもらします。目標を追うか、目の前の点数をとるか。それも作戦です。</div>`},
+    <div class="bk-box">盤面の左下の🎯に、進み具合（2/4など）がいつも出ます。目標に近づくカードには、手札に🎯の印が付きます。ライバルの目標は結果画面までひみつ。でも、CPU社長はときどき「メディアを集めたいな…」とヒントをもらします。<br>🔍 ひとりで遊ぶときは、最後の時代までに1回だけ<b>ライバルの目標を予想</b>できます。当たれば ＋30（ショートは ＋15）。目標を追うか、目の前の点数をとるか。それも作戦です。</div>`},
   {t:'買収',h:()=>`
     <div class="bk-row"><div class="vs">${mini([['fi:2','ho:3'],['me:5','']])}<span class="arr">→</span>${mini([['fi:2','ho:3'],['me:5','']])}</div>
       <ul class="bk-cap">
@@ -2914,8 +2962,7 @@ function homeCityLoop(city){
 function hideHome(){S.homeOpen=false;$('home').hidden=true}
 $('home').addEventListener('click',e=>{
   const th=e.target.closest('[data-theme]');
-  if(th){const T=THEMES.find(x=>x.id===th.dataset.theme);if(myLv()<T.lv){toast(`🔒 「${T.name}」は 社長ランク Lv.${T.lv} で使えるようになります`);return}
-    store.set('azakei-city-theme',T.id);sfx.pick();th.parentElement.outerHTML=themePicker();return}
+  if(th){pickTheme(th);return}
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
   if(a==='cont'){hideHome();if(S.mode!=='local')setMode('local');else{render();advance()}return}
