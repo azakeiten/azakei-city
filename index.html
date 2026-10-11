@@ -1176,7 +1176,7 @@ function replay(tiles,seed,onStep){
       ruins=[];
       for(const[r,c,v]of vals){const x=g[r][c];
         if(v<=BUST&&canBust(x)){rep.bust.push({k:x.k,ok:x.ok,nick:x.nick,name:x.name});O(x.ok).bust++;g[r][c]=null;ruins.push([r,c]);rep.cells.push([r,c,v,'bust'])}
-        else if(v>=GROW&&isInd(x.k)&&(x.lv||1)<3){x.lv=(x.lv||1)+1;rep.grow.push({k:x.k,ok:x.ok,nick:x.nick,lv:x.lv,name:x.name});O(x.ok).grow++;rep.cells.push([r,c,v,'grow'])}
+        else if(v>=GROW&&isInd(x.k)&&(x.lv||1)<3){x.lv=(x.lv||1)+1;if(x.name){x.base=x.base||x.name;x.name=x.base+(x.lv>=3?'ホールディングス':'本店')}rep.grow.push({k:x.k,ok:x.ok,nick:x.nick,lv:x.lv,name:x.name});O(x.ok).grow++;rep.cells.push([r,c,v,'grow'])}
         else rep.cells.push([r,c,v,''])
       }
       // 時代の覇者：前の時代より一番「稼ぎを伸ばした」社長に +20（下位からでも狙える）
@@ -1281,11 +1281,12 @@ function isoDraw(cv,cells,age,t,opt){
   const dpr=window.devicePixelRatio||1, W=cv.clientWidth||cv.width, Hh=cv.clientHeight||cv.height;
   if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(Hh*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(Hh*dpr)}
   const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
-  const sky=SKY[age]||SKY.showa, gr=ctx.createLinearGradient(0,0,0,Hh);
+  // 昼と夜：opt.time（0=朝 → 1=夜）があれば、時間で空と地面の色が変わる。夜は窓に明かりがともる
+  const tm=opt.time, night=tm==null||tm>=.8, sky=tm==null?(SKY[age]||SKY.showa):tm<.15?['#8fd3ff','#ffe1b8','#ffc996']:tm<.6?['#5fb8ff','#a8dcff','#d9f2ff']:tm<.8?['#5a4a9e','#ff8f6b','#ffc58a']:(SKY[age]||SKY.showa), gr=ctx.createLinearGradient(0,0,0,Hh);
   gr.addColorStop(0,sky[0]);gr.addColorStop(.6,sky[1]);gr.addColorStop(1,sky[2]);
   ctx.fillStyle=gr; ctx.fillRect(0,0,W,Hh);
   // 星
-  for(let i=0;i<46;i++){ctx.globalAlpha=.25+.5*((i*7)%10)/10;ctx.fillStyle='#fff';ctx.fillRect((i*131+17)%W,((i*53.7)%37)/37*Hh*.38,1.5,1.5)} ctx.globalAlpha=1;
+  if(night)for(let i=0;i<46;i++){ctx.globalAlpha=.25+.5*((i*7)%10)/10;ctx.fillStyle='#fff';ctx.fillRect((i*131+17)%W,((i*53.7)%37)/37*Hh*.38,1.5,1.5)} ctx.globalAlpha=1;
   let tw=Math.min(W/(N+.6),(Hh*.94)/(N*.5+2.6)), th=tw/2, x0=W/2, y0=Hh-(N*th)-th*.4;
   // カメラ：opt.focus のマスがちょうど入るように寄る（街が小さいうちは大きく見える）
   if(opt.focus&&opt.focus.length){
@@ -1302,8 +1303,8 @@ function isoDraw(cv,cells,age,t,opt){
   const valid=opt.valid||{};
   // 地面（道と区画）。建てられるマスは光る
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const[x,y]=pt(r,c),id=r+'_'+c;
-    poly(dia(x,y),'#262a55');
-    poly(dia(x,y,.86),id in valid?(valid[id]>0?'rgba(58,210,131,.38)':valid[id]<0?'rgba(255,107,94,.32)':'rgba(155,161,204,.25)'):'#1b1f44');
+    poly(dia(x,y),night?'#262a55':'#8f97ae');
+    poly(dia(x,y,.86),id in valid?(valid[id]>0?'rgba(58,210,131,.38)':valid[id]<0?'rgba(255,107,94,.32)':'rgba(155,161,204,.25)'):(night?'#1b1f44':((r+c)%2?'#a9d98c':'#b5e09a')));
     if(id in valid) poly(dia(x,y,.86),null,valid[id]>0?'rgba(58,210,131,.9)':'rgba(155,161,204,.6)',1.2);
   }
   if(opt.hover){const[x,y]=pt(opt.hover[0],opt.hover[1]);poly(dia(x,y,.92),null,'rgba(255,255,255,.8)',1.5)}
@@ -1313,7 +1314,7 @@ function isoDraw(cv,cells,age,t,opt){
     poly([[x-hw,cy-h],[x,cy+hh-h],[x,cy+hh],[x-hw,cy]],shade(col,.62));
     poly([[x,cy+hh-h],[x+hw,cy-h],[x+hw,cy],[x,cy+hh]],shade(col,.45));
     poly(top,shade(col,1.08));
-    if(h>th*.5&&!o.noWin){const rows=Math.floor(h/(th*.32));ctx.fillStyle='rgba(255,226,140,.85)';
+    if(h>th*.5&&!o.noWin&&night){const rows=Math.floor(h/(th*.32));ctx.fillStyle='rgba(255,226,140,.85)';
       for(let i=0;i<rows;i++){const yy=cy-h+th*.22+i*th*.32;for(let j=1;j<=2;j++){const f=j/3;
         if(((i*3+j+(o.seed||0))%4)!==0){ctx.fillRect(x-hw+hw*f-1,yy+hh*f-1,2,2.4);ctx.fillRect(x+hw*f-1,yy+hh*(1-f)-1,2,2.4)}}}}
     return top;
@@ -1349,7 +1350,8 @@ function isoDraw(cv,cells,age,t,opt){
   for(const id in valid){const[r,c]=id.split('_').map(Number);if(opt.pick&&opt.pick[0]===r&&opt.pick[1]===c)continue;const[x,y]=pt(r,c);const v=valid[id];label(x,y+th/2,sg(v),v>0?'#3ad283':v<0?'#ff6b5e':'#9ba1cc',fs,'rgba(10,12,32,.7)')}
   if(opt.deltas)for(const id in opt.deltas){const top=tops[id];const[r,c]=id.split('_').map(Number);const[x,y]=pt(r,c);const yy=top?top[0][1]-fs*.6:y;const d=opt.deltas[id];label(x,yy,sg(d),d>0?'#3ad283':'#ff6b5e',fs,'rgba(10,12,32,.85)')}
   if(opt.pick&&opt.pickScore!=null){const r=opt.pick[0],c=opt.pick[1];const top=tops[r+'_'+c];const[x,y]=pt(r,c);label(x,(top?top[0][1]:y)-fs,sg(opt.pickScore),'#2a1d00',Math.round(fs*1.25),'#ffc83a')}
-  if(opt.floats)for(const f of opt.floats){const[x,y]=pt(f.r,f.c);const top=tops[f.r+'_'+f.c];ctx.globalAlpha=Math.max(0,1-f.p);label(x,(top?top[0][1]:y)-fs-f.p*th*2.2,f.text,f.neg?'#ff6b5e':'#ffc83a',Math.round(fs*(f.big?1.35:1)),'rgba(10,12,32,.75)');ctx.globalAlpha=1}
+  if(opt.floats)for(const f of opt.floats){const[x,y]=pt(f.r,f.c);const top=tops[f.r+'_'+f.c];
+    if(f.voice){const a=f.p<.1?f.p/.1:f.p>.85?(1-f.p)/.15:1, yy=(top?top[0][1]:y)-fs*1.6;ctx.globalAlpha=Math.max(0,a);ctx.font=`800 ${Math.round(fs*1.05)}px "M PLUS Rounded 1c",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(f.text).width+18,h=fs*2;ctx.fillStyle='#fffaf0';ctx.beginPath();ctx.roundRect(x-w/2,yy-h/2,w,h,h/2);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,yy+h/2-1);ctx.lineTo(x,yy+h/2+7);ctx.lineTo(x+5,yy+h/2-1);ctx.fill();ctx.fillStyle='#2a2440';ctx.fillText(f.text,x,yy);ctx.globalAlpha=1;continue}ctx.globalAlpha=Math.max(0,1-f.p);label(x,(top?top[0][1]:y)-fs-f.p*th*2.2,f.text,f.neg?'#ff6b5e':'#ffc83a',Math.round(fs*(f.big?1.35:1)),'rgba(10,12,32,.75)');ctx.globalAlpha=1}
   return geo;
 }
 // 立体の盤面：クリックしたマス（地面の高さで判定）
@@ -1363,7 +1365,7 @@ const view3d=()=>S.view==='3d';
 function drawBoard3d(){
   const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
   const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
-  const opt={hover:V3.hover,insp:S.insp,focus:[]};
+  const opt={hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
   if(k&&!lk){
     opt.ghost=true; opt.valid={};
@@ -1374,13 +1376,35 @@ function drawBoard3d(){
   const now=performance.now();
   V3.anims=V3.anims.filter(a=>now-a.t0<a.dur);
   opt.grow={}; opt.floats=[];
-  for(const a of V3.anims){const p=(now-a.t0)/a.dur;if(a.type==='grow')opt.grow[a.r+'_'+a.c]=1-Math.pow(1-p,3);else opt.floats.push({r:a.r,c:a.c,text:a.text,neg:a.neg,big:a.big,p})}
+  for(const a of V3.anims){const p=(now-a.t0)/a.dur;if(a.type==='grow')opt.grow[a.r+'_'+a.c]=1-Math.pow(1-p,3);else opt.floats.push({r:a.r,c:a.c,text:a.text,neg:a.neg,big:a.big,voice:a.type==='v',p})}
   const cells=g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
   V3.geo=isoDraw(cv,cells,finished()?'reiwa':H(e).age,0,opt);
   cancelAnimationFrame(V3.raf);
   if(V3.anims.length&&!reduced()) V3.raf=requestAnimationFrame(drawBoard3d);
 }
-function anim3d(list){if(!view3d())return;const t0=performance.now();for(const a of list)V3.anims.push({t0,dur:a.type==='grow'?450:1300,...a});drawBoard3d()}
+// 街の声：ときどき建物から、時代のNEWSに合わせたひとことが出る（up=追い風 / dn=向かい風 / f=ふつう）
+const VOICE={
+  ho:{up:['住みやすい街になってきた！','となりに店ができて便利！'],dn:['家計がきびしい…','ものの値段が上がったなあ'],f:['今日も平和だなあ','駅が近いとうれしい']},
+  en:{up:['電気がよく売れる！','燃料が高く売れるぞ'],dn:['電気代が高いって言われる…'],f:['今日も発電中！']},
+  fi:{up:['株価が上がってる！','お金が集まってきた'],dn:['不良債権が…','株価が下がった…'],f:['融資のご相談どうぞ']},
+  ma:{up:['注文が止まらない！','工場フル稼働！'],dn:['材料が高すぎる…','輸出がきびしい…'],f:['いいモノつくるぞ']},
+  re:{up:['お客さんがいっぱい！','セールが大人気！'],dn:['お客さんが減った…'],f:['いらっしゃいませ！']},
+  tr:{up:['荷物がどんどん来る！','旅行客でにぎわってる'],dn:['ガソリン代が…','乗る人が少ない…'],f:['今日も時間どおり']},
+  me:{up:['視聴率うなぎのぼり！','広告が売れてる'],dn:['広告が減った…'],f:['ニュースをお届けします']},
+  in:{up:['街を守ってるよ'],dn:['保険があって助かった！'],f:['もしもに備えよう']},
+  sc:{up:['未来の社長を育てるぞ'],dn:['こんな時こそ勉強だ'],f:['今日も授業中']}
+};
+function cityVoice(){
+  if(!view3d()||!S.R||Math.random()>.55||reduced()) return;
+  const g=S.R.g, e=eraNow(), list=[];
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&VOICE[x.k])list.push([r,c,x])}
+  if(!list.length) return;
+  const[r,c,x]=list[Math.floor(Math.random()*list.length)];
+  const nw=isInd(x.k)?newsOf(g,r,c,e):x.k==='in'&&H(e).r.some(v=>v<0)?-1:0;
+  const pool=VOICE[x.k][nw>0?'up':nw<0?'dn':'f']||VOICE[x.k].f;
+  setTimeout(()=>anim3d([{type:'v',r,c,text:pool[Math.floor(Math.random()*pool.length)],dur:2800}]),500);
+}
+function anim3d(list){if(!view3d())return;const t0=performance.now();for(const a of list)V3.anims.push({t0,...a,dur:a.dur||(a.type==='grow'?450:1300)});drawBoard3d()}
 function setView(v){
   S.view=v; store.set('azakei-city-view',v);
   document.body.classList.toggle('v3d',v==='3d');
@@ -2216,7 +2240,7 @@ function cpuStep(){
   const R=replay(S.game.tiles,S.game.seed), best=cpuPick(R,tp.ty,tp.key,S.game.cpu);
   S.game.tiles.push(best?{r:best.r,c:best.c,k:best.k,src:best.src,t:Date.now(),ok:tp.key,nick:tp.nick,ty:tp.ty}:{k:'pass',t:Date.now(),ok:tp.key});
   saveGame();
-  render(); if(best){floatAt(best.r,best.c,best.d);rippleAt(best.ch);cpuTalk(tp,best)}
+  render(); if(best){floatAt(best.r,best.c,best.d);rippleAt(best.ch);cpuTalk(tp,best);cityVoice()}
   setTimeout(advance,reduced()?120:380);
 }
 async function place(){
@@ -2259,7 +2283,7 @@ function rippleAt(ch){
 function afterPlace(r,c,d,ch){
   S.sel=null; S.cell=null; S.insp=null;
   sfx.build(d);
-  render(); floatAt(r,c,d); rippleAt(ch);
+  render(); floatAt(r,c,d); rippleAt(ch); cityVoice();
 }
 // CPU：市場（ウサギは山札も）から選ぶ。強さで「先の読み」と「迷い」が変わる
 const CPULV={hint:{fut:.9,risk:3,noise:0,top:1},easy:{fut:0,risk:0,noise:7,top:5},normal:{fut:.4,risk:1,noise:5,top:1},hard:{fut:.9,risk:3,noise:0,top:1}};
@@ -2420,7 +2444,7 @@ const BOOK=[
       </ul></div>
     <div class="bk-box">駅は、役所から離れた「第2の街の中心」。早めに駅まで街をのばすと、駅前の一等地をとれます。</div>`},
   {t:'時代とNEWS',h:()=>`
-    <p><b>8手ごとに時代が進みます</b>（1964→2022の12時代）。時代ごとのNEWSで、産業の稼ぎが上下します。</p>
+    <p><b>8手ごとに時代が進みます</b>（1964→2022の12時代）。時代ごとのNEWSで、産業の稼ぎが上下します。立体の街では、時代は<b>朝に始まり、日が暮れて夜になると決算</b>です。</p>
     <div class="bk-box"><b>例：1973年 第一次オイルショック</b>${windRows(HIST[1].r)}</div>
     <ul class="bk-cap">
       <li>▲追い風の産業は稼ぎが増え、▼向かい風の産業は減る。</li>
