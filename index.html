@@ -571,6 +571,8 @@ body.v3d .board3d{display:block}
 .cityWrap canvas{display:block;width:100%;height:100%}
 .cityhint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.75);background:rgba(10,10,30,.5);padding:3px 10px;border-radius:999px}
 .citybtn{position:absolute;right:10px;top:10px;z-index:5;border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);background:rgba(18,20,43,.85);color:var(--gold);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;backdrop-filter:blur(4px)}
+/* ゲーム中のお知らせは、上のバーにかぶらないよう、その下に出す */
+body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 .goalchip{position:absolute;left:10px;bottom:10px;z-index:5;border:1px solid var(--line);background:rgba(12,14,36,.78);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;backdrop-filter:blur(4px);max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .goalchip b{color:var(--gold)}
 .mcard .gmark{position:absolute;top:4px;right:4px;font-size:13px;line-height:1;padding:3px;border-radius:999px;background:rgba(12,14,36,.75);box-shadow:0 0 0 1.5px var(--gold);animation:gmk 2.4s ease-in-out infinite}
@@ -2718,7 +2720,7 @@ function mini(rows){
   }).join('')}</div>`;
 }
 
-/* ---------- ルールブック（絵でわかる11ページ） ---------- */
+/* ---------- ルールブック（絵でわかるルールブック） ---------- */
 const BOOK=[
   {t:'ようこそ、社長',h:()=>`
     <p>1964年の東京オリンピックから、2022年まで。あなたは街の社長です。建物を建てて稼ぎ、<b>最後にいちばんスコアが高い社長</b>が勝ち。</p>
@@ -2853,7 +2855,11 @@ const CHAL=[
   {id:'c2',name:'オイルショックを乗り切れ',yr:'1964→1973',eras:[0,1],star:[70,87,94],d:'高度成長から、突然の石油危機へ。',hint:'1973年は運輸−3・製造−2。エネルギーに乗り換えるか、保険で守ろう。'},
   {id:'c3',name:'バブルの宴と崩壊',yr:'1988→1991',eras:[3,4],star:[65,79,88],d:'株と土地が急上昇。そして、はじける。',hint:'1988年は金融とメディアが+3。でも1991年、金融は−3。'},
   {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[82,96,112],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
-  {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[108,140,160],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'}
+  {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[108,140,160],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'},
+  // ★の基準は、CPU（ふつう／つよい）で14回ずつ遊ばせた結果から決めた
+  {id:'c6',name:'プラザ合意と円高',yr:'1985',eras:[2],star:[36,45,57],d:'円が急上昇。輸出はきびしく、輸入と海外旅行が得をする。8手の勝負。',hint:'1985年は製造−2。運輸+3、金融と小売が+2。'},
+  {id:'c7',name:'リーマン・ショックを生き延びろ',yr:'1999→2008',eras:[6,7],star:[44,56,66],d:'ITバブルで金融とメディアが絶好調。そして、世界金融危機。',hint:'1999年は金融・メディアが+3。2008年は金融−3、製造とメディアも−2。保険と小売で守ろう。'},
+  {id:'c8',name:'60年ダイジェスト',yr:'1964→2022',eras:[0,3,7,11],star:[135,165,200],d:'東京オリンピック、バブル、リーマン・ショック、資源高。4つの大事件を一気に。',hint:'時代ごとに追い風がまるで違う。市場が入れ替わるたびに、乗り換えを考えよう。'}
 ];
 const chalBest=()=>store.get('azakei-city-chal')||{};
 const starsOf=(c,gdp)=>c.star.filter(s=>gdp>=s).length;
@@ -2930,7 +2936,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="short"><span class="mi">⏱️</span><b>ショートで遊ぶ</b><small>大事件の6時代だけ。サクッと1ゲーム</small></button>
       <button class="mbtn" type="button" data-h="chal"><span class="mi">🏆</span><b>チャレンジ</b><small>歴史の一場面をひとりで攻略。★を集めよう（★${CHAL.reduce((s,c)=>s+(chalBest()[c.id]||0),0)}/${CHAL.length*3}）</small></button>
       <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
-      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる11ページ）':'絵でわかる11ページ'}</small></button>
+      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる${BOOK.length}ページ）':'絵でわかる${BOOK.length}ページ'}</small></button>
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
     </div>
