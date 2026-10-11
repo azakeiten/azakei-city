@@ -674,9 +674,19 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .rk-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffc83a,#ff9a3a);transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
 .rankres{display:grid;gap:6px;margin:10px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
 .recap{display:grid;gap:10px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
+.coin{position:fixed;z-index:40;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,#ffc83a 55%,#c98a00);box-shadow:0 0 10px rgba(255,200,58,.8);pointer-events:none;transition:transform .7s cubic-bezier(.45,-.35,.7,1),opacity .7s ease-in}
+#hudMe.bump{display:inline-block;animation:gpop .6s ease}
+.vsbox{display:grid;gap:6px;margin:10px 0;text-align:left}
+.vsrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:13px}
+.vsrow em{font-style:normal;font-weight:800;font-size:12px;padding:2px 8px;border-radius:99px}
+.vsrow.win em{background:rgba(58,210,131,.18);color:#3ad283}
+.vsrow.lose em{background:rgba(255,107,94,.15);color:#ff6b5e}
+.vsrow b{font-family:var(--mono)}
+.goalpick .rivals{margin-top:10px;font-size:13px;line-height:1.7}
+.goalpick .rivals small{color:var(--muted)}
 .pbline{margin:10px 0;padding:12px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(255,200,58,.22),rgba(255,154,58,.12));border:1px solid var(--gold);font-size:14px;text-align:left;animation:gpop 1s ease .3s both}
 .pbline b{color:var(--gold)}
-.recs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}
+.recs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;width:100%}
 .recs div{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);display:grid;gap:2px;text-align:left}
 .recs small{color:var(--muted);font-size:11px;font-weight:800}
 .recs b{font-size:18px;font-family:var(--mono)}
@@ -2145,6 +2155,23 @@ function toast(html){
 }
 
 /* ---------- settlement: coins, crumbling, then the newspaper ---------- */
+// 決算：自分の建物から、スコア（右上）に向かってコインが飛ぶ
+function flyCoins(rep){
+  if(reduced()||!rep) return;
+  const tgt=$('hudMe'); if(!tgt) return; const tr=tgt.getBoundingClientRect(); if(!tr.width) return;
+  const mk=myKey(), g=S.R.g, list=rep.cells.filter(([r,c,v,f])=>v>0&&f!=='bust'&&g[r][c]&&g[r][c].ok===mk).slice(0,16);
+  if(!list.length) return;
+  const cv=$('board3d'), cr=cv.getBoundingClientRect(), G=V3.geo;
+  list.forEach(([r,c],i)=>{
+    let x,y;
+    if(view3d()&&G){x=cr.left+G.x0+(c-r)*G.tw/2; y=cr.top+G.y0+(c+r)*G.th/2+G.th*.2}
+    else{const el=$('board').querySelector(`[data-r="${r}"][data-c="${c}"]`);if(!el)return;const b=el.getBoundingClientRect();x=b.left+b.width/2;y=b.top+b.height/2}
+    const s=document.createElement('span'); s.className='coin'; s.style.left=(x-8)+'px'; s.style.top=(y-8)+'px'; document.body.appendChild(s);
+    const dx=tr.left+tr.width/2-x, dy=tr.top+tr.height/2-y;
+    setTimeout(()=>{s.style.transform=`translate(${dx}px,${dy}px) scale(.6)`;s.style.opacity='.2'},120+i*55);
+    setTimeout(()=>{s.remove();if(i===list.length-1){tgt.classList.remove('bump');void tgt.offsetWidth;tgt.classList.add('bump')}},120+i*55+750);
+  });
+}
 function settleFx(rep){
   if(!rep) return;
   S.pause=true;
@@ -2161,6 +2188,7 @@ function settleFx(rep){
       if(f==='grow') el.classList.add('flash');
     }
   }
+  flyCoins(rep);
   setTimeout(showPaper,wait);
 }
 let paperTimer=null;
@@ -2248,7 +2276,7 @@ async function shareImage(btn){
   // 街の立体図（別のキャンバスに描いてから貼る）
   const city=document.createElement('canvas'); city.width=1000; city.height=600; city.style.width='1000px';
   const cells=R.g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
-  const focus=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=R.g[r][c];if(x&&x.k!=='river'&&x.k!=='sta')focus.push([r,c])}
+  const focus=[[0,0],[0,N-1],[N-1,0],[N-1,N-1]]; // 高いビルの先が切れないよう、地図全体をうつす
   isoDraw(city,cells,'reiwa',0,{focus,theme:themeNow()});
   const sky=ctx.createLinearGradient(0,0,0,Hh);sky.addColorStop(0,'#0d0826');sky.addColorStop(.55,'#2a1a5e');sky.addColorStop(1,'#12142b');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,Hh);
@@ -2307,19 +2335,26 @@ function recordGame(me,rank,arr){
   if(me.goal){rec.goals++;if(me.goal.met)rec.goalsMet++}
   if(me.guess){rec.guesses++;if(me.guess.hit)rec.hits++}
   rec.busts+=me.bust||0; rec.lm+=me.lm||0;
+  // ライバル（CPU社長）ごとの対戦成績：ひとりで遊んだときだけ
+  rec.vs=rec.vs||{}; const vsNow=[];
+  if(humans().length===1) for(const o of arr){const p=S.game.players.find(x=>x.key===o.key);if(!p||!p.cpu)continue;const v=rec.vs[p.nick]||(rec.vs[p.nick]={w:0,l:0});const win=me.score>o.score;if(win)v.w++;else v.l++;vsNow.push({nick:p.nick,ty:p.ty,win,w:v.w,l:v.l})}
   let pb=null;
   const mode=S.game.chal?null:S.game.daily?'daily':S.game.short?'short':'full';
   if(mode){const old=rec.best[mode];if(!old||me.score>old.score){pb={mode,prev:old?old.score:null,score:me.score};rec.best[mode]={score:me.score,date:todayStr()}}}
   store.set('azakei-city-rec',rec);
-  return pb;
+  return {pb,vs:vsNow};
 }
 const MODEN={full:'フル（12時代）',short:'ショート',daily:'今日の街'};
+const vsRec=nick=>((store.get('azakei-city-rec')||{}).vs||{})[nick];
+const vsTxt=nick=>{const v=vsRec(nick);return v&&(v.w+v.l)?`あなたの${v.w}勝${v.l}敗`:'初対戦'};
+function vsHTML(list){return list&&list.length?`<div class="vsbox"><div class="slab">ライバルとの対戦成績</div>${list.map(x=>`<div class="vsrow ${x.win?'win':'lose'}"><span>${TY[x.ty]?.face||''} ${esc(x.nick)}</span><em>${x.win?'勝ち':'負け'}</em><b>${x.w}勝${x.l}敗</b></div>`).join('')}</div>`:''}
 function pbHTML(pb){return pb?`<div class="pbline">🏆 <b>自己ベスト${pb.prev==null?'':'更新'}！</b> ${MODEN[pb.mode]} ${pb.score}点${pb.prev==null?'（はじめての記録）':`（これまで ${pb.prev}点）`}</div>`:''}
 function recordsHTML(){
   const r=store.get('azakei-city-rec'); if(!r||!r.games) return '<p class="empty">まだ記録がありません。1ゲーム遊ぶと、ここに記録がたまります。</p>';
   const pc=(a,b)=>b?Math.round(a/b*100)+'%':'—';
   const cells=[['遊んだ回数',r.games+'回'],['1位',r.wins+'回'],['🎯 目標の達成率',pc(r.goalsMet,r.goals)],['🔍 予想の的中率',pc(r.hits,r.guesses)],['完成させた名所',r.lm+'つ'],['倒産した会社',r.busts+'社']];
   return `<div class="recs">${cells.map(c=>`<div><small>${c[0]}</small><b>${c[1]}</b></div>`).join('')}</div>
+    ${Object.keys(r.vs||{}).length?`<div class="recs vs">${Object.entries(r.vs).map(([n,v])=>`<div><small>対 ${esc(n)}</small><b>${v.w}勝${v.l}敗</b></div>`).join("")}</div>`:""}
     <div class="recs best">${Object.keys(MODEN).map(m=>`<div><small>自己ベスト・${MODEN[m]}</small><b>${r.best[m]?r.best[m].score+'点':'—'}</b>${r.best[m]?`<small>${r.best[m].date}</small>`:''}</div>`).join('')}</div>`;
 }
 function awardXP(me,rank,R){
@@ -2327,7 +2362,7 @@ function awardXP(me,rank,R){
   if(S.game.xp) return S.game.xp; // 同じゲームで2回はもらえない
   const parts=xpFor(me,rank,R), gain=Math.max(5,parts.reduce((s,x)=>s+x[1],0)), before=+(store.get('azakei-city-xp')||0);
   store.set('azakei-city-xp',before+gain);
-  S.game.xp={before,gain,parts,pb:recordGame(me,rank,Object.values(R.own).sort((a,b)=>b.score-a.score))}; saveGame();
+  {const rg=recordGame(me,rank,Object.values(R.own).sort((a,b)=>b.score-a.score));S.game.xp={before,gain,parts,pb:rg.pb,vs:rg.vs}} saveGame();
   return S.game.xp;
 }
 function rankResultHTML(x){
@@ -2387,6 +2422,7 @@ function showResult(){
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
     ${chalResultHTML()}
     ${pbHTML(xp&&xp.pb)}
+    ${vsHTML(xp&&xp.vs)}
     ${rankResultHTML(xp)}
     ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}${me&&me.guess?(()=>{const gs=me.guess,p=arr.find(o=>o.key===gs.target),G=GOALS.find(x=>x.id===gs.id);return `<div class="${gs.hit?"ok":""}"><span>🔍 あなたの予想：${p?esc(sh(p.nick)):""}は <b>${G.name}</b></span><em>${gs.hit?`的中！ ＋${guessPts()}`:"はずれ"}</em></div>`})():""}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
@@ -2528,6 +2564,7 @@ function pickGoals(hs,done){
       <h3>どっちを目指す？</h3>
       <p class="lead">ゲームの最後に達成していたら <b>＋${pts}</b>。ライバルには最後までひみつ。</p>
       <div class="gp">${[A,B].map(G=>`<button type="button" class="gpc" data-g="${G.id}"><b>${G.name}</b><span>${G.d}</span><em>＋${pts}</em></button>`).join('')}</div>
+      ${many?"":`<p class="rivals">今日のライバル：${S.game.players.filter(x=>x.cpu).map(x=>`${TY[x.ty].face} ${esc(x.nick)}<small>（${vsTxt(x.nick)}）</small>`).join("　")}</p>`}
       <p class="small" style="color:var(--muted);margin-top:8px">建物の種類を集める目標は、時代のNEWSとの相性も考えよう。</p>
     </div>`;
     bg.hidden=false; bg.querySelector('.gpc').focus();
