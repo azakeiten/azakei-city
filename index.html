@@ -673,6 +673,22 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .rk-bar{display:block;height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
 .rk-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffc83a,#ff9a3a);transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
 .rankres{display:grid;gap:6px;margin:10px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
+.recap{display:grid;gap:10px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
+.rchart{width:100%;height:auto;display:block}
+.rchart .rg{stroke:rgba(255,255,255,.08);stroke-width:1}
+.rchart .ry,.rchart .rx{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+.rchart .ry{text-anchor:end}
+.rchart .rx{text-anchor:middle}
+.rchart .rn{font-size:12px;font-weight:800}
+.rchart .rn.me{font-size:13px}
+.rchart .rl{stroke-dasharray:2000;stroke-dashoffset:2000;animation:rdraw 1.6s ease-out .2s forwards}
+@keyframes rdraw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.rchart .rl{stroke-dasharray:none;stroke-dashoffset:0}}
+.hls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.hl{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);font-size:13px;line-height:1.5}
+.hl .hi{font-size:20px;line-height:1}
+.hl small{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.05em}
+.hl b{color:var(--gold)}
 .rankres .rr-top{display:flex;align-items:center;gap:8px}
 .rankres .rr-top em{margin-left:auto;font-style:normal;font-weight:800;color:var(--gold);font-family:var(--mono)}
 .rankres.up{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 25%,transparent)}
@@ -1282,6 +1298,7 @@ function replay(tiles,seed,onStep){
       const gains=Object.entries(rep.pay).map(([k,v])=>[k,v-(lastPay[k]||0)]);
       if(gains.length>1){const mx=Math.max(...gains.map(x=>x[1])),w=gains.filter(x=>x[1]===mx);if(mx>0&&w.length===1){const o=O(w[0][0]);o.score+=CROWN;o.crown++;rep.crown={ok:w[0][0],nick:o.nick,gain:mx};log.push({type:"c",ok:w[0][0],nick:o.nick,gain:mx,y:rep.y,n})}}
       lastPay={...rep.pay};
+      rep.sc=Object.fromEntries(Object.values(own).map(o=>[o.key,o.score])); // ふりかえりのグラフ用：この決算のあとのスコア
       hist.push(rep.gdp); eras.push(rep);
       log.push({type:'e',rep});
       refill();
@@ -2271,6 +2288,37 @@ function rankResultHTML(x){
     <small>${x.parts.map(p=>`${p[0]} +${p[1]}`).join('・')}</small>
     ${up?`<div class="rr-up">🎉 ランクアップ！「${a.name}」→「${b.name}」${THEMES.filter(T=>T.lv>a.i+1&&T.lv<=b.i+1).map(T=>`<br>${T.ic} 街のテーマ「${T.name}」が使えるようになった！（ホーム画面で切りかえ）`).join("")}</div>`:`<small>${b.hi?`次の「${b.next}」まで あと${b.hi-(x.before+x.gain)}`:'最高ランク！'}</small>`}</div>`;
 }
+// 試合のふりかえり：社長ごとのスコアの伸び（折れ線）と、あなたの名場面
+function recapHTML(R,arr,mk){
+  if(!R.eras.length||arr.length<2&&!S.game.chal) return '';
+  const sm=innerWidth<640, W=sm?340:600,Hh=sm?200:190,pl=sm?30:34,pr=sm?96:124,pt=12,pb=26, pts=R.eras.length+1; // スマホは横幅をせまくして、文字を大きく見せる
+  const fin=Object.fromEntries(arr.map(o=>[o.key,o.score]));
+  const series=arr.map(o=>({o,v:[0,...R.eras.map(x=>(x.sc&&x.sc[o.key])||0)]}));
+  for(const s of series){s.v[s.v.length-1]=fin[s.o.key]} // 最後は目標・予想のボーナス込み
+  const mx=Math.max(10,...series.flatMap(s=>s.v)), X=i=>pl+i*(W-pl-pr)/(pts-1), Y=v=>pt+(Hh-pt-pb)*(1-v/mx);
+  const grid=[0,.5,1].map(f=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(mx*f)}" y2="${Y(mx*f)}" class="rg"/><text x="${pl-6}" y="${Y(mx*f)+4}" class="ry">${Math.round(mx*f)}</text>`).join('');
+  const ticks=R.eras.map((x,i)=>(R.eras.length<=(sm?4:6)||i%(sm?3:2)===(sm?2:1)||i===R.eras.length-1)?`<text x="${X(i+1)}" y="${Hh-6}" class="rx">${x.y}</text>`:'').join('');
+  // ラベルが重ならないよう、右端の名前を少しずつずらす
+  const ends=series.map(s=>({s,y:Y(s.v.at(-1))})).sort((a,b)=>a.y-b.y); for(let i=1;i<ends.length;i++) if(ends[i].y-ends[i-1].y<14) ends[i].y=ends[i-1].y+14;
+  const lines=series.map(s=>{const me=s.o.key===mk,col=ownerColor(s.o.key);return `<polyline points="${s.v.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="${me?3.5:2}" stroke-linejoin="round" stroke-linecap="round" opacity="${me?1:.75}" class="rl"/>`}).join('');
+  const labels=ends.map(({s,y})=>`<text x="${W-pr+8}" y="${y+4}" fill="${ownerColor(s.o.key)}" class="rn${s.o.key===mk?' me':''}">${esc(s.o.nick.slice(0,sm?4:6))} ${s.v.at(-1)}</text>`).join('');
+  // 名場面（あなたの試合から）
+  const me=arr.find(o=>o.key===mk), hl=[];
+  if(me){
+    const best=R.log.filter(x=>(x.type==='b'||x.type==='m')&&x.ok===mk).sort((a,b)=>b.d-a.d)[0];
+    if(best&&best.d>0) hl.push(['🏢','最高の一手',`${H(Math.floor(best.n/ERA)).y}年代、${best.name?esc(best.name):T[best.k].name}${best.type==='m'?'を買収':'を建てて'} <b>${sg(best.d)}</b>`]);
+    const pe=R.eras.slice().sort((a,b)=>((b.pay||{})[mk]||0)-((a.pay||{})[mk]||0))[0];
+    if(pe&&(pe.pay||{})[mk]) hl.push(['💰','いちばん稼いだ時代',`${pe.y}年「${esc(H(pe.e).n)}」の決算で <b>+${pe.pay[mk]}</b>`]);
+    const bz=R.eras.map(x=>({x,b:x.bust.filter(b=>b.ok===mk)})).filter(z=>z.b.length).sort((a,b)=>b.b.length-a.b.length)[0];
+    if(bz) hl.push(['💥','痛かった倒産',`${bz.x.y}年「${esc(H(bz.x.e).n)}」で ${bz.b.slice(0,2).map(b=>b.name?esc(b.name):T[b.k].name).join('・')}${bz.b.length>2?` ほか${bz.b.length-2}社`:''}が倒産`]);
+    else if(me.built>=6) hl.push(['🛡️','倒産ゼロ','最後まで、1社もつぶさずに乗り切った']);
+    // 逆転：途中で1位以外だったのに、最後に1位
+    if(arr[0].key===mk&&series.length>1){const ms=series.find(s=>s.o.key===mk);const behind=ms.v.slice(1,-1).findIndex((v,i)=>series.some(s=>s.o.key!==mk&&s.v[i+1]>v));if(behind>=0) hl.push(['🔥','大逆転',`${R.eras[behind].y}年の時点では追いかける側。そこから1位に`])}
+  }
+  return `<div class="recap"><div class="slab">試合のふりかえり</div>
+    ${series.length>1?`<svg class="rchart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="社長ごとのスコアの伸び">${grid}${ticks}${lines}${labels}</svg>`:''}
+    ${hl.length?`<div class="hls">${hl.map(h=>`<div class="hl"><span class="hi">${h[0]}</span><span><small>${h[1]}</small>${h[2]}</span></div>`).join('')}</div>`:''}</div>`;
+}
 function showResult(){
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey();
   const hs=S.mode==='local'?humans():[], many=hs.length>1;
@@ -2290,6 +2338,7 @@ function showResult(){
     ${rankResultHTML(xp)}
     ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}${me&&me.guess?(()=>{const gs=me.guess,p=arr.find(o=>o.key===gs.target),G=GOALS.find(x=>x.id===gs.id);return `<div class="${gs.hit?"ok":""}"><span>🔍 あなたの予想：${p?esc(sh(p.nick)):""}は <b>${G.name}</b></span><em>${gs.hit?`的中！ ＋${guessPts()}`:"はずれ"}</em></div>`})():""}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
+    ${recapHTML(R,arr,mk)}
     <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div></div>
     <div class="tblwrap"><table class="eras"><thead><tr><th>年代</th><th>できごと</th><th>GDP</th><th>倒産</th><th>成長</th></tr></thead><tbody>
       ${R.eras.map(x=>`<tr${x===peak?' style="color:var(--gold)"':''}><td>${x.y}</td><td>${esc(H(x.e).n)}</td><td>${x.gdp}</td><td>${x.bust.length}</td><td>${x.grow.length}</td></tr>`).join('')}
