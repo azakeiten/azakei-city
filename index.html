@@ -566,6 +566,8 @@ body.v3d .board3d{display:block}
 .goalchip{position:absolute;left:10px;bottom:10px;z-index:5;border:1px solid var(--line);background:rgba(12,14,36,.78);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:12px;backdrop-filter:blur(4px);max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .goalchip b{color:var(--gold)}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
+.goalchip.pop{animation:gpop .9s ease}
+@keyframes gpop{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.95)}100%{transform:scale(1)}}
 .goalchip.met{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 30%,transparent)}
 .goalres{margin:10px 0;display:grid;gap:6px}
 .goalres div{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:13px;text-align:left}
@@ -1071,7 +1073,7 @@ function buyable(g,r,c,era,ok){const t=g[r][c];return !!(t&&isInd(t.k)&&t.ok!=nu
 function buyTargets(g,era,ok){const a=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(buyable(g,r,c,era,ok))a.push([r,c]);return a}
 /* 時代のお題：その時代のうちに最初に達成した社長に +15 */
 // 秘密の目標：社長ごとに1つ（シードと社長で決まるので、同じゲームなら毎回同じ）
-const GOALPTS=40;
+const goalPts=()=>Math.round(NE()*25/30)*10; // フル12時代＝＋100、ショート6時代＝＋50
 const GOALS=[
   {id:'me',name:'メディア王',d:'メディアを4つ持って終える',need:4,k:'me'},
   {id:'tr',name:'鉄道王',d:'運輸を4つ持って終える',need:4,k:'tr'},
@@ -1241,7 +1243,7 @@ function replay(tiles,seed,onStep){
     if(onStep&&n%ERA!==0) onStep(g,n,Math.floor(n/ERA),false);
   }
   // 秘密の目標：ゲームの最後に、達成していたら＋40（ひとり・友だちの街だけ）
-  if(goalOn()&&n>=ERA*NE()) for(const o of Object.values(own)){const gp=goalProg(g,o,seed);o.goal={id:gp.G.id,met:gp.met};if(gp.met)o.score+=GOALPTS}
+  if(goalOn()&&n>=ERA*NE()) for(const o of Object.values(own)){const gp=goalProg(g,o,seed);o.goal={id:gp.G.id,met:gp.met};if(gp.met)o.score+=goalPts()}
   return {g,own,log,hist,eras,n,ruins,claimed,mq,lastPay,market:mk,peek:[D(di),D(di+1),D(di+2)]};
 }
 
@@ -1258,6 +1260,7 @@ const sfx={
   coin(i){tone(1046+((i*97)%400),.07,'sine',.025,i*.018)},
   turn(){tone(660,.12,'triangle',.05);tone(990,.16,'triangle',.05,.1)},
   paper(bust){tone(196,.25,'square',.035);tone(262,.3,'triangle',.05,.12);if(bust)tone(110,.4,'sawtooth',.04,.3)},
+  goal(){[784,988,1175,1568].forEach((f,i)=>tone(f,.18,'sine',.05,i*.08))},
   end(){[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',.06,i*.12))}
 };
 
@@ -1358,6 +1361,8 @@ function isoDraw(cv,cells,age,t,opt){
     const pad=2.2; if(a1-a0<6){const m=(a0+a1)/2;a0=m-3;a1=m+3} if(b1-b0<6){const m=(b0+b1)/2;b0=m-3;b1=m+3}
     tw=Math.min(2*W/(a1-a0+pad*2),Hh/((b1-b0+pad*2)/4+1.9),W/7.5); th=tw/2;
     x0=W/2-((a0+a1)/2)*tw/2; y0=Hh-th*(.5+pad*.5)-(b1+1)*th/2;
+    // 縦長の画面（スマホ）では、街が下にくっつかないよう、上の空きを半分ずつに
+    const topY=y0+(b0-pad)*th/2-th*4.5; if(topY>Hh*.14) y0-=(topY-Hh*.14)*.5;
   }
   const geo={tw,th,x0,y0};
   const pt=(r,c)=>[x0+(c-r)*tw/2, y0+(c+r)*th/2];
@@ -1447,8 +1452,17 @@ function isoPick(geo,x,y){
 }
 const V3={geo:null,hover:null,anims:[],raf:null};
 const view3d=()=>S.view==='3d';
+// スマホ：立体の盤面を、上のバーと下の手札のあいだいっぱいに広げる
+function fit3d(cv){
+  if(innerWidth>640||!document.body.classList.contains('playing')){cv.style.height='';cv.style.aspectRatio='';return}
+  const tray=$('tray'), w=cv.clientWidth||innerWidth, top=cv.getBoundingClientRect().top+scrollY;
+  const h=Math.round(Math.max(w*.8,Math.min(w*1.6,innerHeight-top-(tray&&!tray.hidden?tray.offsetHeight:0)-14)));
+  if(cv.style.height!==h+'px'){cv.style.aspectRatio='auto';cv.style.height=h+'px'}
+}
+addEventListener('resize',()=>{clearTimeout(fit3d.t);fit3d.t=setTimeout(drawBoard3d,120)});
 function drawBoard3d(){
   const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
+  fit3d(cv);
   const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
   const opt={amb:!reduced(),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
@@ -1858,9 +1872,16 @@ function renderGoal(){
   const o=goalOn()&&S.R&&S.R.own[myKey()];
   if(!o){el.hidden=true;return}
   const p=goalProg(S.R.g,o,S.game.seed);
+  // 達成した瞬間・くずれた瞬間を知らせる（読みこみ直後や、もどしたときは知らせない）
+  const prev=S.goalSeen;
+  if(prev&&prev.id===S.game.seed+'/'+o.key&&prev.n<S.game.tiles.length&&prev.met!==p.met){
+    if(p.met){sfx.goal();toast(`🎯 <b>ひみつの目標「${p.G.name}」達成！</b><br>このまま最後まで守れば ＋${goalPts()}`);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}
+    else toast(`🎯 目標「${p.G.name}」の条件がくずれた…<br>まだ間に合う。もう一度ねらおう`);
+  }
+  S.goalSeen={id:S.game.seed+'/'+o.key,n:S.game.tiles.length,met:p.met};
   el.hidden=false; el.classList.toggle('met',p.met);
   el.innerHTML=`🎯 <b>${p.G.name}</b> <i>${p.G.id==='safe'?(p.met?'達成中':`産業 ${Object.entries(o.kinds||{}).reduce((s,[k,v])=>s+(isInd(k)?v:0),0)}/5${o.bust?'・倒産あり':''}`):`${Math.min(p.cur,p.G.need)}/${p.G.need}`}</i>${p.met?' ✓':''}`;
-  el.onclick=()=>toast(`🎯 ひみつの目標「${p.G.name}」<br>${p.G.d}。ゲームの最後に達成していたら <b>＋${GOALPTS}</b>${p.met?'（いま達成中！ 最後まで守ろう）':''}`);
+  el.onclick=()=>toast(`🎯 ひみつの目標「${p.G.name}」<br>${p.G.d}。ゲームの最後に達成していたら <b>＋${goalPts()}</b>${p.met?'（いま達成中！ 最後まで守ろう）':''}`);
 }
 // 時代レース：この時代に「稼ぎを一番伸ばしている」社長がだれか、いつも見せる
 function renderRace(){
@@ -2116,7 +2137,7 @@ function showResult(){
     <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
     ${chalResultHTML()}
-    ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${GOALPTS}`:"ならず"}</em></div>`:""}).join("")}</div>`:""}
+    ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
     <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div></div>
     <div class="tblwrap"><table class="eras"><thead><tr><th>年代</th><th>できごと</th><th>GDP</th><th>倒産</th><th>成長</th></tr></thead><tbody>
@@ -2236,7 +2257,7 @@ function startGame(){
   saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false;
   S.viewer=players[0].key;
   hideHome();
-  setTimeout(()=>{if(S.game&&!tutorOn()){const G=goalOn()?goalOf(S.game.seed,myKey()):null;toast(G?`🎯 あなたのひみつの目標：<b>${G.name}</b><br>${G.d}で <b>＋${GOALPTS}</b>（左下でいつでも確認）`:`🎓 麻経の先輩「${SENPAI[HI(0)]}」`)}},2600);
+  setTimeout(()=>{if(S.game&&!tutorOn()){const G=goalOn()?goalOf(S.game.seed,myKey()):null;toast(G?`🎯 あなたのひみつの目標：<b>${G.name}</b><br>${G.d}で <b>＋${goalPts()}</b>（左下でいつでも確認）`:`🎓 麻経の先輩「${SENPAI[HI(0)]}」`)}},2600);
   $('typebg').hidden=true;
   if(S.mode!=='local') setMode('local'); else render();
   advance();
@@ -2388,7 +2409,18 @@ function afterPlace(r,c,d,ch){
   render(); floatAt(r,c,d); rippleAt(ch); cityVoice();
 }
 // CPU：市場（ウサギは山札も）から選ぶ。強さで「先の読み」と「迷い」が変わる
-const CPULV={hint:{fut:.9,risk:3,noise:0,top:1},easy:{fut:0,risk:0,noise:7,top:5},normal:{fut:.4,risk:1,noise:5,top:1},hard:{fut:.9,risk:3,noise:0,top:1}};
+const CPULV={hint:{fut:.9,risk:3,noise:0,top:1,goal:0},easy:{fut:0,risk:0,noise:7,top:5,goal:.3},normal:{fut:.4,risk:1,noise:5,top:1,goal:.6},hard:{fut:.9,risk:3,noise:0,top:1,goal:.9}};
+// CPUもひみつの目標を狙う：目標に近づく手に、目標の点を少し上乗せして考える
+function goalBias(R,ok,w){
+  if(!w||!goalOn()||!R.own[ok]) return ()=>0;
+  const o=R.own[ok], p=goalProg(R.g,o,seedNow()), G=p.G, per=goalPts()/G.need*w, left=Math.max(0,ERA*NE()-R.n);
+  if(p.met&&G.id!=='safe') return ()=>0;
+  if(G.k) return x=>x.k===G.k&&left>=(G.need-p.cur)*2?per:0;
+  if(G.id==='lm') return x=>x.lms&&x.lms.length?per:0;
+  if(G.id==='star') return x=>x.fut>=GROW?per*.6:0;
+  if(G.id==='safe') return x=>x.k==='buy'?0:isInd(x.k)?(x.fut<=BUST?-per*2:per*.15):0;
+  return ()=>0;
+}
 function cpuPick(R,ty,ok,lvName){
   const L=CPULV[lvName||'normal']||CPULV.normal, g=R.g, cells=validCells(g), e=Math.floor(R.n/ERA), cand=[];
   for(const x of choices(R,ty)){
@@ -2398,10 +2430,11 @@ function cpuPick(R,ty,ok,lvName){
     }
     for(const[r,c]of cells){
       const s=simulate(g,r,c,x.k,e,ty,R);
-      cand.push({v:s.score+L.fut*s.fut-(isInd(x.k)&&ty!=='turtle'&&s.fut<=BUST?L.risk:0)+Math.random()*L.noise,r,c,k:x.k,src:x.src,d:s.score,ch:s.changes,lms:s.lms,mq:s.mq});
+      cand.push({v:s.score+L.fut*s.fut-(isInd(x.k)&&ty!=='turtle'&&s.fut<=BUST?L.risk:0)+Math.random()*L.noise,r,c,k:x.k,src:x.src,d:s.score,fut:s.fut,ch:s.changes,lms:s.lms,mq:s.mq});
     }
   }
   if(!cand.length) return null;
+  const gb=goalBias(R,ok,L.goal); for(const x of cand) x.v+=gb(x);
   cand.sort((a,b)=>b.v-a.v);
   return cand[Math.floor(Math.random()*Math.min(L.top,cand.length))];
 }
@@ -2570,7 +2603,7 @@ const BOOK=[
     <p style="margin-top:10px"><b>時代のお題</b>は、時代ごとに歴史にちなんだお題が1つ。その時代のうちに最初に達成すると<b>＋15</b>。</p>
     <div class="bk-box">例（1964年）：${MQT[0]}</div>`},
   {t:'🎯 ひみつの目標',h:()=>`
-    <p>ゲームの最初に、社長ごとに<b>ひみつの目標</b>が1つ配られます（ひとり・友だちと遊ぶとき）。ゲームの最後に達成していたら<b>＋${GOALPTS}</b>。</p>
+    <p>ゲームの最初に、社長ごとに<b>ひみつの目標</b>が1つ配られます（ひとり・友だちと遊ぶとき）。ゲームの最後に達成していたら<b>＋100</b>（ショートは＋50）。</p>
     <div class="bk-grid">${GOALS.map(G=>`<div class="bk-box" style="margin:0"><b>${G.name}</b><br>${G.d}</div>`).join('')}</div>
     <div class="bk-box">盤面の左下の🎯に、進み具合（2/4など）がいつも出ます。ライバルの目標は、結果画面までひみつ。目標を追うか、目の前の点数をとるか。それも作戦です。</div>`},
   {t:'買収',h:()=>`
