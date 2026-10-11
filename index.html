@@ -645,6 +645,21 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .hero .tag{font-family:var(--serif);font-weight:800;font-size:clamp(15px,3.2vw,20px)}
 .hero .tag2{font-size:13px;color:var(--muted);max-width:34em}
 .skyline{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px;width:min(620px,100%);margin-top:6px}
+.homecity{position:relative;width:min(620px,100%);margin-top:6px}
+.homecity canvas{display:block;width:100%;aspect-ratio:16/9;border-radius:18px;border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.homecity .hc-lab{position:absolute;left:12px;bottom:10px;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(12,14,36,.75);color:var(--gold)}
+.rankchip{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px;width:min(420px,100%);padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);text-align:left}
+.rankchip b{font-size:15px}
+.rankchip .rk-bar,.rankchip small{grid-column:1/-1}
+.rankchip small,.rankres small{color:var(--muted);font-size:12px}
+.rk-lv{font-family:var(--mono);font-weight:800;font-size:12px;color:#2a1d00;background:var(--gold);border-radius:8px;padding:2px 8px}
+.rk-bar{display:block;height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.rk-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffc83a,#ff9a3a);transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.rankres{display:grid;gap:6px;margin:10px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
+.rankres .rr-top{display:flex;align-items:center;gap:8px}
+.rankres .rr-top em{margin-left:auto;font-style:normal;font-weight:800;color:var(--gold);font-family:var(--mono)}
+.rankres.up{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 25%,transparent)}
+.rr-up{font-weight:800;color:var(--gold);animation:gpop 1s ease .9s both}
 .skyline span{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 24%,#1b1e40);color:var(--c);
   box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--c) 70%,transparent);opacity:0;animation:rise2 .5s ease forwards}
 .skyline span svg{width:58%;height:58%}
@@ -2151,6 +2166,36 @@ async function shareImage(btn){
   box.innerHTML=`<img src="${url}" alt="結果の画像"><p>画像を長押し（右クリック）でも保存できます。</p>${HASCLAUDE?"":`<a class="go savebtn" href="${url}" download="azakei-city.png">画像を保存</a>`}`;
   btn.textContent='画像を作りました';
 }
+// 社長ランク：ゲームを終えるたびに経験値（この端末に保存）。遊ぶほど肩書きが上がる
+const RANKS=[[0,'かけだし社長'],[80,'町工場の社長'],[200,'商店街の顔役'],[380,'地元の名士'],[620,'上場企業の社長'],[950,'財界の大物'],[1400,'経済界の重鎮'],[2000,'伝説の経営者']];
+function rankOf(xp){let i=0;while(i+1<RANKS.length&&xp>=RANKS[i+1][0])i++;const lo=RANKS[i][0],hi=RANKS[i+1]?RANKS[i+1][0]:null;return {i,name:RANKS[i][1],lo,hi,p:hi?(xp-lo)/(hi-lo):1,next:RANKS[i+1]?RANKS[i+1][1]:null}}
+function rankChip(xp){const k=rankOf(xp);return `<div class="rankchip"><span class="rk-lv">Lv.${k.i+1}</span><b>${k.name}</b><span class="rk-bar"><i style="width:${Math.round(k.p*100)}%"></i></span><small>${k.hi?`次の「${k.next}」まで あと${k.hi-xp}`:'最高ランク！'}</small></div>`}
+// 1ゲームでもらえる経験値：スコア（ゲームの長さでならす）＋順位＋目標＋名所
+function xpFor(me,rank,R){
+  const base=Math.round(me.score/(NE()>=12?16:8));
+  const parts=[['スコア',base]];
+  if(rank===0) parts.push(['1位',25]);
+  if(me.goal&&me.goal.met) parts.push(['🎯 目標達成',15]);
+  if(me.lm) parts.push([`名所 ${me.lm}`,me.lm*5]);
+  return parts;
+}
+function awardXP(me,rank,R){
+  if(!S.game||S.mode!=='local') return null;
+  if(S.game.xp) return S.game.xp; // 同じゲームで2回はもらえない
+  const parts=xpFor(me,rank,R), gain=Math.max(5,parts.reduce((s,x)=>s+x[1],0)), before=+(store.get('azakei-city-xp')||0);
+  store.set('azakei-city-xp',before+gain);
+  S.game.xp={before,gain,parts}; saveGame();
+  return S.game.xp;
+}
+function rankResultHTML(x){
+  if(!x) return '';
+  const a=rankOf(x.before), b=rankOf(x.before+x.gain), up=b.i>a.i;
+  return `<div class="rankres${up?' up':''}"><div class="slab">社長ランク</div>
+    <div class="rr-top"><span class="rk-lv">Lv.${b.i+1}</span><b>${b.name}</b><em>＋${x.gain} 経験値</em></div>
+    <span class="rk-bar"><i data-from="${up?0:Math.round(a.p*100)}" data-to="${Math.round(b.p*100)}" style="width:${up?0:Math.round(a.p*100)}%"></i></span>
+    <small>${x.parts.map(p=>`${p[0]} +${p[1]}`).join('・')}</small>
+    ${up?`<div class="rr-up">🎉 ランクアップ！「${a.name}」→「${b.name}」</div>`:`<small>${b.hi?`次の「${b.next}」まで あと${b.hi-(x.before+x.gain)}`:'最高ランク！'}</small>`}</div>`;
+}
 function showResult(){
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey();
   const hs=S.mode==='local'?humans():[], many=hs.length>1;
@@ -2158,6 +2203,7 @@ function showResult(){
   if(!win) return;
   const peak=R.eras.reduce((a,b)=>b.gdp>a.gdp?b:a,R.eras[0]||{gdp:0,y:'-'});
   const daily=S.mode==='local'&&S.game&&S.game.daily;
+  const xp=me?awardXP(me,mi,R):null;
   const text=many
     ?`AZAKEI CITY 1964→2022 対戦結果\n${arr.map((o,i)=>`${i+1}位 ${o.nick}（${TY[o.ty]?.name||''}）${o.score}点`).join('\n')}`
     :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
@@ -2166,6 +2212,7 @@ function showResult(){
     <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
     ${chalResultHTML()}
+    ${rankResultHTML(xp)}
     ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
     <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div></div>
@@ -2177,6 +2224,8 @@ function showResult(){
     <div class="btns"><button class="go" type="button" id="again">新しい街をつくる</button><button class="ghost" type="button" id="openBook">社長手帳</button><button class="ghost" type="button" id="shareImg">📷 結果を画像に</button><button class="ghost" type="button" id="copyRes">結果をコピー</button><button class="ghost" type="button" id="closeRes">街をながめる</button></div>
   </div>`;
   $('resultbg').hidden=false; sfx.end();
+  // ランクのゲージを、少し待ってから伸ばす（ランクアップなら、ファンファーレ）
+  setTimeout(()=>{const bar=$('resultbg').querySelector('.rankres .rk-bar i');if(bar)bar.style.width=bar.dataset.to+'%';if($('resultbg').querySelector('.rankres.up'))sfx.goal()},700);
   $('again').onclick=()=>{$('resultbg').hidden=true;showSetup()};
   $('closeRes').onclick=()=>{$('resultbg').hidden=true;toggleCity(true)};
   playTimelapse(); $('tlPlay').onclick=playTimelapse;
@@ -2688,6 +2737,7 @@ const BOOK=[
       <li>暴落の前に<b>保険</b>を。周りの産業をNEWSの▼から守る。</li>
       <li>市場はライバルと共通。<b>相手がほしいカードを先にとる</b>のも作戦。</li>
       <li>名所とお題の<b>ボーナス</b>は大きい。早い者勝ち。</li>
+      <li>ゲームを終えるたびに<b>経験値</b>がたまり、<b>社長ランク</b>が上がる（かけだし社長 → … → 伝説の経営者）。スコア・1位・目標達成・名所で多くもらえる。</li>
     </ul>
     <div class="bk-grid">
       <div class="bk-box" style="margin:0"><b>ひとりで</b><br>CPUの社長2人と対戦。</div>
@@ -2777,10 +2827,12 @@ function chalResultHTML(){
 /* ---------- ホーム画面 ---------- */
 function showHome(){
   S.homeOpen=true;
-  let cont='';
+  let cont="", city=null;
   if(S.game&&S.game.tiles.length){
     const keep=S.mode; S.mode='local'; syncEL();
     const R=replay(S.game.tiles,S.game.seed), e=Math.floor(R.n/ERA);
+    // ホームの背景に、前に遊んだ街を立体で
+    if(R.n>=4) city={cells:R.g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null)),age:R.n>=ERA*NE()?"reiwa":H(e).age,y:R.n>=ERA*NE()?2022:H(e).y,done:R.n>=ERA*NE()};
     if(R.n<ERA*NE()){const ev=H(e);cont=`<button class="cont" type="button" data-h="cont"><span class="big">つづきから</span><span>${ev.y}年代「${esc(ev.n)}」・${R.n}手目<small>${S.game.players.filter(p=>!p.cpu).map(p=>`${TY[p.ty].face} ${esc(p.nick)}`).join('・')}${S.game.daily?' ・ 今日の街':''}${S.game.short?' ・ ショート':''}</small></span><span class="arrow">→</span></button>`}
     S.mode=keep; syncEL();
   }
@@ -2793,7 +2845,8 @@ function showHome(){
       <div class="logo">AZAKEI CITY</div>
       <div class="tag">1964→2022。60年の経済を、街ごと生き抜け。</div>
       <p class="tag2">建物を建てて、となりどうしで稼ぎを増やす。オイルショックもバブルもリーマン・ショックも、街ごと乗りこえろ。</p>
-      <div class="skyline" aria-hidden="true">${sky.join('')}</div>
+      ${city?`<div class="homecity"><canvas id="homeCity" aria-label="あなたの街"></canvas><span class="hc-lab">${city.done?"前回の街（2022年）":`あなたの街（${city.y}年代）`}</span></div>`:`<div class="skyline" aria-hidden="true">${sky.join("")}</div>`}
+      ${rankChip(+(store.get("azakei-city-xp")||0))}
       <div class="years">${HIST.map((h,i)=>i%2===0?`<span><b>${h.y}</b> ${esc(h.n)}</span>`:'').join('')}</div>
     </div>
     ${cont}
@@ -2810,6 +2863,7 @@ function showHome(){
     <p class="homefoot">AZAKEI（麻経）・麻布中学校・高等学校 経済系同好会</p>
   </div>`;
   $('home').hidden=false;
+  if(city) homeCityLoop(city);
   const f=$('home').querySelector('.cont,.mbtn.main'); if(f) f.focus();
 }
 // すぐ遊ぶ：設定画面をとばして、ひとり・ショートで始める（社長タイプは前回のもの、なければおまかせ）
@@ -2820,6 +2874,16 @@ function quickStart(){
   SU.rows=[{nick:S.nick||'',ty},{nick:'',ty:null},{nick:'',ty:null},{nick:'',ty:null}];
   startGame();
   toast(`${TY[ty].face} <b>${TY[ty].name}社長</b>でスタート！ タイプは右上で変えられます`);
+}
+// ホームの街：車と雲がゆっくり動く（ホームを閉じたら止まる）
+function homeCityLoop(city){
+  const cv=$('homeCity'); if(!cv) return;
+  const focus=[[0,0],[0,N-1],[N-1,0],[N-1,N-1]]; // 高いビルが切れないよう、地図全体をうつす
+  const tick=()=>{if(!S.homeOpen||!document.body.contains(cv)) return;
+    isoDraw(cv,city.cells,city.age,performance.now(),{amb:!reduced(),time:city.done?.9:.35,focus});
+    if(!reduced()) setTimeout(()=>document.hidden?tick():requestAnimationFrame(tick),document.hidden?600:66);
+    else if(!cv.clientWidth||cv.width<cv.clientWidth) setTimeout(tick,300)}; // 見えないあいだは、ゆっくり待つ
+  tick();
 }
 function hideHome(){S.homeOpen=false;$('home').hidden=true}
 $('home').addEventListener('click',e=>{
