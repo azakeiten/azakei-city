@@ -674,6 +674,14 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .rk-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffc83a,#ff9a3a);transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
 .rankres{display:grid;gap:6px;margin:10px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
 .recap{display:grid;gap:10px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
+.pbline{margin:10px 0;padding:12px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(255,200,58,.22),rgba(255,154,58,.12));border:1px solid var(--gold);font-size:14px;text-align:left;animation:gpop 1s ease .3s both}
+.pbline b{color:var(--gold)}
+.recs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}
+.recs div{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);display:grid;gap:2px;text-align:left}
+.recs small{color:var(--muted);font-size:11px;font-weight:800}
+.recs b{font-size:18px;font-family:var(--mono)}
+.recs.best b{color:var(--gold)}
+@media (max-width:640px){.recs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .rchart{width:100%;height:auto;display:block}
 .rchart .rg{stroke:rgba(255,255,255,.08);stroke-width:1}
 .rchart .ry,.rchart .rx{fill:var(--muted);font-size:11px;font-family:var(--mono)}
@@ -1705,7 +1713,7 @@ function checkBadges(){
 }
 function showBook(){
   const got=store.get('azakei-city-badges')||{}, n=BADGES.filter(b=>got[b.id]).length;
-  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p>
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3>${rankChip(+(store.get("azakei-city-xp")||0))}<div class="slab" style="margin-top:12px">通算記録</div>${recordsHTML()}<div class="slab" style="margin-top:12px">バッジ</div><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p>
     <div class="book">${BADGES.map(b=>`<div class="badge${got[b.id]?' got':''}"><span class="bm">${got[b.id]?'★':'？'}</span><span><b>${b.name}</b><small>${b.hint}${got[b.id]?`（${got[b.id]}）`:''}</small></span></div>`).join('')}</div>
     <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
   $('typebg').hidden=false;
@@ -2214,23 +2222,44 @@ function playTimelapse(){
   tlTimer=setTimeout(step,400);
 }
 // 結果を1枚の画像に（街の立体図＋スコア＋称号）。スマホは共有メニュー、PCは保存
+// シェア画像の折れ線グラフ（結果画面のグラフと同じ考え方）
+function shareChart(ctx,R,arr,mk,x0,y0,w,h){
+  if(!R.eras.length||arr.length<2) return;
+  ctx.save();
+  ctx.fillStyle='rgba(18,20,43,.7)';ctx.beginPath();ctx.roundRect(x0-20,y0-20,w+40,h+40,22);ctx.fill();
+  const pr=170, n=R.eras.length, mx=Math.max(10,...arr.map(o=>o.score),...R.eras.flatMap(e=>Object.values(e.sc||{})));
+  const X=i=>x0+i*(w-pr)/n, Y=v=>y0+h-(v/mx)*h;
+  const ends=[];
+  for(const o of arr.slice().sort((a,b)=>(a.key===mk)-(b.key===mk))){
+    const v=[0,...R.eras.map(e=>(e.sc&&e.sc[o.key])||0)]; v[v.length-1]=o.score;
+    const me=o.key===mk; ctx.strokeStyle=me?'#ffc83a':ownerColor(o.key); ctx.lineWidth=me?8:4; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.globalAlpha=me?1:.7;
+    ctx.beginPath(); v.forEach((s,i)=>i?ctx.lineTo(X(i),Y(s)):ctx.moveTo(X(i),Y(s))); ctx.stroke();
+    ends.push({o,y:Y(v.at(-1)),me});
+  }
+  ctx.globalAlpha=1; ends.sort((a,b)=>a.y-b.y); for(let i=1;i<ends.length;i++) if(ends[i].y-ends[i-1].y<30) ends[i].y=ends[i-1].y+30;
+  ctx.textAlign='left'; ctx.font='800 26px "M PLUS Rounded 1c", sans-serif';
+  for(const e of ends){ctx.fillStyle=e.me?'#ffc83a':ownerColor(e.o.key);ctx.fillText(`${e.o.nick.slice(0,5)} ${e.o.score}`,X(n)+16,e.y+9)}
+  ctx.restore();
+}
 async function shareImage(btn){
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey(), mi=arr.findIndex(o=>o.key===mk), me=arr[mi]||arr[0];
   const W=1080,Hh=1350, cv=document.createElement('canvas'); cv.width=W; cv.height=Hh;
   const ctx=cv.getContext('2d');
   // 街の立体図（別のキャンバスに描いてから貼る）
-  const city=document.createElement('canvas'); city.width=1000; city.height=760; city.style.width='1000px';
+  const city=document.createElement('canvas'); city.width=1000; city.height=600; city.style.width='1000px';
   const cells=R.g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
   const focus=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=R.g[r][c];if(x&&x.k!=='river'&&x.k!=='sta')focus.push([r,c])}
-  isoDraw(city,cells,'reiwa',0,{focus});
+  isoDraw(city,cells,'reiwa',0,{focus,theme:themeNow()});
   const sky=ctx.createLinearGradient(0,0,0,Hh);sky.addColorStop(0,'#0d0826');sky.addColorStop(.55,'#2a1a5e');sky.addColorStop(1,'#12142b');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,Hh);
-  ctx.drawImage(city,0,0,city.width,city.height,40,250,1000,760);
+  ctx.drawImage(city,0,0,city.width,city.height,40,225,1000,600);
   ctx.textAlign='center';
   ctx.fillStyle='#ffc83a';ctx.font='96px "Dela Gothic One", sans-serif';ctx.fillText('AZAKEI CITY',W/2,130);
   ctx.fillStyle='#eef0ff';ctx.font='800 34px "Shippori Mincho B1", serif';
   const modeTxt=S.game&&S.game.chal?'チャレンジ':S.game&&S.game.daily?`今日の街 ${S.game.daily}`:S.game&&S.game.short?'ショート（6時代）':'1964→2022 の60年';
-  ctx.fillText(modeTxt,W/2,190);
+  ctx.fillText(modeTxt,W/2,180);
+  {const k=rankOf(+(store.get("azakei-city-xp")||0));ctx.fillStyle="#9ba1cc";ctx.font="800 26px \"M PLUS Rounded 1c\", sans-serif";ctx.fillText(`社長ランク Lv.${k.i+1} ${k.name}`,W/2,218)}
+  shareChart(ctx,R,arr,mk,90,845,900,165);
   // スコアカード
   ctx.fillStyle='rgba(18,20,43,.88)';ctx.beginPath();ctx.roundRect(70,1030,940,250,28);ctx.fill();
   ctx.strokeStyle='rgba(255,200,58,.6)';ctx.lineWidth=3;ctx.stroke();
@@ -2271,12 +2300,34 @@ function xpFor(me,rank,R){
   if(me.lm) parts.push([`名所 ${me.lm}`,me.lm*5]);
   return parts;
 }
+// 通算記録と自己ベスト（この端末に保存）。awardXP と同じく、1ゲームに1回だけ記録する
+function recordGame(me,rank,arr){
+  const rec=store.get('azakei-city-rec')||{games:0,wins:0,goals:0,goalsMet:0,guesses:0,hits:0,busts:0,lm:0,best:{}};
+  rec.games++; if(rank===0&&arr.length>1) rec.wins++;
+  if(me.goal){rec.goals++;if(me.goal.met)rec.goalsMet++}
+  if(me.guess){rec.guesses++;if(me.guess.hit)rec.hits++}
+  rec.busts+=me.bust||0; rec.lm+=me.lm||0;
+  let pb=null;
+  const mode=S.game.chal?null:S.game.daily?'daily':S.game.short?'short':'full';
+  if(mode){const old=rec.best[mode];if(!old||me.score>old.score){pb={mode,prev:old?old.score:null,score:me.score};rec.best[mode]={score:me.score,date:todayStr()}}}
+  store.set('azakei-city-rec',rec);
+  return pb;
+}
+const MODEN={full:'フル（12時代）',short:'ショート',daily:'今日の街'};
+function pbHTML(pb){return pb?`<div class="pbline">🏆 <b>自己ベスト${pb.prev==null?'':'更新'}！</b> ${MODEN[pb.mode]} ${pb.score}点${pb.prev==null?'（はじめての記録）':`（これまで ${pb.prev}点）`}</div>`:''}
+function recordsHTML(){
+  const r=store.get('azakei-city-rec'); if(!r||!r.games) return '<p class="empty">まだ記録がありません。1ゲーム遊ぶと、ここに記録がたまります。</p>';
+  const pc=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  const cells=[['遊んだ回数',r.games+'回'],['1位',r.wins+'回'],['🎯 目標の達成率',pc(r.goalsMet,r.goals)],['🔍 予想の的中率',pc(r.hits,r.guesses)],['完成させた名所',r.lm+'つ'],['倒産した会社',r.busts+'社']];
+  return `<div class="recs">${cells.map(c=>`<div><small>${c[0]}</small><b>${c[1]}</b></div>`).join('')}</div>
+    <div class="recs best">${Object.keys(MODEN).map(m=>`<div><small>自己ベスト・${MODEN[m]}</small><b>${r.best[m]?r.best[m].score+'点':'—'}</b>${r.best[m]?`<small>${r.best[m].date}</small>`:''}</div>`).join('')}</div>`;
+}
 function awardXP(me,rank,R){
   if(!S.game||S.mode!=='local') return null;
   if(S.game.xp) return S.game.xp; // 同じゲームで2回はもらえない
   const parts=xpFor(me,rank,R), gain=Math.max(5,parts.reduce((s,x)=>s+x[1],0)), before=+(store.get('azakei-city-xp')||0);
   store.set('azakei-city-xp',before+gain);
-  S.game.xp={before,gain,parts}; saveGame();
+  S.game.xp={before,gain,parts,pb:recordGame(me,rank,Object.values(R.own).sort((a,b)=>b.score-a.score))}; saveGame();
   return S.game.xp;
 }
 function rankResultHTML(x){
@@ -2306,7 +2357,7 @@ function recapHTML(R,arr,mk){
   const me=arr.find(o=>o.key===mk), hl=[];
   if(me){
     const best=R.log.filter(x=>(x.type==='b'||x.type==='m')&&x.ok===mk).sort((a,b)=>b.d-a.d)[0];
-    if(best&&best.d>0) hl.push(['🏢','最高の一手',`${H(Math.floor(best.n/ERA)).y}年代、${best.name?esc(best.name):T[best.k].name}${best.type==='m'?'を買収':'を建てて'} <b>${sg(best.d)}</b>`]);
+    if(best&&best.d>0) hl.push(['🏢','最高の一手',`${H(Math.floor(best.n/ERA)).y}年「${esc(H(Math.floor(best.n/ERA)).n)}」の時代に、${best.name?esc(best.name):T[best.k].name}${best.type==='m'?'を買収':'を建てて'} <b>${sg(best.d)}</b>`]);
     const pe=R.eras.slice().sort((a,b)=>((b.pay||{})[mk]||0)-((a.pay||{})[mk]||0))[0];
     if(pe&&(pe.pay||{})[mk]) hl.push(['💰','いちばん稼いだ時代',`${pe.y}年「${esc(H(pe.e).n)}」の決算で <b>+${pe.pay[mk]}</b>`]);
     const bz=R.eras.map(x=>({x,b:x.bust.filter(b=>b.ok===mk)})).filter(z=>z.b.length).sort((a,b)=>b.b.length-a.b.length)[0];
@@ -2335,6 +2386,7 @@ function showResult(){
     <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
     ${chalResultHTML()}
+    ${pbHTML(xp&&xp.pb)}
     ${rankResultHTML(xp)}
     ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}${me&&me.guess?(()=>{const gs=me.guess,p=arr.find(o=>o.key===gs.target),G=GOALS.find(x=>x.id===gs.id);return `<div class="${gs.hit?"ok":""}"><span>🔍 あなたの予想：${p?esc(sh(p.nick)):""}は <b>${G.name}</b></span><em>${gs.hit?`的中！ ＋${guessPts()}`:"はずれ"}</em></div>`})():""}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
