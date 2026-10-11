@@ -599,6 +599,31 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 @keyframes gmk{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .fastbtn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
+.yearflip{position:fixed;inset:0;z-index:28;display:grid;place-content:center;justify-items:center;gap:10px;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(12,10,40,.82),rgba(4,5,16,.55) 70%)}
+.yf-in{display:flex;align-items:center;gap:18px;font-family:var(--display);font-size:clamp(48px,12vw,110px);line-height:1;color:var(--ink)}
+.yf-old{opacity:.45}
+.yf-arr{font-size:.5em;color:var(--gold)}
+.yf-new{color:var(--gold);text-shadow:0 0 30px rgba(255,200,58,.5)}
+.yf-name{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:clamp(18px,4.5vw,30px);color:var(--ink)}
+.yearflip.go{animation:yfbg 1.5s ease both}
+.yearflip.go .yf-old{animation:yfold 1.5s ease both}
+.yearflip.go .yf-new{animation:yfnew 1.5s cubic-bezier(.2,.9,.3,1.2) both}
+.yearflip.go .yf-name{animation:yfname 1.5s ease both}
+@keyframes yfbg{0%{opacity:0}12%{opacity:1}85%{opacity:1}100%{opacity:0}}
+@keyframes yfold{0%{transform:translateY(0);opacity:.9}35%{transform:translateY(-12px);opacity:.45}100%{opacity:.45}}
+@keyframes yfnew{0%,25%{transform:rotateX(90deg);opacity:0}50%{transform:rotateX(0) scale(1.12);opacity:1}62%{transform:scale(1)}100%{opacity:1}}
+@keyframes yfname{0%,45%{opacity:0;transform:translateY(10px)}65%{opacity:1;transform:none}100%{opacity:1}}
+.missions{width:min(420px,100%);display:grid;gap:6px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:left}
+.ms-head{display:flex;justify-content:space-between;align-items:center}
+.ms-head b{font-size:14px}
+.ms-head small{color:var(--gold);font-weight:800;font-family:var(--mono)}
+.ms{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;font-size:13px}
+.ms small{color:var(--muted);margin-left:4px}
+.ms em{font-style:normal;font-family:var(--mono);font-weight:800;color:var(--gold);font-size:12px}
+.ms-ck{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:800}
+.ms.done{color:var(--muted)}
+.ms.done span:nth-child(2){text-decoration:line-through}
+.ms.done .ms-ck{background:#3ad283;border-color:#3ad283;color:#0b2a17}
 .bestco{display:grid;gap:8px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));background:linear-gradient(135deg,rgba(255,200,58,.08),rgba(255,255,255,.03));text-align:left}
 .bc-in{display:flex;align-items:center;gap:12px}
 .bc-main{flex:1;min-width:0}
@@ -2291,6 +2316,15 @@ function toast(html){
 }
 
 /* ---------- settlement: coins, crumbling, then the newspaper ---------- */
+// 時代が変わる演出：年号がめくれて、新しい時代の名前が出る（そのあと新聞）
+function yearFlip(rep,done){
+  if(reduced()||finished()||!rep){done();return}
+  const nx=H(eraNow()); if(!nx||nx.y===rep.y){done();return}
+  let el=$('yearflip'); if(!el){el=document.createElement('div');el.id='yearflip';el.className='yearflip';document.body.appendChild(el)}
+  el.innerHTML=`<div class="yf-in"><span class="yf-old">${rep.y}</span><span class="yf-arr">→</span><span class="yf-new">${nx.y}</span></div><div class="yf-name">${esc(nx.n)}</div>`;
+  el.hidden=false; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); tone(392,.12,'triangle',.05); tone(587,.2,'triangle',.05,.5);
+  setTimeout(()=>{el.hidden=true;done()},1500);
+}
 // 決算：自分の建物から、スコア（右上）に向かってコインが飛ぶ
 function flyCoins(rep){
   if(reduced()||!rep) return;
@@ -2325,7 +2359,7 @@ function settleFx(rep){
     }
   }
   flyCoins(rep);
-  setTimeout(showPaper,wait);
+  setTimeout(()=>yearFlip(rep,showPaper),wait);
 }
 let paperTimer=null;
 function names(list){const a=list.filter(x=>x.name).map(x=>`「${x.name}」`);return a.length?a.slice(0,3).join('')+(a.length>3?`ほか${a.length-3}社`:''):''}
@@ -2360,6 +2394,7 @@ $('paperbg').addEventListener('click',ev=>{
   S.game.quiz[i]=ok?1:2; saveGame();
   const rec=store.get('azakei-city-rec')||{games:0,wins:0,goals:0,goalsMet:0,guesses:0,hits:0,busts:0,lm:0,best:{}};
   rec.quizN=(rec.quizN||0)+1; if(ok){rec.quizOk=(rec.quizOk||0)+1; store.set('azakei-city-xp',+(store.get('azakei-city-xp')||0)+5)} store.set('azakei-city-rec',rec);
+  if(ok){const ms=misState();ms.quiz=(ms.quiz||0)+1;if(todayMis().some(m=>m.id==='quiz3')&&!ms.done.quiz3&&ms.quiz>=3){ms.done.quiz3=1;store.set('azakei-city-xp',+(store.get('azakei-city-xp')||0)+10);setTimeout(()=>toast('📋 ミッション達成！「時代クイズに3問正解」 経験値＋10'),400)}store.set('azakei-city-mis',ms)}
   ok?sfx.goal():tone(160,.18,'sawtooth',.04);
   box.querySelectorAll('[data-qa]').forEach(x=>{x.disabled=true;x.classList.add(x.dataset.qa==='1'?'right':'wrong')});
   box.insertAdjacentHTML('beforeend',`<p class="qx">${ok?'⭕ 正解！ 経験値＋5':'❌ 残念…　答えは「'+esc(Q.a[0])+'」'}　${esc(Q.x)}</p>`);
@@ -2543,10 +2578,36 @@ function recordsHTML(){
     ${Object.keys(r.vs||{}).length?`<div class="recs vs">${Object.entries(r.vs).map(([n,v])=>`<div><small>対 ${esc(n)}</small><b>${v.w}勝${v.l}敗</b></div>`).join("")}</div>`:""}
     <div class="recs best">${Object.keys(MODEN).map(m=>`<div><small>自己ベスト・${MODEN[m]}</small><b>${r.best[m]?r.best[m].score+'点':'—'}</b>${r.best[m]?`<small>${r.best[m].date}</small>`:''}</div>`).join('')}</div>`;
 }
+// 今日のミッション：日付で3つ決まる（みんな同じ）。達成すると経験値。チャレンジは対象外
+const MISSIONS=[
+  {id:'win',t:'1位になる',pts:20,chk:(me,rank,arr)=>rank===0&&arr.length>1},
+  {id:'lm2',t:'1ゲームで名所を2つ完成させる',pts:15,chk:me=>(me.lm||0)>=2},
+  {id:'safe',t:'産業を6つ以上建てて、倒産ゼロで終える',pts:15,chk:me=>!me.bust&&Object.entries(me.kinds||{}).reduce((s,[k,v])=>s+(isInd(k)?v:0),0)>=6},
+  {id:'goal',t:'ひみつの目標を達成する',pts:15,chk:me=>!!(me.goal&&me.goal.met)},
+  {id:'quiz3',t:'時代クイズに3問正解する（今日の合計）',pts:10,chk:()=>false},
+  {id:'grow3',t:'1ゲームで★の会社を3つ持って終える',pts:15,chk:(me,rank,arr,R)=>{let n=0;for(const row of R.g)for(const x of row)if(x&&x.ok===me.key&&(x.lv||1)>=2)n++;return n>=3}},
+  {id:'crown2',t:'時代レースで2回 首位（👑）になる',pts:15,chk:me=>(me.crown||0)>=2},
+  {id:'full',t:'フル（12時代）を最後まで遊ぶ',pts:20,chk:()=>!S.game.short&&!S.game.daily},
+  {id:'guess',t:'ライバルの目標を予想して当てる',pts:15,chk:me=>!!(me.guess&&me.guess.hit)},
+  {id:'buy',t:'買収を1回成功させる（「ぜんぶ」ルール）',pts:10,chk:me=>(me.buys||0)>=1}
+];
+function todayMis(){const d=todayStr();let h=seedOf('mis-'+d);const pool=MISSIONS.slice(),out=[];while(out.length<3){out.push(pool.splice(h%pool.length,1)[0]);h=Math.floor(h/7)+13}return out}
+function misState(){const d=todayStr();let s=store.get('azakei-city-mis');if(!s||s.date!==d)s={date:d,done:{},quiz:0};return s}
+function checkMissions(me,rank,arr,R){
+  const s=misState(), got=[];
+  for(const m of todayMis()) if(!s.done[m.id]&&m.chk(me,rank,arr,R)){s.done[m.id]=1;got.push(m)}
+  store.set('azakei-city-mis',s); return got;
+}
+function missionsHTML(){
+  const s=misState(), list=todayMis(), n=list.filter(m=>s.done[m.id]).length;
+  return `<div class="missions"><div class="ms-head"><b>📋 今日のミッション</b><small>${n}/3 達成${n===3?' 🎉':''}</small></div>${list.map(m=>`<div class="ms${s.done[m.id]?' done':''}"><span class="ms-ck">${s.done[m.id]?'✓':''}</span><span>${m.t}${m.id==='quiz3'&&!s.done[m.id]?`<small>（いま ${s.quiz}/3）</small>`:''}</span><em>+${m.pts}</em></div>`).join('')}</div>`;
+}
 function awardXP(me,rank,R){
   if(!S.game||S.mode!=='local') return null;
   if(S.game.xp) return S.game.xp; // 同じゲームで2回はもらえない
-  const parts=xpFor(me,rank,R), gain=Math.max(5,parts.reduce((s,x)=>s+x[1],0)), before=+(store.get('azakei-city-xp')||0);
+  const parts=xpFor(me,rank,R);
+  if(!S.game.chal) for(const m of checkMissions(me,rank,Object.values(R.own).sort((a,b)=>b.score-a.score),R)) parts.push([`📋 ${m.t}`,m.pts]);
+  const gain=Math.max(5,parts.reduce((s,x)=>s+x[1],0)), before=+(store.get("azakei-city-xp")||0);
   store.set('azakei-city-xp',before+gain);
   {const rg=recordGame(me,rank,Object.values(R.own).sort((a,b)=>b.score-a.score));S.game.xp={before,gain,parts,pb:rg.pb,vs:rg.vs}} saveGame();
   return S.game.xp;
@@ -3140,6 +3201,7 @@ const BOOK=[
       <li>市場はライバルと共通。<b>相手がほしいカードを先にとる</b>のも作戦。</li>
       <li>名所とお題の<b>ボーナス</b>は大きい。早い者勝ち。</li>
       <li>ゲームを終えるたびに<b>経験値</b>がたまり、<b>社長ランク</b>が上がる（かけだし社長 → … → 伝説の経営者）。スコア・1位・目標達成・名所で多くもらえる。Lv.3・5・7で<b>街のテーマ</b>（桜・雪・ネオン）が使えるようになる。</li>
+      <li>ホーム画面の<b>📋 今日のミッション</b>は毎日3つ。達成すると経験値がもらえる。</li>
     </ul>
     <div class="bk-grid">
       <div class="bk-box" style="margin:0"><b>ひとりで</b><br>CPUの社長2人と対戦。</div>
@@ -3254,6 +3316,7 @@ function showHome(){
       ${city?`<div class="homecity"><canvas id="homeCity" aria-label="あなたの街"></canvas><span class="hc-lab">${city.done?"前回の街（2022年）":`あなたの街（${city.y}年代）`}</span></div>`:`<div class="skyline" aria-hidden="true">${sky.join("")}</div>`}
       ${rankChip(+(store.get("azakei-city-xp")||0))}
       ${themePicker()}
+      ${missionsHTML()}
       <div class="years">${HIST.map((h,i)=>i%2===0?`<span><b>${h.y}</b> ${esc(h.n)}</span>`:'').join('')}</div>
     </div>
     ${cont}
