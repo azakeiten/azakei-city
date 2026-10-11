@@ -402,6 +402,16 @@ ol.rules b{color:var(--ink)}
 .cell.ripple{animation:ripple .7s ease}
 @keyframes ripple{0%{box-shadow:0 0 0 0 var(--gold)}100%{box-shadow:0 0 0 8px transparent}}
 .float.side{font-family:var(--mono);font-size:12px;top:2px}
+.paper .nums{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(60,40,10,.35);font-family:var(--body);display:grid;gap:5px}
+.paper .nums .slab{color:#7a5a1e;margin:0}
+.paper .num{display:grid;grid-template-columns:6.5em 1fr auto auto;align-items:center;gap:8px;font-size:12.5px;font-weight:700}
+.paper .num i{height:8px;border-radius:99px;background:linear-gradient(90deg,#2f6fb0 var(--w),rgba(60,40,10,.12) var(--w))}
+.paper .num i.pay{background:linear-gradient(90deg,#c2412d var(--w),rgba(60,40,10,.12) var(--w))}
+.paper .num b{font-family:var(--mono);font-size:13px}
+.paper .num em{font-style:normal;font-size:11px;font-weight:800;padding:1px 6px;border-radius:99px}
+.paper .num em.up{background:#d8efd9;color:#1d6b32}
+.paper .num em.dn{background:#f6d9d4;color:#9b2a1a}
+.paper .nums small{font-size:11px;color:#7a6a4a}
 .paper .tip{margin-top:8px;font-family:var(--body);font-size:12px;font-weight:700;background:#f1e2b6;border-radius:3px;padding:6px 9px}
 
 /* rule as a picture formula */
@@ -577,6 +587,7 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 .goalchip b{color:var(--gold)}
 .mcard .gmark{position:absolute;top:4px;right:4px;font-size:13px;line-height:1;padding:3px;border-radius:999px;background:rgba(12,14,36,.75);box-shadow:0 0 0 1.5px var(--gold);animation:gmk 2.4s ease-in-out infinite}
 @keyframes gmk{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.fastbtn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
 .bestco{display:grid;gap:8px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));background:linear-gradient(135deg,rgba(255,200,58,.08),rgba(255,255,255,.03));text-align:left}
 .bc-in{display:flex;align-items:center;gap:12px}
@@ -991,7 +1002,7 @@ body.drawer .side{transform:none}
 <div class="tutor" id="tutor" hidden role="status" aria-live="polite"></div>
 <div class="tray" id="tray" aria-label="手札（市場のカード）">
   <div class="tray-in">
-    <div class="tray-top"><div class="tray-msg" id="trayMsg"></div><button class="hintbtn undo" id="undoBtn" type="button" hidden>↶ 1手もどす</button><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
+    <div class="tray-top"><div class="tray-msg" id="trayMsg"></div><button class="hintbtn undo" id="undoBtn" type="button" hidden>↶ 1手もどす</button><button class="hintbtn fastbtn" id="fastBtn" type="button" aria-pressed="false" title="CPUの番を早送り" hidden>⏩</button><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
     <div class="mk" id="market"></div>
     <div class="dock" id="dock" hidden></div>
   </div>
@@ -1245,6 +1256,19 @@ const SENPAI=[
   "巣ごもり。小売とメディアが＋3、運輸は−3。家の近くの店が強い",
   "資源高と円安。エネルギーと製造が＋3。最後の決算、がんばって！"
 ];
+// その頃の数字（HISTと同じ順）。ドル円は年平均、初任給は大卒の目安。どちらもおおよその値
+const NUMS=[{usd:360,pay:2.1},{usd:272,pay:6.2},{usd:239,pay:14.0},{usd:128,pay:15.3},{usd:135,pay:17.9},{usd:94,pay:19.4},{usd:114,pay:19.6},{usd:103,pay:19.8},{usd:88,pay:20.0},{usd:98,pay:19.8},{usd:107,pay:22.6},{usd:131,pay:22.8}];
+function numsHTML(e){
+  const i=HI(e), x=NUMS[i]; if(!x) return '';
+  const pi=EL.indexOf(i)>0?EL[EL.indexOf(i)-1]:null, p=pi!=null?NUMS[pi]:null;
+  const fx=p?(x.usd<p.usd?`<em class="up">↓ 円高</em>`:x.usd>p.usd?`<em class="dn">↑ 円安</em>`:''):'';
+  const py=p?(x.pay>p.pay?`<em class="up">↑ ${x.pay/p.pay>=2?`約${Math.round(x.pay/p.pay)}倍`:`${Math.round((x.pay/p.pay-1)*100)}%`}</em>`:x.pay<p.pay?`<em class="dn">↓</em>`:''):'';
+  const w=v=>Math.max(6,Math.round(v/360*100)), wp=v=>Math.max(6,Math.round(v/23*100));
+  return `<div class="nums"><div class="slab">その頃の数字（${HIST[i].y}年・約）</div>
+    <div class="num"><span>1ドル</span><i style="--w:${w(x.usd)}%"></i><b>${x.usd}円</b>${fx}</div>
+    <div class="num"><span>大卒の初任給</span><i class="pay" style="--w:${wp(x.pay)}%"></i><b>${x.pay.toFixed(1)}万円</b>${py}</div>
+    ${p?`<small>前の時代（${HIST[pi].y}年）：1ドル${p.usd}円・初任給${p.pay.toFixed(1)}万円</small>`:''}</div>`;
+}
 // 経済まめ知識（号外にのせる）
 const TIPS=[
   "東海道新幹線は、開業したとき東京〜新大阪を4時間で結んだ。",
@@ -1446,7 +1470,8 @@ const seedNow=()=>S.mode==='local'?(S.game?S.game.seed:1):SHARED_SEED;
 const viewerP=()=>S.game&&S.game.players.find(p=>p.key===S.viewer);
 const myTy=()=>S.mode==='local'?(viewerP()||{}).ty:S.tyShared;
 const myKey=()=>S.mode==='local'?(S.viewer||'h1'):(NET.uid||('n:'+S.nick));
-const eraNow=()=>Math.floor(S.R.n/ERA);
+// ゲームが終わったあとは「最後の時代」のまま（1964年に戻って数えないように）
+const eraNow=()=>{const e=Math.floor(S.R.n/ERA);return S.mode==="local"&&S.game&&e>=NE()?NE()-1:e};
 const finished=()=>S.mode==='local'&&S.R.n>=ERA*NE();
 const moveCount=()=>S.game?S.game.tiles.filter(t=>t.k!=='pol').length:0;
 const turnPlayer=()=>S.game?S.game.players[moveCount()%S.game.players.length]:null;
@@ -1786,6 +1811,10 @@ function showBook(){
 /* ---------- render ---------- */
 function chipRow(r){return IND.map((n,i)=>`<span class="chip k-${KEYS[i+1]}"><i></i>${n}<b class="${cls(r[i])}">${r[i]>0?'▲':r[i]<0?'▼':''}${Math.abs(r[i])||'0'}</b></span>`).join('')}
 function syncEL(){SIMPLE=S.mode==="local"&&!!S.game&&!!S.game.simple;NOBUY=S.mode==="local"&&!!S.game&&(S.game.players.length===1||SIMPLE);document.body.classList.toggle("simple",SIMPLE);EL=S.mode==="local"&&S.game?(Array.isArray(S.game.eras)?S.game.eras:S.game.short?SHORT:FULL):FULL}
+// ⏩ 早送り：CPUの番を速く進める（この端末に記憶）
+S.fast=!!store.get('azakei-city-fast');
+function renderFast(){const b=$('fastBtn'); if(!b) return; const on=S.mode==='local'&&!!S.game&&S.game.players.some(p=>p.cpu)&&!finished(); b.hidden=!on; b.setAttribute('aria-pressed',String(S.fast)); b.title=S.fast?'早送り中（押すと ふつうの速さ）':'CPUの番を早送り'}
+$('fastBtn').addEventListener('click',()=>{S.fast=!S.fast;store.set('azakei-city-fast',S.fast);renderFast();toast(S.fast?'⏩ 早送り：CPUの番をすばやく進めます':'ふつうの速さに戻しました')});
 // 会社カード：建物をタップすると、盤面の上にその会社の歴史と稼ぎを出す
 function renderCoCard(){
   const el=$('coCard'); if(!el) return;
@@ -1847,7 +1876,7 @@ function render(){
   spark(fin?R.hist:R.hist.concat(cur));
   if(view3d()) setTimeout(drawBoard3d,0);
   bgmSync();
-  setTimeout(drawMini,0); renderRace(); renderGoal(); renderGuess(); commentary(); renderCoCard();
+  setTimeout(drawMini,0); renderRace(); renderGoal(); renderGuess(); commentary(); renderCoCard(); renderFast();
   renderTurn(); renderEra(); renderBoard(); renderMarket(); renderPre(); renderRank(); renderLog(); renderLms(); renderTools(); renderMe(); renderCoach();
   const prev=S.seen[S.mode];
   S.seen[S.mode]=R.n;
@@ -2300,7 +2329,7 @@ function showPaper(){
   $('paperbg').innerHTML=`<div class="paper" role="dialog" aria-label="決算と時代の変化">
     <div class="mast"><span>AZAKEI 経済新聞</span><small>${fin?'令和4年':ev.w}</small><span>${fin?'最終号':'号外'}</span></div>
     ${fin?`<div class="yr">2022</div><h3>${S.game&&S.game.chal?"チャレンジ、決算完了":"60年の決算、完了"}</h3><p>${S.game&&S.game.chal?"この時代を、街ごと乗りこえました。結果を見てみよう。":"東京オリンピックから資源高まで。この街は、日本の60年を生き抜きました。"}</p>`
-         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${esc(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>`}
+         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${esc(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>${numsHTML(e)}`}
     <div class="box"><div class="hd">${done.y}年代（${done.n}）の決算</div>
       <div>街のGDP <b>${rep.gdp}</b></div>
       <div>${payLine}</div>
@@ -2737,7 +2766,7 @@ function advance(){
   const R=replay(S.game.tiles,S.game.seed);
   if(R.n>=ERA*NE()||!validCells(R.g).length){S.busy=false;render();return}
   const tp=turnPlayer();
-  if(tp.cpu){S.busy=true;renderMarket();renderPre();renderTurn();setTimeout(cpuStep,reduced()?120:420);return}
+  if(tp.cpu){S.busy=true;renderMarket();renderPre();renderTurn();setTimeout(cpuStep,reduced()||S.fast?120:420);return}
   const changed=S.viewer!==tp.key;
   S.viewer=tp.key; S.busy=false; S.sel=null; S.cell=null; S.insp=null;
   render();
@@ -2795,7 +2824,7 @@ function cpuStep(){
   S.game.tiles.push(best?{r:best.r,c:best.c,k:best.k,src:best.src,t:Date.now(),ok:tp.key,nick:tp.nick,ty:tp.ty}:{k:'pass',t:Date.now(),ok:tp.key});
   saveGame();
   render(); if(best){floatAt(best.r,best.c,best.d);rippleAt(best.ch);cpuTalk(tp,best);cityVoice()}
-  setTimeout(advance,reduced()?120:380);
+  setTimeout(advance,reduced()||S.fast?110:380);
 }
 async function place(){
   const card=selCard();
@@ -2993,6 +3022,7 @@ const BOOK=[
         <li>盤面の右上のボタンで<b>立体</b>と<b>平面</b>を切りかえられる。立体では、街の上に直接建てられる。</li>
         <li>NEWS・番付・名所・できごと・ルールは、右上の<b>☰</b>にまとめてある。</li>
         <li>ひとりで遊ぶときは<b>↶ 1手もどす</b>で、やり直せる（今日の街はのぞく）。</li>
+        <li>CPUの番を待つのが長いときは、手札の上の<b>⏩</b>で早送りできる。</li>
       </ol></div>
     <div class="bk-box">この例：小売の稼ぎ <b>3</b> ＋ となりの住宅が <b>+1</b> ＝ スコア <b>+4</b>。<br>市場はライバルと共通。ほしいカードは先にとられるかも。</div>`},
   {t:'ルールの図の読み方',h:()=>`
