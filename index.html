@@ -402,6 +402,16 @@ ol.rules b{color:var(--ink)}
 .cell.ripple{animation:ripple .7s ease}
 @keyframes ripple{0%{box-shadow:0 0 0 0 var(--gold)}100%{box-shadow:0 0 0 8px transparent}}
 .float.side{font-family:var(--mono);font-size:12px;top:2px}
+.paper .quiz{margin-top:10px;padding:10px 12px;border-radius:6px;background:#fff6dc;border:1.5px solid #c9a24a;font-family:var(--body)}
+.paper .quiz .slab{color:#7a5a1e;margin:0 0 4px}
+.paper .quiz .slab small{font-weight:800;color:#1d6b32}
+.paper .quiz p{margin:0;font-size:13.5px;font-weight:800;line-height:1.5}
+.paper .qa{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.paper .qa button{padding:10px 8px;border-radius:8px;border:1.5px solid #3a2a10;background:#fffdf5;color:#2a1d00;font-weight:800;font-size:13px;cursor:pointer}
+.paper .qa button:hover{background:#ffeec2}
+.paper .qa button.right{background:#d8efd9;border-color:#1d6b32;color:#1d6b32}
+.paper .qa button.wrong{opacity:.55}
+.paper .quiz .qx{margin-top:8px;font-size:12px;font-weight:700;color:#5a4520}
 .paper .nums{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(60,40,10,.35);font-family:var(--body);display:grid;gap:5px}
 .paper .nums .slab{color:#7a5a1e;margin:0}
 .paper .num{display:grid;grid-template-columns:6.5em 1fr auto auto;align-items:center;gap:8px;font-size:12.5px;font-weight:700}
@@ -2320,6 +2330,40 @@ function settleFx(rep){
 let paperTimer=null;
 function names(list){const a=list.filter(x=>x.name).map(x=>`「${x.name}」`);return a.length?a.slice(0,3).join('')+(a.length>3?`ほか${a.length-3}社`:''):''}
 function summarize(list){const m={};for(const x of list)m[x.k]=(m[x.k]||0)+1;return Object.entries(m).map(([k,v])=>`${T[k].name}${v>1?v:''}`).join('・')}
+// 時代クイズ（HISTと同じ順）：a[0]が正解。正解で経験値＋5（スコアには関係しない）
+// 新聞の本文・まめ知識・先輩のひとことに答えが書いていない問題にしてある
+const QUIZ=[
+  {q:'新幹線や高速道路のように、国や自治体がお金を出してつくる工事を何という？',a:['公共事業','民間投資'],x:'道路や橋をつくると、建設の仕事が増え、街の運輸も便利になります。'},
+  {q:'オイルショックのとき、原油の供給を絞った国が多かった地域は？',a:['中東','南米'],x:'サウジアラビアなど中東の産油国が、原油の値段を大きく引き上げました。'},
+  {q:'プラザ合意が結ばれたのは、どこの都市のホテル？',a:['ニューヨーク','パリ'],x:'ニューヨークの「プラザホテル」に、日米英仏独の5か国が集まりました。'},
+  {q:'「日経平均株価」は、何の値段をもとにした数字？',a:['日本の代表的な会社の株価','日本の土地の値段'],x:'日本を代表する225社の株価から計算される、株式市場の体温計のような数字です。'},
+  {q:'景気が悪くなり、物の値段が下がり続けることを何という？',a:['デフレ','インフレ'],x:'値段が下がると会社のもうけが減り、給料も上がりにくくなります。'},
+  {q:'インターネットのホームページを見るためのソフトを何という？',a:['ブラウザ','表計算ソフト'],x:'ブラウザが広まり、だれでもホームページを見られるようになりました。'},
+  {q:'会社が自分の株を、株式市場でだれでも売り買いできるようにすることを何という？',a:['上場','決算'],x:'上場すると、たくさんの人からお金を集めやすくなります。'},
+  {q:'リーマン・ショックのきっかけになった、返すのが難しい人にも貸していたアメリカの住宅ローンを何という？',a:['サブプライムローン','奨学金'],x:'返せない人が増えて、そのローンを組みこんだ金融商品の値段が一気に下がりました。'},
+  {q:'カードやスマホで払うなど、現金を使わない支払いを何という？',a:['キャッシュレス決済','現金書留'],x:'スマホが広まり、買い物の払い方も大きく変わりました。'},
+  {q:'日本で、金利などの「金融政策」を決めるのはどこ？',a:['日本銀行','財務省'],x:'日本銀行が金融緩和をして、お金を借りやすくしました。'},
+  {q:'会社に行かず、家などで仕事をする働き方を何という？',a:['テレワーク','アルバイト'],x:'外出をひかえるため、多くの会社がテレワークを取り入れました。'},
+  {q:'物の値段が全体的に上がり続けることを何という？',a:['インフレ','デフレ'],x:'資源高と円安で、食べ物や電気代など身近な物の値段が上がりました。'}
+];
+function quizHTML(e){
+  if(S.mode!=='local'||!S.game) return '';
+  const i=HI(e), Q=QUIZ[i]; if(!Q) return '';
+  const done=S.game.quiz&&S.game.quiz[i], flip=(i+(S.game.seed||0))%2===1, opts=flip?[Q.a[1],Q.a[0]]:Q.a;
+  if(done) return `<div class="quiz done"><div class="slab">時代クイズ</div><p>${esc(Q.q)}</p><p class="qx">${done===1?'⭕ 正解！':'答え：'+esc(Q.a[0])}　${esc(Q.x)}</p></div>`;
+  return `<div class="quiz" data-qi="${i}"><div class="slab">時代クイズ　<small>正解で 経験値＋5</small></div><p>${esc(Q.q)}</p><div class="qa">${opts.map(o=>`<button type="button" data-qa="${o===Q.a[0]?1:0}">${esc(o)}</button>`).join('')}</div></div>`;
+}
+$('paperbg').addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-qa]'); if(!b) return;
+  const box=b.closest('.quiz'), i=+box.dataset.qi, ok=b.dataset.qa==='1', Q=QUIZ[i];
+  S.game.quiz=S.game.quiz||{}; if(S.game.quiz[i]) return;
+  S.game.quiz[i]=ok?1:2; saveGame();
+  const rec=store.get('azakei-city-rec')||{games:0,wins:0,goals:0,goalsMet:0,guesses:0,hits:0,busts:0,lm:0,best:{}};
+  rec.quizN=(rec.quizN||0)+1; if(ok){rec.quizOk=(rec.quizOk||0)+1; store.set('azakei-city-xp',+(store.get('azakei-city-xp')||0)+5)} store.set('azakei-city-rec',rec);
+  ok?sfx.goal():tone(160,.18,'sawtooth',.04);
+  box.querySelectorAll('[data-qa]').forEach(x=>{x.disabled=true;x.classList.add(x.dataset.qa==='1'?'right':'wrong')});
+  box.insertAdjacentHTML('beforeend',`<p class="qx">${ok?'⭕ 正解！ 経験値＋5':'❌ 残念…　答えは「'+esc(Q.a[0])+'」'}　${esc(Q.x)}</p>`);
+});
 function showPaper(){
   const R=S.R,rep=R.eras.at(-1); if(!rep){S.pause=false;return}
   const e=eraNow(),fin=finished(),ev=H(e),done=H(rep.e),mk=myKey();
@@ -2329,7 +2373,7 @@ function showPaper(){
   $('paperbg').innerHTML=`<div class="paper" role="dialog" aria-label="決算と時代の変化">
     <div class="mast"><span>AZAKEI 経済新聞</span><small>${fin?'令和4年':ev.w}</small><span>${fin?'最終号':'号外'}</span></div>
     ${fin?`<div class="yr">2022</div><h3>${S.game&&S.game.chal?"チャレンジ、決算完了":"60年の決算、完了"}</h3><p>${S.game&&S.game.chal?"この時代を、街ごと乗りこえました。結果を見てみよう。":"東京オリンピックから資源高まで。この街は、日本の60年を生き抜きました。"}</p>`
-         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${esc(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>${numsHTML(e)}`}
+         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${esc(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>${numsHTML(e)}${quizHTML(e)}`}
     <div class="box"><div class="hd">${done.y}年代（${done.n}）の決算</div>
       <div>街のGDP <b>${rep.gdp}</b></div>
       <div>${payLine}</div>
@@ -2341,7 +2385,7 @@ function showPaper(){
   $('paperbg').hidden=false;
   sfx.paper(rep.bust.length>0);
   if(fin){$('paperRes').onclick=()=>{hidePaper();showResult()};$('paperRes').focus()}
-  else{$('paperClose').onclick=hidePaper;$('paperClose').focus();clearTimeout(paperTimer);paperTimer=setTimeout(hidePaper,6000)}
+  else{$("paperClose").onclick=hidePaper;$("paperClose").focus();clearTimeout(paperTimer);if(!$("paperbg").querySelector(".quiz[data-qi]"))paperTimer=setTimeout(hidePaper,6000)} // クイズに答えていないあいだは、自動で閉じない
 }
 function hidePaper(){$('paperbg').hidden=true;clearTimeout(paperTimer);if(S.pause){S.pause=false;renderBoard();renderMarket();renderPre();drawBoard3d()}}
 
@@ -2492,9 +2536,9 @@ const vsTxt=nick=>{const v=vsRec(nick);return v&&(v.w+v.l)?`あなたの${v.w}�
 function vsHTML(list){return list&&list.length?`<div class="vsbox"><div class="slab">ライバルとの対戦成績</div>${list.map(x=>`<div class="vsrow ${x.win?'win':'lose'}"><span>${TY[x.ty]?.face||''} ${esc(x.nick)}</span><em>${x.win?'勝ち':'負け'}</em><b>${x.w}勝${x.l}敗</b></div>`).join('')}</div>`:''}
 function pbHTML(pb){return pb?`<div class="pbline">🏆 <b>自己ベスト${pb.prev==null?'':'更新'}！</b> ${MODEN[pb.mode]} ${pb.score}点${pb.prev==null?'（はじめての記録）':`（これまで ${pb.prev}点）`}</div>`:''}
 function recordsHTML(){
-  const r=store.get('azakei-city-rec'); if(!r||!r.games) return '<p class="empty">まだ記録がありません。1ゲーム遊ぶと、ここに記録がたまります。</p>';
+  const r=store.get('azakei-city-rec'); if(!r||(!r.games&&!r.quizN)) return '<p class="empty">まだ記録がありません。1ゲーム遊ぶと、ここに記録がたまります。</p>';
   const pc=(a,b)=>b?Math.round(a/b*100)+'%':'—';
-  const cells=[['遊んだ回数',r.games+'回'],['1位',r.wins+'回'],['🎯 目標の達成率',pc(r.goalsMet,r.goals)],['🔍 予想の的中率',pc(r.hits,r.guesses)],['完成させた名所',r.lm+'つ'],['倒産した会社',r.busts+'社']];
+  const cells=[['遊んだ回数',r.games+'回'],['1位',r.wins+'回'],['🎯 目標の達成率',pc(r.goalsMet,r.goals)],['🔍 予想の的中率',pc(r.hits,r.guesses)],['完成させた名所',r.lm+'つ'],['倒産した会社',r.busts+'社'],['📰 時代クイズ',r.quizN?`${r.quizOk||0}/${r.quizN}問 正解`:'—']];
   return `<div class="recs">${cells.map(c=>`<div><small>${c[0]}</small><b>${c[1]}</b></div>`).join('')}</div>
     ${Object.keys(r.vs||{}).length?`<div class="recs vs">${Object.entries(r.vs).map(([n,v])=>`<div><small>対 ${esc(n)}</small><b>${v.w}勝${v.l}敗</b></div>`).join("")}</div>`:""}
     <div class="recs best">${Object.keys(MODEN).map(m=>`<div><small>自己ベスト・${MODEN[m]}</small><b>${r.best[m]?r.best[m].score+'点':'—'}</b>${r.best[m]?`<small>${r.best[m].date}</small>`:''}</div>`).join('')}</div>`;
@@ -3051,6 +3095,7 @@ const BOOK=[
     <p><b>8手ごとに時代が進みます</b>（1964→2022の12時代）。時代ごとのNEWSで、産業の稼ぎが上下します。立体の街では、時代は<b>朝に始まり、日が暮れて夜になると決算</b>です。</p>
     <div class="bk-box"><b>例：1973年 第一次オイルショック</b>${windRows(HIST[1].r)}</div>
     <p class="bk-cap">立体の街では、時代の空気が天気になります。<b>不景気の時代は雨</b>、<b>好景気の時代は夜に花火</b>。</p>
+    <p class="bk-cap">決算の新聞には、その頃の<b>1ドルの値段と初任給</b>、そして<b>時代クイズ</b>（正解で経験値＋5）がのります。</p>
     <ul class="bk-cap">
       <li>▲追い風の産業は稼ぎが増え、▼向かい風の産業は減る。</li>
       <li>次の時代の<b>予報</b>はいつでも見られる。先回りして建てるのがコツ。</li>
