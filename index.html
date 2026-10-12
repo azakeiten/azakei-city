@@ -646,6 +646,18 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 .cityname .ghost{padding:5px 10px;font-size:12px}
 .profjump{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:800}
 .profjump:hover{border-color:var(--gold)}
+.bosscard{width:min(520px,100%);display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:14px;border:1.5px solid #c9a24a;background:linear-gradient(135deg,rgba(201,162,74,.18),rgba(80,30,90,.25));color:var(--ink);cursor:pointer}
+.bosscard:hover{transform:translateY(-1px)}
+.bosscard .bc-face{font-size:28px}
+.bosscard b{display:block;font-size:15px}
+.bosscard small{color:var(--muted);font-size:12px}
+.bosscard em{margin-left:auto;font-style:normal;font-weight:800;color:var(--gold);white-space:nowrap}
+.bosscard.locked{opacity:.6;border-style:dashed}
+.bossres{margin:10px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.05);text-align:left;font-size:15px}
+.bossres small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.bossres.win{border-color:var(--gold);background:linear-gradient(90deg,rgba(255,200,58,.2),rgba(201,162,74,.08))}
+.bossres.win b{color:var(--gold)}
+html.bigtext{zoom:1.1}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -1035,7 +1047,7 @@ body.drawer .side{transform:none}
       <div class="drawer-head"><b>くわしい情報</b><button class="tb-btn" id="drawerClose" type="button" aria-label="とじる">✕</button></div>
       <div class="drawer-me">
         <button class="me-chip" id="meChip" type="button" aria-label="社長タイプを変える"></button>
-        <button class="icon-btn" id="sound" type="button" aria-pressed="true">音 ON</button>
+        <button class="icon-btn" id="sound" type="button" aria-pressed="true">音 ON</button><button class="icon-btn" id="bigText" type="button" aria-pressed="false">文字 大</button>
         <div class="tabs" role="group" aria-label="遊ぶ街"><button id="mShared" type="button" aria-pressed="false">みんなの街</button><button id="mLocal" type="button" aria-pressed="true">ひとり・友だち</button></div>
         <label class="nick" for="nick">社長名 <input id="nick" maxlength="12" placeholder="なまえ" autocomplete="off"></label>
       </div>
@@ -1226,6 +1238,7 @@ const POLBY=Object.fromEntries(POL.map(p=>[p.id,p]));
 var POLMAP={};
 // 📢 速報（HISTと同じ順）：時代の途中（5手目）に発表。その時代の決算だけ、1つの産業の稼ぎが変わる
 const EVAT=4;
+const BOSS={nick:'麻布の大旦那',ty:'fox',lv:4,xp:50,head:150}; // ボス戦の相手（社長ランク Lv.4 から）
 var EVON={};
 const EVENTS=[
   {t:'新幹線の開業で、出張や旅行がブームに',k:'tr',v:1},
@@ -1441,6 +1454,8 @@ function replay(tiles,seed,onStep){
   const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
   refill();
   const O=(k,nick,ty)=>{const o=own[k]||(own[k]={key:k,nick:'',ty:'',score:0,build:0,settle:0,built:0,bust:0,grow:0,goal:null,crown:0,buys:0,lm:0,mq:0,kinds:{}});if(nick)o.nick=nick;if(ty)o.ty=ty;return o};
+  // ボス戦：麻布の大旦那は、最初から資産（点数）を持っている
+  if(S.mode==="local"&&S.game&&S.game.boss){const ob=O("cpu1",BOSS.nick,BOSS.ty);ob.score+=BOSS.head;ob.head=BOSS.head}
   const quest=(e,r,c,k,isBuy,t,o)=>{if(mq[e]||!missionHit(e,g,r,c,k,out(g,r,c,e),isBuy))return;mq[e]={ok:t.ok,nick:t.nick,n};o.score+=mqPts(t.ty);o.mq++;log.push({type:'q',e,nick:t.nick,ok:t.ok,n})};
   for(const t of tiles){
     if(n>=ERA*ERAS*9) break;
@@ -1935,6 +1950,10 @@ function chipRow(r){return IND.map((n,i)=>`<span class="chip k-${KEYS[i+1]}"><i>
 function syncEL(){SIMPLE=S.mode==="local"&&!!S.game&&!!S.game.simple;NOBUY=S.mode==="local"&&!!S.game&&(S.game.players.length===1||SIMPLE);document.body.classList.toggle("simple",SIMPLE);EL=S.mode==="local"&&S.game?(Array.isArray(S.game.eras)?S.game.eras:S.game.short?SHORT:FULL):FULL}
 // ⏩ 早送り：CPUの番を速く進める（この端末に記憶）
 S.fast=!!store.get('azakei-city-fast');
+// 文字の大きさ：画面全体を少し大きく（この端末に記憶）
+function applyBig(){const on=!!store.get('azakei-city-big');document.documentElement.classList.toggle('bigtext',on);const b=$('bigText');if(b){b.setAttribute('aria-pressed',String(on));b.textContent=on?'文字 大 ✓':'文字 大'}}
+applyBig();
+$('bigText').addEventListener('click',()=>{store.set('azakei-city-big',!store.get('azakei-city-big'));applyBig();setTimeout(drawBoard3d,50)});
 function renderFast(){const b=$('fastBtn'); if(!b) return; const on=S.mode==='local'&&!!S.game&&S.game.players.some(p=>p.cpu)&&!finished(); b.hidden=!on; b.setAttribute('aria-pressed',String(S.fast)); b.title=S.fast?'早送り中（押すと ふつうの速さ）':'CPUの番を早送り'}
 $('fastBtn').addEventListener('click',()=>{S.fast=!S.fast;store.set('azakei-city-fast',S.fast);renderFast();toast(S.fast?'⏩ 早送り：CPUの番をすばやく進めます':'ふつうの速さに戻しました')});
 // 会社カード：建物をタップすると、盤面の上にその会社の歴史と稼ぎを出す
@@ -2422,13 +2441,13 @@ function flyCoins(rep){
   const tgt=$('hudMe'); if(!tgt) return; const tr=tgt.getBoundingClientRect(); if(!tr.width) return;
   const mk=myKey(), g=S.R.g, list=rep.cells.filter(([r,c,v,f])=>v>0&&f!=='bust'&&g[r][c]&&g[r][c].ok===mk).slice(0,16);
   if(!list.length) return;
-  const cv=$('board3d'), cr=cv.getBoundingClientRect(), G=V3.geo;
+  const cv=$('board3d'), cr=cv.getBoundingClientRect(), G=V3.geo, z=parseFloat(getComputedStyle(document.documentElement).zoom)||1; // 画面ズーム中は、固定位置の座標を割り戻す
   list.forEach(([r,c],i)=>{
     let x,y;
-    if(view3d()&&G){x=cr.left+G.x0+(c-r)*G.tw/2; y=cr.top+G.y0+(c+r)*G.th/2+G.th*.2}
-    else{const el=$('board').querySelector(`[data-r="${r}"][data-c="${c}"]`);if(!el)return;const b=el.getBoundingClientRect();x=b.left+b.width/2;y=b.top+b.height/2}
+    if(view3d()&&G){x=cr.left/z+G.x0+(c-r)*G.tw/2; y=cr.top/z+G.y0+(c+r)*G.th/2+G.th*.2}
+    else{const el=$('board').querySelector(`[data-r="${r}"][data-c="${c}"]`);if(!el)return;const b=el.getBoundingClientRect();x=(b.left+b.width/2)/z;y=(b.top+b.height/2)/z}
     const s=document.createElement('span'); s.className='coin'; s.style.left=(x-8)+'px'; s.style.top=(y-8)+'px'; document.body.appendChild(s);
-    const dx=tr.left+tr.width/2-x, dy=tr.top+tr.height/2-y;
+    const dx=(tr.left+tr.width/2)/z-x, dy=(tr.top+tr.height/2)/z-y;
     setTimeout(()=>{s.style.transform=`translate(${dx}px,${dy}px) scale(.6)`;s.style.opacity='.2'},120+i*55);
     setTimeout(()=>{s.remove();if(i===list.length-1){tgt.classList.remove('bump');void tgt.offsetWidth;tgt.classList.add('bump')}},120+i*55+750);
   });
@@ -2622,6 +2641,7 @@ function xpFor(me,rank,R){
   if(rank===0) parts.push(['1位',25]);
   if(me.goal&&me.goal.met) parts.push(['🎯 目標達成',15]);
   if(me.lm) parts.push([`名所 ${me.lm}`,me.lm*5]);
+  if(S.game&&S.game.boss&&rank===0) parts.push([`👑 ${BOSS.nick}に勝利`,BOSS.xp]);
   return parts;
 }
 // 通算記録と自己ベスト（この端末に保存）。awardXP と同じく、1ゲームに1回だけ記録する
@@ -2645,6 +2665,7 @@ function recordGame(me,rank,arr){
   if(me.goal){rec.goals++;if(me.goal.met)rec.goalsMet++}
   if(me.guess){rec.guesses++;if(me.guess.hit)rec.hits++}
   rec.busts+=me.bust||0; rec.lm+=me.lm||0;
+  if(S.game.boss){if(rank===0)rec.bossW=(rec.bossW||0)+1;else rec.bossL=(rec.bossL||0)+1}
   // ライバル（CPU社長）ごとの対戦成績：ひとりで遊んだときだけ
   rec.vs=rec.vs||{}; const vsNow=[];
   if(humans().length===1) for(const o of arr){const p=S.game.players.find(x=>x.key===o.key);if(!p||!p.cpu)continue;const v=rec.vs[p.nick]||(rec.vs[p.nick]={w:0,l:0});const win=me.score>o.score;if(win)v.w++;else v.l++;vsNow.push({nick:p.nick,ty:p.ty,win,w:v.w,l:v.l})}
@@ -2760,6 +2781,7 @@ function showResult(){
     <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
     ${chalResultHTML()}
+    ${S.game&&S.game.boss?(mi===0?`<div class="bossres win">👑 <b>${BOSS.nick}に勝った！</b><small>経験値＋${BOSS.xp}。ボスを倒した社長は、ほんのひとにぎり。</small></div>`:`<div class="bossres">👑 ${BOSS.nick}の勝ち…<small>あと${arr[0].score-me.score}点。作戦を変えて、また挑もう。</small></div>`):""}
     ${pbHTML(xp&&xp.pb)}
     ${vsHTML(xp&&xp.vs)}
     ${rankResultHTML(xp)}
@@ -2876,13 +2898,26 @@ function drawSetup(){
   </div>`;
 }
 function readNames(){for(let i=0;i<SU.n;i++){const el=$('pn'+i);if(el)SU.rows[i].nick=el.value.slice(0,12)}}
+// 👑 ボス戦：社長ランク Lv.4 から。最強のCPU「麻布の大旦那」と1対1・6時代
+function startBoss(){
+  if(myLv()<BOSS.lv){toast(`🔒 ボス戦は 社長ランク Lv.${BOSS.lv} から挑めます`);return}
+  const ty=store.get('azakei-city-ty-local')||TYK[Math.floor(Math.random()*TYK.length)];
+  Object.assign(SU,{daily:false,short:true,n:1,simple:false,boss:true,rows:[{nick:S.nick||'',ty},{nick:'',ty:null},{nick:'',ty:null},{nick:'',ty:null}]});
+  startGame();
+  setTimeout(()=>toast(`👑 <b>${BOSS.nick}</b>があらわれた！<br>大旦那は最初から <b>${BOSS.head}点</b> を持っている。6時代で追いこせ！（勝てば経験値＋${BOSS.xp}）`),300);
+}
+function bossHTML(){
+  const lv=myLv(), r=store.get('azakei-city-rec')||{}, w=r.bossW||0, l=r.bossL||0, open=lv>=BOSS.lv;
+  return `<button type="button" class="bosscard${open?'':' locked'}" data-h="boss"><span class="bc-face">👑</span><span><b>ボス戦：${BOSS.nick}に挑む</b><small>${open?`最初から${BOSS.head}点を持つ資産家と、1対1・6時代。勝てば経験値＋${BOSS.xp}${w+l?`（${w}勝${l}敗）`:''}`:`🔒 社長ランク Lv.${BOSS.lv} から挑めます`}</small></span><em>${open?'挑む ▶':`Lv.${BOSS.lv}`}</em></button>`;
+}
 function startGame(){
   readNames();
   const n=SU.n, today=todayStr(), seed=SU.daily?seedOf('azakei-'+today):Math.floor(Math.random()*1e9);
   const players=SU.rows.slice(0,n).map((r,i)=>({key:"h"+(i+1),nick:(r.nick||"").trim()||(n>1?`${i+1}P`:"あなた"),ty:r.ty||TYK[i%TYK.length],cpu:false}));
   const rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
-  for(let i=0;i<Math.max(0,3-n);i++) players.push({key:'cpu'+(i+1),nick:CPUN[i],ty:cp[i],cpu:true});
-  S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,simple:!SU.daily&&SU.simple,cpu:SU.daily?'normal':SU.cpu,players,tiles:[]}; store.set('azakei-city-cpu',SU.cpu);
+  if(SU.boss) players.push({key:"cpu1",nick:BOSS.nick,ty:BOSS.ty,cpu:true});
+  else for(let i=0;i<Math.max(0,3-n);i++) players.push({key:'cpu'+(i+1),nick:CPUN[i],ty:cp[i],cpu:true});
+  S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,simple:!SU.daily&&SU.simple,cpu:SU.boss?"boss":SU.daily?"normal":SU.cpu,boss:!!SU.boss,players,tiles:[]}; if(!SU.boss) store.set("azakei-city-cpu",SU.cpu); SU.boss=false;
   store.set('azakei-city-names',SU.rows.map(r=>r.nick)); store.set('azakei-city-ty-local',SU.rows[0].ty);
   if(n===1&&players[0].nick!=='あなた'){S.nick=players[0].nick;store.set('azakei-city-nick',S.nick);$('nick').value=S.nick}
   saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false;
@@ -3067,7 +3102,7 @@ function afterPlace(r,c,d,ch){
   render(); floatAt(r,c,d); rippleAt(ch); cityVoice();
 }
 // CPU：市場（ウサギは山札も）から選ぶ。強さで「先の読み」と「迷い」が変わる
-const CPULV={hint:{fut:.9,risk:3,noise:0,top:1,goal:0},easy:{fut:0,risk:0,noise:7,top:5,goal:.3},normal:{fut:.4,risk:1,noise:5,top:1,goal:.6},hard:{fut:.9,risk:3,noise:0,top:1,goal:.9}};
+const CPULV={hint:{fut:.9,risk:3,noise:0,top:1,goal:0},easy:{fut:0,risk:0,noise:7,top:5,goal:.3},normal:{fut:.4,risk:1,noise:5,top:1,goal:.6},hard:{fut:.9,risk:3,noise:0,top:1,goal:.9},boss:{fut:1.1,risk:4,noise:0,top:1,goal:1}};
 // CPUもひみつの目標を狙う：目標に近づく手に、目標の点を少し上乗せして考える
 function goalBias(R,ok,w){
   if(!w||!goalOn()||!R.own[ok]) return ()=>0;
@@ -3134,7 +3169,8 @@ $('board').addEventListener('click',e=>{
   cellClick(+b.dataset.r,+b.dataset.c);
 });
 // 立体の盤面：タップしたマスを地面の位置から求める。マウスなら、乗せたマスを白い枠で示す
-const xy3d=e=>{const rc=$('board3d').getBoundingClientRect();return [e.clientX-rc.left,e.clientY-rc.top]};
+// 文字を大きくしている（画面ズーム）ときも、タップした場所と盤面の座標がずれないように
+const xy3d=e=>{const cv=$('board3d'),rc=cv.getBoundingClientRect(),s=rc.width/(cv.clientWidth||rc.width)||1;return [(e.clientX-rc.left)/s,(e.clientY-rc.top)/s]};
 $('board3d').addEventListener('click',e=>{if(!V3.geo||!S.R)return;const p=isoPick(V3.geo,...xy3d(e));if(p)cellClick(p[0],p[1])});
 $('board3d').addEventListener('mousemove',e=>{if(!V3.geo)return;const p=isoPick(V3.geo,...xy3d(e));const k=p?p.join('_'):'';if(k!==(V3.hover||[]).join('_')){V3.hover=p;drawBoard3d()}});
 $('board3d').addEventListener('mouseleave',()=>{V3.hover=null;drawBoard3d()});
@@ -3296,6 +3332,8 @@ const BOOK=[
       <li>名所とお題の<b>ボーナス</b>は大きい。早い者勝ち。</li>
       <li>ゲームを終えるたびに<b>経験値</b>がたまり、<b>社長ランク</b>が上がる（かけだし社長 → … → 伝説の経営者）。スコア・1位・目標達成・名所で多くもらえる。Lv.3・5・7で<b>街のテーマ</b>（桜・雪・ネオン）が使えるようになる。</li>
       <li>ホーム画面の<b>📋 今日のミッション</b>は毎日3つ。達成すると経験値がもらえる。</li>
+      <li>社長ランク Lv.4 からは<b>👑 ボス戦</b>。最初から150点を持つ「麻布の大旦那」と1対1。勝てば経験値＋50。</li>
+      <li>☰メニューの<b>文字 大</b>で、画面全体を少し大きくできる。</li>
     </ul>
     <div class="bk-grid">
       <div class="bk-box" style="margin:0"><b>ひとりで</b><br>CPUの社長2人と対戦。</div>
@@ -3423,7 +3461,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="museum"><span class="mi">📚</span><b>経済ミュージアム</b><small>1964〜2022年の経済を、年表とグラフで</small></button>
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
     </div>
-    <div class="homeprof"><div class="slab">社長の部屋</div>${rankChip(+(store.get("azakei-city-xp")||0))}${missionsHTML()}${themePicker()}</div>
+    <div class="homeprof"><div class="slab">社長の部屋</div>${rankChip(+(store.get("azakei-city-xp")||0))}${bossHTML()}${missionsHTML()}${themePicker()}</div>
     <p class="homefoot">AZAKEI（麻経）・麻布中学校・高等学校 経済系同好会</p>
   </div>`;
   $('home').hidden=false;
@@ -3456,6 +3494,7 @@ $('home').addEventListener('click',e=>{
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
   if(a==='museum'){showMuseum();return}
+  if(a==='boss'){startBoss();return}
   if(a==='prof'){document.querySelector('.homeprof')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'});return}
   if(a==='cont'){hideHome();if(S.mode!=='local')setMode('local');else{render();advance()}return}
   if(a==='new'||a==='short'||a==='daily'){SU.daily=a==='daily';SU.short=a==='short';showSetup();return}
