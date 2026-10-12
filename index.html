@@ -603,6 +603,28 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 @keyframes gmk{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .fastbtn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
 .goalchip i{font-style:normal;font-family:var(--mono);margin-left:2px}
+.sheet.museum{max-width:880px}
+.mchart{width:100%;height:auto;display:block;margin-top:6px}
+.mchart .mg{stroke:rgba(255,255,255,.08)}
+.mchart .mx,.mchart .my{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+.mchart .mx{text-anchor:middle}.mchart .my{text-anchor:end}.mchart .my.r{text-anchor:start}
+.mleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted)}
+.mleg i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:3px}
+.mnote{font-size:12px;color:var(--muted);margin:6px 0 0}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:8px;text-align:left}
+.mcard2{padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);display:grid;gap:6px;align-content:start}
+.mc-y{display:flex;align-items:baseline;gap:8px}
+.mc-y b{font-family:var(--display);font-weight:400;font-size:24px;color:var(--gold)}
+.mc-y small{color:var(--muted);font-size:11px}
+.mcard2 h4{margin:0;font-size:15px}
+.mcard2 p{margin:0;font-size:12.5px;line-height:1.6;color:var(--ink)}
+.mcard2 .chips{display:flex;flex-wrap:wrap;gap:4px}
+.mc-row{font-size:12px;line-height:1.55}
+.mc-row span{display:inline-block;font-weight:800;color:var(--muted);margin-right:6px;font-size:11px}
+.mcard2 details{font-size:12px;border-top:1px dashed var(--line);padding-top:6px}
+.mcard2 summary{cursor:pointer;font-weight:800;color:var(--ink)}
+.mcard2 details p{margin-top:6px;color:var(--muted)}
+.mcard2 details b{color:var(--gold)}
 .yearflip{position:fixed;inset:0;z-index:28;display:grid;place-content:center;justify-items:center;gap:10px;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(12,10,40,.82),rgba(4,5,16,.55) 70%)}
 .yf-in{display:flex;align-items:center;gap:clamp(8px,2.5vw,18px);font-family:var(--display);font-size:clamp(30px,8.5vw,110px);line-height:1;color:var(--ink)}
 .yf-old{opacity:.45}
@@ -716,6 +738,7 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 /* challenge mode */
 .menu .mbtn:first-child{grid-column:span 2}
 .menu.n6 .mbtn:first-child{grid-column:1/-1}
+.menu.n6 .mbtn:last-child{grid-column:1/-1} /* ボタンが7つ並ぶので、最後の1つは横いっぱい */
 @media (max-width:640px){.menu.n6 .mbtn:first-child{grid-column:span 2}}
 .chl{display:grid;gap:8px;max-height:52vh;overflow:auto}
 .chc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;text-align:left;border:1px solid var(--line);background:#191c3c;border-radius:12px;padding:10px 12px}
@@ -1872,6 +1895,32 @@ function checkBadges(){
   store.set('azakei-city-badges',got); store.set('azakei-city-wins',wins);
   S.game.badged=true; S.game.fresh=fresh; saveGame();
   return fresh;
+}
+// 📚 経済ミュージアム：ゲームに出てくる60年の経済を、年表とグラフでまとめて読む
+function museumChart(){
+  const sm=innerWidth<640, W=sm?360:640,Hh=sm?230:220,pl=36,pr=40,pt=16,pb=28, y0=1964,y1=2022, X=y=>pl+(y-y0)/(y1-y0)*(W-pl-pr);
+  const Yu=v=>pt+(Hh-pt-pb)*(1-v/400), Yp=v=>pt+(Hh-pt-pb)*(1-v/25);
+  const line=(f,key,col)=>`<polyline points="${HIST.map((h,i)=>`${X(h.y).toFixed(1)},${f(NUMS[i][key]).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="3" stroke-linejoin="round"/>`+HIST.map((h,i)=>`<circle cx="${X(h.y)}" cy="${f(NUMS[i][key])}" r="3.5" fill="${col}"/>`).join('');
+  const ticks=(sm?[1964,1985,2008,2022]:[1964,1973,1985,1991,1999,2008,2013,2022]).map(y=>`<text x="${X(y)}" y="${Hh-8}" class="mx">${y}</text>`).join('');
+  const gl=(sm?[0,200,400]:[0,100,200,300,400]).map(v=>`<line x1="${pl}" x2="${W-pr}" y1="${Yu(v)}" y2="${Yu(v)}" class="mg"/><text x="${pl-6}" y="${Yu(v)+4}" class="my">${v}</text>`).join("")+[0,10,20].map(v=>`<text x="${W-pr+6}" y="${Yp(v)+4}" class="my r">${v}万</text>`).join("");
+  return `<svg class="mchart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="1ドルの値段と大卒初任給の移り変わり">${gl}${ticks}${line(Yu,'usd','#4aa8ff')}${line(Yp,'pay','#ff6b5e')}</svg>
+    <div class="mleg"><span><i style="background:#4aa8ff"></i>1ドル＝何円（左の目もり・円）</span><span><i style="background:#ff6b5e"></i>大卒の初任給（右の目もり・万円）</span></div>
+    <p class="mnote">1ドルの円が少なくなるほど「円高」。初任給は60年でおよそ10倍に。数字はどれも目安です。</p>`;
+}
+function showMuseum(){
+  const cards=HIST.map((h,i)=>{const E=EVENTS[i],Q=QUIZ[i],x=NUMS[i];return `<article class="mcard2">
+    <div class="mc-y"><b>${h.y}</b><small>${h.w}</small></div><h4>${esc(h.n)}</h4><p>${esc(h.d)}</p>
+    <div class="chips">${chipRow(h.r)}</div>
+    <div class="mc-row"><span>📢 速報</span>${esc(E.t)}（${T[E.k].name} ${E.v>0?'＋':'−'}${Math.abs(E.v)}）</div>
+    <div class="mc-row"><span>💴 数字</span>1ドル ${x.usd}円・初任給 ${x.pay.toFixed(1)}万円</div>
+    <div class="mc-row"><span>💡 まめ知識</span>${esc(TIPS[i])}</div>
+    <details><summary>📰 クイズ：${esc(Q.q)}</summary><p>答え：<b>${esc(Q.a[0])}</b>　${esc(Q.x)}</p></details></article>`}).join('');
+  $('typebg').innerHTML=`<div class="sheet museum" role="dialog" aria-label="経済ミュージアム">
+    <h3>📚 経済ミュージアム</h3><p class="lead">AZAKEI CITY の60年に出てくる、本当の経済の出来事。ゲームのNEWSの点数は、AZAKEI MARKET 歴史モードと同じです。</p>
+    <div class="slab">60年の数字</div>${museumChart()}
+    <div class="slab" style="margin-top:14px">12の時代</div><div class="mgrid">${cards}</div>
+    <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
+  $('typebg').hidden=false; $('typebg').querySelector('.sheet').scrollTop=0;
 }
 function showBook(){
   const got=store.get('azakei-city-badges')||{}, n=BADGES.filter(b=>got[b.id]).length;
@@ -3288,7 +3337,7 @@ const CHAL=[
   {id:'c1',name:'東京オリンピック',yr:'1964',eras:[0],star:[37,47,60],d:'新幹線と首都高の時代。8手で、街の土台をつくれ。',hint:'運輸と製造が追い風。運輸を2つ並べると、時代のお題も達成。'},
   {id:'c2',name:'オイルショックを乗り切れ',yr:'1964→1973',eras:[0,1],star:[70,87,94],d:'高度成長から、突然の石油危機へ。',hint:'1973年は運輸−3・製造−2。エネルギーに乗り換えるか、保険で守ろう。'},
   {id:'c3',name:'バブルの宴と崩壊',yr:'1988→1991',eras:[3,4],star:[65,79,88],d:'株と土地が急上昇。そして、はじける。',hint:'1988年は金融とメディアが+3。でも1991年、金融は−3。'},
-  {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[82,96,112],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
+  {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[76,86,96],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
   {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[108,140,160],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'},
   // ★の基準は、CPU（ふつう／つよい）で14回ずつ遊ばせた結果から決めた
   {id:'c6',name:'プラザ合意と円高',yr:'1985',eras:[2],star:[36,45,57],d:'円が急上昇。輸出はきびしく、輸入と海外旅行が得をする。8手の勝負。',hint:'1985年は製造−2。運輸+3、金融と小売が+2。'},
@@ -3371,6 +3420,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
       <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる${BOOK.length}ページ）':'絵でわかる${BOOK.length}ページ'}</small></button>
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
+      <button class="mbtn" type="button" data-h="museum"><span class="mi">📚</span><b>経済ミュージアム</b><small>1964〜2022年の経済を、年表とグラフで</small></button>
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
     </div>
     <div class="homeprof"><div class="slab">社長の部屋</div>${rankChip(+(store.get("azakei-city-xp")||0))}${missionsHTML()}${themePicker()}</div>
@@ -3405,6 +3455,7 @@ $('home').addEventListener('click',e=>{
   if(th){pickTheme(th);return}
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
+  if(a==='museum'){showMuseum();return}
   if(a==='prof'){document.querySelector('.homeprof')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'});return}
   if(a==='cont'){hideHome();if(S.mode!=='local')setMode('local');else{render();advance()}return}
   if(a==='new'||a==='short'||a==='daily'){SU.daily=a==='daily';SU.short=a==='short';showSetup();return}
