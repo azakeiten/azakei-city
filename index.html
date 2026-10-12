@@ -670,6 +670,10 @@ html.bigtext{zoom:1.1}
 .updlist small{color:var(--muted);font-size:11px;font-family:var(--mono)}
 .updlist b{font-size:14px}
 .updlist span{font-size:12.5px;color:var(--muted)}
+.demobar{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:35;border:1px solid var(--gold);background:rgba(12,14,36,.92);color:var(--ink);border-radius:999px;padding:8px 18px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+.demobar b{color:var(--gold)}
+.demobar u{color:var(--muted)}
+body:has(.demobar:not([hidden])) .tray{display:none}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -762,7 +766,7 @@ html.bigtext{zoom:1.1}
 /* challenge mode */
 .menu .mbtn:first-child{grid-column:span 2}
 .menu.n6 .mbtn:first-child{grid-column:1/-1}
-.menu.n6 .mbtn:last-child{grid-column:1/-1} /* ボタンが7つ並ぶので、最後の1つは横いっぱい */
+@media (min-width:641px){.menu.n6{grid-template-columns:repeat(4,minmax(0,1fr))}} /* ボタンが8つ並ぶので、PCは4列にしてそろえる */
 @media (max-width:640px){.menu.n6 .mbtn:first-child{grid-column:span 2}}
 .chl{display:grid;gap:8px;max-height:52vh;overflow:auto}
 .chc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;text-align:left;border:1px solid var(--line);background:#191c3c;border-radius:12px;padding:10px 12px}
@@ -1598,7 +1602,7 @@ const eraNow=()=>{const e=Math.floor(S.R.n/ERA);return S.mode==="local"&&S.game&
 const finished=()=>S.mode==='local'&&S.R.n>=ERA*NE();
 const moveCount=()=>S.game?S.game.tiles.filter(t=>t.k!=='pol').length:0;
 const turnPlayer=()=>S.game?S.game.players[moveCount()%S.game.players.length]:null;
-const saveGame=()=>store.set('azakei-city-game4',S.game);
+const saveGame=()=>{if(S.game&&S.game.demo)return;store.set('azakei-city-game4',S.game)}; // 展示モードの試合は保存しない
 // いま選べるカード：市場の5枚（ウサギは山札の一番上も）
 function choices(R,ty){const a=R.market.map((k,j)=>({k,src:'m',j}));if(ty==='rabbit')a.push({k:R.peek[0],src:'d',j:MKT});return a}
 const selCard=()=>S.sel==null?null:(choices(S.R,myTy())[S.sel]||null);
@@ -1713,7 +1717,12 @@ function isoDraw(cv,cells,age,t,opt){
     if(S2.awn){ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(x-tw/2*S2.w*.9,y+th/2-h*.45,tw*S2.w*.45,2)}
     if(S2.glass){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;const hw=tw/2*S2.w,cy=y+th/2;for(let i=1;i<=3;i++){const yy=cy-h*i/4;ctx.beginPath();ctx.moveTo(x-hw,yy);ctx.lineTo(x,yy+th/2*S2.w);ctx.lineTo(x+hw,yy);ctx.stroke()}}
     if(S2.cols){ctx.fillStyle='rgba(255,255,255,.55)';const hw=tw/2*S2.w,hh=th/2*S2.w,cy=y+th/2;for(let i=1;i<=3;i++){const f=i/4;ctx.fillRect(x-hw+hw*f-1,cy-h+hh*f+2,2,h-4)}}
-    if(lv>1){ctx.fillStyle='#ffc83a';ctx.font=`${Math.round(th*.7)}px sans-serif`;ctx.textAlign='center';ctx.fillText('★'.repeat(lv-1),x,top[0][1]-3)}
+    // ★★（ホールディングス）の会社は、屋上を金色にして王冠をのせる
+    if(lv>=3&&growP==null){ctx.save();ctx.globalAlpha=alpha*.55;poly(top,'#ffd34d');ctx.globalAlpha=alpha;
+      const mx=(top[0][0]+top[2][0])/2, my=(top[0][1]+top[2][1])/2-th*.15, w=tw*.13, hgt=th*.32;
+      ctx.fillStyle='#ffc83a';ctx.strokeStyle='#7a5200';ctx.lineWidth=1;ctx.beginPath();
+      ctx.moveTo(mx-w,my);ctx.lineTo(mx-w,my-hgt*.55);ctx.lineTo(mx-w*.5,my-hgt*.2);ctx.lineTo(mx,my-hgt);ctx.lineTo(mx+w*.5,my-hgt*.2);ctx.lineTo(mx+w,my-hgt*.55);ctx.lineTo(mx+w,my);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+    if(lv>1){ctx.fillStyle='#ffc83a';ctx.font=`${Math.round(th*.7)}px sans-serif`;ctx.textAlign='center';ctx.fillText('★'.repeat(lv-1),x,top[0][1]-3-(lv>=3?th*.4:0))}
     if(t2.ok){ctx.fillStyle=ownerColor(t2.ok);const[a,b]=top[3];ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(a+tw*.14,b-th*.07);ctx.lineTo(a+tw*.14,b+th*.07);ctx.closePath();ctx.fill()}
     ctx.globalAlpha=1;
     return top;
@@ -1910,7 +1919,7 @@ const BADGES=[
   {id:'types',name:'4タイプ制覇',hint:'4つの社長タイプそれぞれで1位になる'}
 ];
 function checkBadges(){
-  if(S.mode!=="local"||!S.game||S.game.badged) return [];
+  if(S.mode!=="local"||!S.game||S.game.badged||S.game.demo) return [];
   if(S.game.chal){S.game.badged=true;S.game.fresh=[];saveGame();return []}
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), got=store.get('azakei-city-badges')||{}, wins=store.get('azakei-city-wins')||{};
   const today=todayStr(), fresh=[], hs=humans(), finalGdp=R.hist.at(-1)||0;
@@ -1952,6 +1961,8 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:14,d:'2026-10-12',t:'👑 ★★の会社のビルに王冠',x:'ホールディングスまで育った会社は、屋上が金色になって王冠がのる。'},
+  {v:13,d:'2026-10-12',t:'🎬 展示モード',x:'CPUの社長3人が自動で遊び続ける。学園祭の展示に。タップで終わる。'},
   {v:12,d:'2026-10-12',t:'ライバルの「時代リアクション」',x:'新しい時代が始まると、CPU社長が自分の会社の追い風・向かい風にひとこと。'},
   {v:11,d:'2026-10-12',t:'↻ 立体の街を回せるように',x:'ビルの裏にかくれた建物やマスも見える。'},
   {v:10,d:'2026-10-12',t:'👑 ボス戦「麻布の大旦那」',x:'社長ランク Lv.4 から。最初から150点を持つ資産家と1対1。'},
@@ -2045,7 +2056,7 @@ function commentary(){
   {const es=Math.floor(R.n/ERA)*ERA+EVAT, E=evOf(Math.floor(R.n/ERA));if(E&&prev.n<es&&R.n>=es&&R.n%ERA>=EVAT){ticker(`📢 速報！ ${esc(E.t)}<small>この時代の決算で ${T[E.k].name} ${E.v>0?"＋":"−"}${Math.abs(E.v)}</small>`,E.v>0?"good":"hot");return}}
   if(NE()>1&&prev.n<lastStart&&R.n>=lastStart){ticker(`🔥 ラスト1時代！<small>最後の${ERA}手で、逆転をねらえ</small>`,'hot');return}
   // トップ交代：最初の時代はしょっちゅう入れかわるので黙る。続けて出すのも4手あける
-  if(prev.lead&&lead.key!==prev.lead&&arr.length>1&&lead.score>arr[1].score&&R.n>=ERA&&R.n-(S.tickAt||-99)>=4){S.tickAt=R.n;const me=lead.key===myKey();ticker(`👑 ${me?'あなた':esc(sh(lead.nick))}が<b>トップ</b>に！<small>${me?'このまま逃げきろう':`2位と ${lead.score-arr[1].score}点差`}</small>`,me?'good':'');return}
+  if(prev.lead&&lead.key!==prev.lead&&arr.length>1&&lead.score>arr[1].score&&R.n>=ERA&&R.n-(S.tickAt||-99)>=4){S.tickAt=R.n;const me=!S.game.demo&&lead.key===myKey();ticker(`👑 ${me?'あなた':esc(sh(lead.nick))}が<b>トップ</b>に！<small>${me?'このまま逃げきろう':`2位と ${lead.score-arr[1].score}点差`}</small>`,me?'good':'');return}
   // 大接戦：決算の直後、1位と2位が5点差以内
   if(R.n%ERA===0&&arr.length>1&&lead.score-arr[1].score<=5&&R.n>=ERA) ticker(`⚡ 大接戦！<small>1位と2位の差は わずか${lead.score-arr[1].score}点</small>`,'hot');
 }
@@ -2540,7 +2551,7 @@ const QUIZ=[
   {q:'物の値段が全体的に上がり続けることを何という？',a:['インフレ','デフレ'],x:'資源高と円安で、食べ物や電気代など身近な物の値段が上がりました。'}
 ];
 function quizHTML(e){
-  if(S.mode!=='local'||!S.game) return '';
+  if(S.mode!=='local'||!S.game||S.game.demo) return '';
   const i=HI(e), Q=QUIZ[i]; if(!Q) return '';
   const done=S.game.quiz&&S.game.quiz[i], flip=(i+(S.game.seed||0))%2===1, opts=flip?[Q.a[1],Q.a[0]]:Q.a;
   if(done) return `<div class="quiz done"><div class="slab">時代クイズ</div><p>${esc(Q.q)}</p><p class="qx">${done===1?'⭕ 正解！':'答え：'+esc(Q.a[0])}　${esc(Q.x)}</p></div>`;
@@ -2578,8 +2589,8 @@ function showPaper(){
     <div class="btns">${fin?`<button type="button" id="paperRes">結果を見る</button>`:`<button type="button" id="paperClose">街にもどる<i class="autobar"></i></button>`}</div></div>`;
   $('paperbg').hidden=false;
   sfx.paper(rep.bust.length>0);
-  if(fin){$('paperRes').onclick=()=>{hidePaper();showResult()};$('paperRes').focus()}
-  else{$("paperClose").onclick=hidePaper;$("paperClose").focus();clearTimeout(paperTimer);if(!$("paperbg").querySelector(".quiz[data-qi]"))paperTimer=setTimeout(hidePaper,6000)} // クイズに答えていないあいだは、自動で閉じない
+  if(fin){$("paperRes").onclick=()=>{hidePaper();showResult()};$("paperRes").focus();if(S.game&&S.game.demo){clearTimeout(paperTimer);paperTimer=setTimeout(()=>{if(S.game&&S.game.demo){hidePaper();showResult();demoNext()}},4000)}}
+  else{$("paperClose").onclick=hidePaper;$("paperClose").focus();clearTimeout(paperTimer);if(!$("paperbg").querySelector(".quiz[data-qi]"))paperTimer=setTimeout(hidePaper,S.game&&S.game.demo?3500:6000)} // クイズに答えていないあいだは、自動で閉じない
 }
 function hidePaper(){$('paperbg').hidden=true;clearTimeout(paperTimer);if(S.pause){S.pause=false;renderBoard();renderMarket();renderPre();drawBoard3d();eraReaction()}}
 
@@ -2764,7 +2775,7 @@ function missionsHTML(){
   return `<div class="missions"><div class="ms-head"><b>📋 今日のミッション</b><small>${n}/3 達成${n===3?' 🎉':''}</small></div>${list.map(m=>`<div class="ms${s.done[m.id]?' done':''}"><span class="ms-ck">${s.done[m.id]?'✓':''}</span><span>${m.t}${m.id==='quiz3'&&!s.done[m.id]?`<small>（いま ${s.quiz}/3）</small>`:''}</span><em>+${m.pts}</em></div>`).join('')}</div>`;
 }
 function awardXP(me,rank,R){
-  if(!S.game||S.mode!=='local') return null;
+  if(!S.game||S.mode!=='local'||S.game.demo) return null; // 展示モードは記録しない
   if(S.game.xp) return S.game.xp; // 同じゲームで2回はもらえない
   const parts=xpFor(me,rank,R);
   if(!S.game.chal) for(const m of checkMissions(me,rank,Object.values(R.own).sort((a,b)=>b.score-a.score),R)) parts.push([`📋 ${m.t}`,m.pts]);
@@ -2843,7 +2854,7 @@ function showResult(){
       ${R.eras.map(x=>`<tr${x===peak?' style="color:var(--gold)"':''}><td>${x.y}</td><td>${esc(H(x.e).n)}</td><td>${x.gdp}</td><td>${x.bust.length}</td><td>${x.grow.length}</td></tr>`).join('')}
     </tbody></table></div>
     ${daily?`<div class="daily" id="dailyBox"><div class="slab">今日の街ランキング</div><p class="empty">読み込み中…</p></div>`:''}
-    ${(()=>{if(S.mode!=='local')return '';checkBadges();const fr=(S.game&&S.game.fresh)||[];return fr.length?`<div class="newbadge"><div class="slab">社長手帳に新しいバッジ</div>${fr.map(id=>{const b=BADGES.find(x=>x.id===id);return `<span class="nb2">★ ${b.name}</span>`}).join('')}</div>`:''})()}
+    ${(()=>{if(S.mode!=='local'||S.game.demo)return '';checkBadges();const fr=(S.game&&S.game.fresh)||[];return fr.length?`<div class="newbadge"><div class="slab">社長手帳に新しいバッジ</div>${fr.map(id=>{const b=BADGES.find(x=>x.id===id);return `<span class="nb2">★ ${b.name}</span>`}).join('')}</div>`:''})()}
     <div class="btns"><button class="go" type="button" id="again">新しい街をつくる</button><button class="ghost" type="button" id="openBook">社長手帳</button><button class="ghost" type="button" id="shareImg">📷 結果を画像に</button><button class="ghost" type="button" id="copyRes">結果をコピー</button><button class="ghost" type="button" id="closeRes">街をながめる</button></div>
   </div>`;
   $('resultbg').hidden=false; sfx.end();
@@ -2947,6 +2958,27 @@ function drawSetup(){
   </div>`;
 }
 function readNames(){for(let i=0;i<SU.n;i++){const el=$('pn'+i);if(el)SU.rows[i].nick=el.value.slice(0,12)}}
+// 🎬 展示モード：CPUの社長3人が自動で遊び続ける（学園祭などの展示用）。記録・経験値・保存中のゲームには影響しない
+function startDemo(){
+  if(!S.demoKeep) S.demoKeep=S.game; // 終わったら元のゲームに戻す
+  clearTimeout(ticker.w); S.tick=null; // 前の試合の実況が、あとから出ないように
+  const seed=Math.floor(Math.random()*1e9), rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
+  S.game={seed,short:true,simple:false,cpu:'hard',demo:true,players:CPUN.map((n,i)=>({key:'cpu'+(i+1),nick:n,ty:cp[i],cpu:true})),tiles:[]};
+  S.demo=true; S.fastKeep=S.fastKeep??S.fast; S.fast=true;
+  S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false; S.policy=false; S.viewer='cpu1';
+  hideHome(); $('typebg').hidden=true; $('resultbg').hidden=true;
+  let bar=$('demobar'); if(!bar){bar=document.createElement('button');bar.id='demobar';bar.type='button';bar.className='demobar';bar.onclick=stopDemo;document.body.appendChild(bar)}
+  bar.innerHTML='🎬 <b>展示モード</b>：CPUの社長が自動で遊んでいます　<u>タップで終わる</u>'; bar.hidden=false;
+  if(S.mode!=='local') setMode('local'); else render();
+  setView('3d'); advance();
+}
+function demoNext(){clearTimeout(S.demoT);S.demoT=setTimeout(()=>{if(S.demo)startDemo()},9000)}
+function stopDemo(){
+  if(!S.demo) return; S.demo=false; clearTimeout(S.demoT); clearTimeout(paperTimer); clearTimeout(ticker.w); clearTimeout(talkTimer); $("ticker").hidden=true; $("talk").hidden=true; S.tick=null;
+  S.game=S.demoKeep||null; S.demoKeep=null; S.fast=!!S.fastKeep; S.fastKeep=null;
+  $('demobar').hidden=true; $('paperbg').hidden=true; $('resultbg').hidden=true; S.pause=false; S.policy=false; S.busy=false;
+  render(); showHome();
+}
 // 👑 ボス戦：社長ランク Lv.4 から。最強のCPU「麻布の大旦那」と1対1・6時代
 function startBoss(){
   if(myLv()<BOSS.lv){toast(`🔒 ボス戦は 社長ランク Lv.${BOSS.lv} から挑めます`);return}
@@ -2969,6 +3001,7 @@ function startGame(){
   S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,simple:!SU.daily&&SU.simple,cpu:SU.boss?"boss":SU.daily?"normal":SU.cpu,boss:!!SU.boss,players,tiles:[]}; if(!SU.boss) store.set("azakei-city-cpu",SU.cpu); SU.boss=false;
   store.set('azakei-city-names',SU.rows.map(r=>r.nick)); store.set('azakei-city-ty-local',SU.rows[0].ty);
   if(n===1&&players[0].nick!=='あなた'){S.nick=players[0].nick;store.set('azakei-city-nick',S.nick);$('nick').value=S.nick}
+  clearTimeout(ticker.w); S.tick=null;
   saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false;
   S.viewer=players[0].key;
   hideHome();
@@ -3533,6 +3566,7 @@ function showHome(){
       <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる${BOOK.length}ページ）':'絵でわかる${BOOK.length}ページ'}</small></button>
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
       <button class="mbtn" type="button" data-h="museum"><span class="mi">📚</span><b>経済ミュージアム</b><small>1964〜2022年の経済を、年表とグラフで</small></button>
+      <button class="mbtn" type="button" data-h="demo"><span class="mi">🎬</span><b>展示モード</b><small>CPUが自動で遊び続ける。学園祭の展示に</small></button>
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
     </div>
     <div class="homeprof"><div class="slab">社長の部屋</div>${rankChip(+(store.get("azakei-city-xp")||0))}${bossHTML()}${missionsHTML()}${themePicker()}</div>
@@ -3568,6 +3602,7 @@ $('home').addEventListener('click',e=>{
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
   if(a==='museum'){showMuseum();return}
+  if(a==='demo'){startDemo();return}
   if(a==='upd'){showUpdates();return}
   if(a==='boss'){startBoss();return}
   if(a==='prof'){document.querySelector('.homeprof')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'});return}
