@@ -518,6 +518,10 @@ ol.rules b{color:var(--ink)}
 .polcard .pd{font-size:12.5px;color:var(--muted)}
 .polcard .pe{display:flex;flex-wrap:wrap;gap:5px}
 .polcard .pm{font-size:12px;color:var(--muted)} .polcard .pm b{color:var(--gold);font-family:var(--mono);font-weight:500}
+.evnow{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:8px;padding:7px 10px;border-radius:10px;border:1px solid #ff8a3a;background:rgba(255,138,58,.1);font-size:12.5px}
+.evnow span{font-weight:800;color:#ff8a3a}
+.evnow small{color:var(--muted)}
+.evnow.wait{border-style:dashed;opacity:.85}
 .polnow{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:10px;padding:7px 10px;border-radius:10px;background:color-mix(in srgb,var(--glow) 12%,transparent);font-size:12px}
 .polnow span{color:var(--glow);font-weight:800}.polnow b{font-size:14px}.polnow small{color:var(--muted)}
 .bk-body .chip{color:var(--paper-ink);background:color-mix(in srgb,var(--c) 22%,transparent)}
@@ -1197,6 +1201,25 @@ const POL=[
 ];
 const POLBY=Object.fromEntries(POL.map(p=>[p.id,p]));
 var POLMAP={};
+// 📢 速報（HISTと同じ順）：時代の途中（5手目）に発表。その時代の決算だけ、1つの産業の稼ぎが変わる
+const EVAT=4;
+var EVON={};
+const EVENTS=[
+  {t:'新幹線の開業で、出張や旅行がブームに',k:'tr',v:1},
+  {t:'石油の節約で、街のネオン広告が消える',k:'me',v:-1},
+  {t:'円高で、海外旅行がブームに',k:'tr',v:1},
+  {t:'ゴルフ会員権や絵画まで、値段が急上昇',k:'fi',v:1},
+  {t:'安さが売りの「100円ショップ」が人気に',k:'re',v:1},
+  {t:'携帯電話が急速に広まる',k:'me',v:1},
+  {t:'携帯でネットが使えるサービスが始まる',k:'me',v:1},
+  {t:'世界中で注文が減り、工場が生産を減らす',k:'ma',v:-1},
+  {t:'スマホゲームが大ヒット',k:'me',v:1},
+  {t:'富士山が世界遺産に。観光客がさらに増える',k:'tr',v:1},
+  {t:'テイクアウトや宅配の注文が急増',k:'re',v:1},
+  {t:'電気やガスの料金が大きく値上がり',k:'en',v:1}
+];
+const evOf=era=>EVENTS[HI(era)];
+function evAdd(add,k,era){const E=evOf(era);if(EVON[era]&&E&&E.k===k)add(`📢 速報`,E.v)}
 const polTxt=p=>Object.entries(p.b).map(([k,v])=>`${T[k].name}＋${v}`).join("・");
 function polAdd(add,k,era){const id=POLMAP[era];if(id&&POLBY[id].b[k])add(`政策「${POLBY[id].name}」`,POLBY[id].b[k])}
 // その時代に出される2つの政策（シードで決まる）
@@ -1219,6 +1242,7 @@ function parts(g,r,c,era){
   add('隣の学校',2*cnt(n4,x=>x==='sc'));
   add('★ 成長',LVB*((t.lv||1)-1));
   polAdd(add,k,era);
+  evAdd(add,k,era);
   add(`NEWS（${H(era).y}）`,newsOf(g,r,c,era),1);
   return P;
 }
@@ -1389,7 +1413,7 @@ var NOBUY=false, SIMPLE=false; // ひとりのゲームでは買収カードを�
 function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):KEYS,tot=KS.reduce((s,k)=>s+W[k],0),cards=[];
   return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
 function replay(tiles,seed,onStep){
-  POLMAP={};
+  POLMAP={}; EVON={};
   const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, cos=[], D=deck(seed); let n=0, ruins=[], di=0, mk=[], lastPay={};
   const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
   refill();
@@ -1427,6 +1451,8 @@ function replay(tiles,seed,onStep){
     }
     if(fromDeck) di++; else {mk.splice(slot,1);mk.push(D(di++))}
     n++;
+    // 速報：時代の5手目で発表。その時代の決算だけ、ある産業の稼ぎが変わる
+    if(n%ERA===EVAT){const ee=Math.floor(n/ERA);EVON[ee]=true;log.push({type:"ev",e:ee,n})}
     if(n%ERA===0){
       const rep={e,y:H(e).y,gdp:gdp(g,e),bust:[],grow:[],pay:{},cells:[],ind:{}};
       const vals=[];
@@ -1891,13 +1917,15 @@ function ticker(html,kind){
   clearTimeout(ticker.t); ticker.t=setTimeout(()=>{el.hidden=true},reduced()?2200:2000);
 }
 function commentary(){
-  if(S.mode!=='local'||!S.game||!S.R||S.game.chal) {S.tick=null;return}
+  if(S.mode!=="local"||!S.game||!S.R) {S.tick=null;return}
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), lead=arr[0], id=S.game.seed;
   const prev=S.tick; S.tick={id,n:R.n,lead:lead&&lead.key};
   if(!prev||prev.id!==id||R.n<prev.n) S.tickAt=null; // 新しいゲーム・もどしたときは数えなおし
   // 読みこみ直後・1手もどしたときは、実況しない
   if(!prev||prev.id!==id||R.n<=prev.n||finished()||!lead) return;
   const lastStart=ERA*(NE()-1);
+  // 速報が出た瞬間
+  {const es=Math.floor(R.n/ERA)*ERA+EVAT, E=evOf(Math.floor(R.n/ERA));if(E&&prev.n<es&&R.n>=es&&R.n%ERA>=EVAT){ticker(`📢 速報！ ${esc(E.t)}<small>この時代の決算で ${T[E.k].name} ${E.v>0?"＋":"−"}${Math.abs(E.v)}</small>`,E.v>0?"good":"hot");return}}
   if(NE()>1&&prev.n<lastStart&&R.n>=lastStart){ticker(`🔥 ラスト1時代！<small>最後の${ERA}手で、逆転をねらえ</small>`,'hot');return}
   // トップ交代：最初の時代はしょっちゅう入れかわるので黙る。続けて出すのも4手あける
   if(prev.lead&&lead.key!==prev.lead&&arr.length>1&&lead.score>arr[1].score&&R.n>=ERA&&R.n-(S.tickAt||-99)>=4){S.tickAt=R.n;const me=lead.key===myKey();ticker(`👑 ${me?'あなた':esc(sh(lead.nick))}が<b>トップ</b>に！<small>${me?'このまま逃げきろう':`2位と ${lead.score-arr[1].score}点差`}</small>`,me?'good':'');return}
@@ -1959,6 +1987,7 @@ function renderEra(){
     ${S.mode==="local"&&S.game&&S.game.chal?(()=>{const c=CHAL.find(x=>x.id===S.game.chal);return `<div class="goal"><span>🏆 チャレンジ「${c.name}」</span><b>目標GDP ${c.star.map((s,j)=>`★${j+1} ${s}`).join(" ・ ")}</b><small>${c.hint}</small></div>`})():""}
     ${windRows(ev.r)}
     <div class="senpai2">🎓 <b>麻経の先輩</b>「${SENPAI[HI(e)]}」</div>
+    ${(()=>{const E=evOf(e);return E&&!finished()?(EVON[e]?`<div class="evnow"><span>📢 速報</span><b>${esc(E.t)}</b><small>この時代の決算で ${T[E.k].name} ${E.v>0?"＋":"−"}${Math.abs(E.v)}</small></div>`:`<div class="evnow wait"><span>📢 速報</span><small>この時代の${EVAT+1}手目に、なにかが起きる…（あと${EVAT-(S.R.n%ERA)}手）</small></div>`):""})()}
     ${POLMAP[e]?`<div class="polnow"><span>▣ この時代の政策</span><b>${POLBY[POLMAP[e]].name}</b><small>${polTxt(POLBY[POLMAP[e]])}</small></div>`:''}
     <div class="quest${q?' got':''}"><div class="qh"><span>★ この時代のお題（早い者勝ち）</span><span>+${mqPts(myTy())}</span></div><div class="qb">${MQT[HI(e)]}</div>${q?`<div style="color:var(--glow);font-size:11.5px;margin-top:2px">${q.ok===mk?'あなた':esc(q.nick)} が達成済み</div>`:''}</div>
     ${risky?`<p class="warn-line">⚠ このままだと、あなたの建物 ${risky} 棟が決算で倒産（稼ぎ2以下）。</p>`:''}
@@ -2125,6 +2154,7 @@ function renderLog(){
     :x.type==='c'?`<li class="ev">👑 <b>${esc(sh(x.nick))}</b> が${x.y}年代の覇者（稼ぎ+${x.gain}）＋${CROWN}</li>`
     :x.type==='p'?`<li class="ev" style="color:var(--glow)">▣ <b>${esc(x.nick)}</b> が政策「${POLBY[x.p].name}」を決定（${polTxt(POLBY[x.p])}）</li>`
     :x.type==='q'?`<li class="ev" style="color:var(--glow)">★ <b>${esc(x.nick)}</b> が${H(x.e).y}年のお題を達成 +${MQ}</li>`
+    :x.type==='ev'?(()=>{const E=evOf(x.e);return E?`<li class="ev" style="color:#ff8a3a">📢 速報：${esc(E.t)}（${T[E.k].name} ${E.v>0?'＋':'−'}${Math.abs(E.v)}）</li>`:''})()
     :x.type==='m'?`<li><b>${esc(x.nick)||'名無し'}</b> が ${esc(x.from)} の「${esc(x.name||T[x.k].name)}」を<span class="n">買収</span></li>`
     :`<li><b>${esc(x.nick)||'名無し'}</b> が「${esc(x.name||T[x.k].name)}」を設立 <span class="${cls(x.d)}" style="font-family:var(--mono)">${sg(x.d)}</span></li>`).join(''):'<li>まだありません</li>';
 }
@@ -2674,7 +2704,7 @@ function showResult(){
   const xp=me?awardXP(me,mi,R):null;
   const text=many
     ?`AZAKEI CITY 1964→2022 対戦結果\n${arr.map((o,i)=>`${i+1}位 ${o.nick}（${TY[o.ty]?.name||''}）${o.score}点`).join('\n')}`
-    :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
+    :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n街の名前：${cityName()}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
   $('resultbg').innerHTML=`<div class="sheet result" role="dialog" aria-label="結果">
     <h3>${S.game&&S.game.chal?'チャレンジの結果':daily?`今日の街（${daily}）の結果`:S.game&&S.game.short?'ショート（6時代）の結果':'60年の結果'}</h3>
     ${S.mode==="local"&&S.game?`<div class="cityname"><span>🏙️</span><input id="cityIn" maxlength="10" value="${esc(cityName())}" aria-label="街の名前"><button class="ghost" type="button" id="citySave">名前を変える</button></div>`:""}
@@ -3170,6 +3200,7 @@ const BOOK=[
     <p><b>8手ごとに時代が進みます</b>（1964→2022の12時代）。時代ごとのNEWSで、産業の稼ぎが上下します。立体の街では、時代は<b>朝に始まり、日が暮れて夜になると決算</b>です。</p>
     <div class="bk-box"><b>例：1973年 第一次オイルショック</b>${windRows(HIST[1].r)}</div>
     <p class="bk-cap">立体の街では、時代の空気が天気になります。<b>不景気の時代は雨</b>、<b>好景気の時代は夜に花火</b>。</p>
+    <p class="bk-cap">📢 <b>速報</b>：どの時代も、5手目に本当の出来事にちなんだ速報が入り、<b>その時代の決算だけ</b>1つの産業の稼ぎが ±1 変わります（例：1973年「石油の節約で、街のネオン広告が消える」→ メディア −1）。速報を見て、作戦を変えよう。</p>
     <p class="bk-cap">決算の新聞には、その頃の<b>1ドルの値段と初任給</b>、そして<b>時代クイズ</b>（正解で経験値＋5）がのります。</p>
     <ul class="bk-cap">
       <li>▲追い風の産業は稼ぎが増え、▼向かい風の産業は減る。</li>
