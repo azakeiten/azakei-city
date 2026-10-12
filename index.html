@@ -661,6 +661,15 @@ body.playing .toast{top:calc(86px + env(safe-area-inset-top,0px))}
 .bossres.win{border-color:var(--gold);background:linear-gradient(90deg,rgba(255,200,58,.2),rgba(201,162,74,.08))}
 .bossres.win b{color:var(--gold)}
 html.bigtext{zoom:1.1}
+.updbtn{border:1px dashed var(--line);background:none;color:var(--muted);border-radius:999px;padding:5px 14px;font-size:12px;font-weight:800;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.updbtn:hover{color:var(--ink);border-color:var(--gold)}
+.newdot{font-style:normal;display:inline-block;padding:1px 6px;border-radius:99px;background:#ff6b5e;color:#fff;font-size:10px;font-weight:800;letter-spacing:.04em;vertical-align:1px}
+.updlist{list-style:none;margin:0;padding:0;display:grid;gap:8px;text-align:left}
+.updlist li{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.updlist li.nw{border-color:var(--gold)}
+.updlist small{color:var(--muted);font-size:11px;font-family:var(--mono)}
+.updlist b{font-size:14px}
+.updlist span{font-size:12.5px;color:var(--muted)}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -1941,6 +1950,27 @@ function museumChart(){
     <div class="mleg"><span><i style="background:#4aa8ff"></i>1ドル＝何円（左の目もり・円）</span><span><i style="background:#ff6b5e"></i>大卒の初任給（右の目もり・万円）</span></div>
     <p class="mnote">1ドルの円が少なくなるほど「円高」。初任給は60年でおよそ10倍に。数字はどれも目安です。</p>`;
 }
+// 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
+const UPDATES=[
+  {v:12,d:'2026-10-12',t:'ライバルの「時代リアクション」',x:'新しい時代が始まると、CPU社長が自分の会社の追い風・向かい風にひとこと。'},
+  {v:11,d:'2026-10-12',t:'↻ 立体の街を回せるように',x:'ビルの裏にかくれた建物やマスも見える。'},
+  {v:10,d:'2026-10-12',t:'👑 ボス戦「麻布の大旦那」',x:'社長ランク Lv.4 から。最初から150点を持つ資産家と1対1。'},
+  {v:9,d:'2026-10-12',t:'📚 経済ミュージアム',x:'60年のドル円・初任給のグラフと、12の時代の年表。'},
+  {v:8,d:'2026-10-12',t:'📢 時代の途中に「速報」',x:'5手目に本当の出来事にちなんだ速報。その時代だけ1つの産業が±1。'},
+  {v:7,d:'2026-10-12',t:'📋 今日のミッション',x:'毎日3つ。達成すると経験値。'},
+  {v:6,d:'2026-10-12',t:'📰 時代クイズと「その頃の数字」',x:'決算の新聞に、ドル円・初任給と2択クイズ。'},
+  {v:5,d:'2026-10-12',t:'🏢 会社カードと殿堂入り企業',x:'建物をタップすると、その会社の歴史が読める。'}
+];
+const updSeen=()=>+(store.get('azakei-city-upd')||0);
+function updBtnHTML(){const u=UPDATES[0],nw=updSeen()<u.v;return `<button class="updbtn" type="button" data-h="upd">${nw?'<i class="newdot">NEW</i>':'🆕'} アップデート：${u.t}</button>`}
+function showUpdates(){
+  const seen=updSeen();
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="アップデート情報"><h3>🆕 アップデート情報</h3><p class="lead">AZAKEI CITY は、どんどん進化中。</p>
+    <ul class="updlist">${UPDATES.map(u=>`<li class="${u.v>seen?'nw':''}"><small>${u.d}${u.v>seen?' <i class="newdot">NEW</i>':''}</small><b>${u.t}</b><span>${u.x}</span></li>`).join('')}</ul>
+    <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
+  $('typebg').hidden=false; store.set('azakei-city-upd',UPDATES[0].v);
+  const b=document.querySelector('.updbtn'); if(b) b.outerHTML=updBtnHTML();
+}
 function showMuseum(){
   const cards=HIST.map((h,i)=>{const E=EVENTS[i],Q=QUIZ[i],x=NUMS[i];return `<article class="mcard2">
     <div class="mc-y"><b>${h.y}</b><small>${h.w}</small></div><h4>${esc(h.n)}</h4><p>${esc(h.d)}</p>
@@ -2551,7 +2581,7 @@ function showPaper(){
   if(fin){$('paperRes').onclick=()=>{hidePaper();showResult()};$('paperRes').focus()}
   else{$("paperClose").onclick=hidePaper;$("paperClose").focus();clearTimeout(paperTimer);if(!$("paperbg").querySelector(".quiz[data-qi]"))paperTimer=setTimeout(hidePaper,6000)} // クイズに答えていないあいだは、自動で閉じない
 }
-function hidePaper(){$('paperbg').hidden=true;clearTimeout(paperTimer);if(S.pause){S.pause=false;renderBoard();renderMarket();renderPre();drawBoard3d()}}
+function hidePaper(){$('paperbg').hidden=true;clearTimeout(paperTimer);if(S.pause){S.pause=false;renderBoard();renderMarket();renderPre();drawBoard3d();eraReaction()}}
 
 /* ---------- result ---------- */
 function titleFor(o,rank){
@@ -3176,6 +3206,30 @@ function cpuTalk(p,best){
   el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   clearTimeout(talkTimer); talkTimer=setTimeout(()=>{el.hidden=true},2600);
 }
+// 時代リアクション：新しい時代が始まると、いちばん影響を受けるCPU社長がひとこと（ライバルの懐事情が読める）
+const REACT={
+  lion:{up:'{k}が追い風！ この時代はいただきだ',dn:'{k}が向かい風か…だが、攻めるのみ！'},
+  fox:{up:'読みどおり、{k}の時代だ',dn:'{k}は、そろそろ手放しどきか…'},
+  turtle:{up:'{k}が、じわじわ効いてきた',dn:'うちの{k}が…「{n}」はきついな'},
+  rabbit:{up:'{k}が絶好調！ たのしい〜',dn:'{k}がピンチ〜！ どうしよう'}
+};
+function eraReaction(){
+  if(S.mode!=='local'||!S.game||finished()||reduced()) return;
+  const R=S.R, e=eraNow(), ev=H(e); let best=null;
+  for(const p of S.game.players){ if(!p.cpu) continue;
+    const cnt={}; for(const row of R.g)for(const x of row)if(x&&x.ok===p.key&&isInd(x.k))cnt[x.k]=(cnt[x.k]||0)+1;
+    IND.forEach((_,i)=>{const k=KEYS[i+1],v=(cnt[k]||0)*ev.r[i];if(cnt[k]&&ev.r[i]&&(!best||Math.abs(v)>Math.abs(best.v)))best={p,k,v}});
+  }
+  if(!best) return;
+  const t=(REACT[best.p.ty]||REACT.lion)[best.v>0?'up':'dn'].replace('{k}',T[best.k].name).replace('{n}',ev.n);
+  setTimeout(()=>sayTalk(best.p,t),700);
+}
+function sayTalk(p,line){
+  const el=$('talk'); if(!el) return; el.hidden=false;
+  el.innerHTML=`<span class="face" style="--tc:var(--${p.ty})">${TY[p.ty].face}</span><b>${esc(p.nick)}</b><span class="line">「${esc(line)}」</span>`;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  clearTimeout(talkTimer); talkTimer=setTimeout(()=>{el.hidden=true},3200);
+}
 async function resetShared(){
   if(!resetArm){resetArm=true;renderTools();setTimeout(()=>{resetArm=false;renderTools()},4000);return}
   resetArm=false;
@@ -3466,6 +3520,7 @@ function showHome(){
       <p class="tag2">建物を建てて、となりどうしで稼ぎを増やす。オイルショックもバブルもリーマン・ショックも、街ごと乗りこえろ。</p>
       ${city?`<div class="homecity"><canvas id="homeCity" aria-label="あなたの街"></canvas><span class="hc-lab">${esc(cityName())}（${city.done?"2022年":`${city.y}年代`}）</span></div>`:`<div class="skyline" aria-hidden="true">${sky.join("")}</div>`}
       <button class="profjump" type="button" data-h="prof">${(()=>{const k=rankOf(+(store.get('azakei-city-xp')||0)),s=misState(),n=todayMis().filter(m=>s.done[m.id]).length;return `Lv.${k.i+1} ${k.name} ・ 📋 今日のミッション ${n}/3`})()} ▼</button>
+      ${updBtnHTML()}
       <div class="years">${HIST.map((h,i)=>i%2===0?`<span><b>${h.y}</b> ${esc(h.n)}</span>`:'').join('')}</div>
     </div>
     ${cont}
@@ -3513,6 +3568,7 @@ $('home').addEventListener('click',e=>{
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
   if(a==='museum'){showMuseum();return}
+  if(a==='upd'){showUpdates();return}
   if(a==='boss'){startBoss();return}
   if(a==='prof'){document.querySelector('.homeprof')?.scrollIntoView({behavior:reduced()?'auto':'smooth',block:'start'});return}
   if(a==='cont'){hideHome();if(S.mode!=='local')setMode('local');else{render();advance()}return}
