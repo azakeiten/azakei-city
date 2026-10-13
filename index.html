@@ -679,6 +679,8 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .codeNote{font-size:12.5px;color:var(--gold);margin:6px 0 0}
 .citycode{margin:6px 0 10px;padding:10px 14px;border-radius:12px;border:1px dashed var(--gold);display:grid;gap:2px;text-align:center;font-size:13px}
 .citycode b{font-family:var(--mono);font-size:20px;letter-spacing:.08em;color:var(--gold);user-select:all}
+.citycode .cbest{font-size:12.5px;color:var(--ink)}
+.citycode .cbest b{font-size:14px;letter-spacing:0}
 .citycode small{color:var(--muted);font-size:11.5px}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
@@ -728,6 +730,9 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .cc-stats small{color:var(--muted);font-size:10px;font-weight:800}
 .cc-stats b{font-family:var(--mono);font-size:15px}
 .cc-stats .cc-now{color:var(--gold)}
+.cc-rename{display:flex;gap:6px}
+.cc-rename input{flex:1;min-width:0;font:inherit;font-size:13px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink)}
+.cc-rename .ghost{padding:4px 10px;font-size:12px;white-space:nowrap}
 .cc-parts{display:flex;flex-wrap:wrap;gap:4px}
 .cc-parts span{font-size:11.5px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06)}
 .cc-parts .p{color:#3ad283}.cc-parts .n{color:#ff6b5e}
@@ -1498,7 +1503,7 @@ function replay(tiles,seed,onStep){
       quest(e,t.r,t.c,x.k,true,t,o);
     }else{
       if(!valid(g,t.r,t.c)) continue;
-      g[t.r][t.c]={k:t.k,ok:t.ok,nick:t.nick,ty:t.ty,lv:1,name:cname(seed,n,t.k),y0:H(e).y,earn:0,age:0,story:[]}; if(isInd(t.k)) cos.push(g[t.r][t.c]);
+      g[t.r][t.c]={k:t.k,ok:t.ok,nick:t.nick,ty:t.ty,lv:1,n0:n,name:(S.mode==="local"&&S.game&&S.game.seed===seed&&S.game.cnames&&S.game.cnames[n])||cname(seed,n,t.k),y0:H(e).y,earn:0,age:0,story:[]}; if(isInd(t.k)) cos.push(g[t.r][t.c]);
       const sc=lionx(t.ty,gdp(g,e)-before), o=O(t.ok,t.nick,t.ty);
       o.score+=sc; o.build+=sc; o.built++; o.kinds[t.k]=(o.kinds[t.k]||0)+1;
       log.push({type:'b',nick:t.nick,k:t.k,d:sc,ok:t.ok,n,name:g[t.r][t.c].name});
@@ -1967,6 +1972,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:16,d:'2026-10-13',t:'🏢 自分の会社に名前を付けられる',x:'会社カードの「✎ 名前を変える」で。育つと「○○本店」「○○ホールディングス」に。街コードの勝負は、CPUの手も同じになった。'},
   {v:15,d:'2026-10-13',t:'🔢 街コードで友だちと勝負',x:'結果画面のコードを友だちが入れると、同じ地図・同じ市場の順番で遊べる。'},
   {v:14,d:'2026-10-12',t:'👑 ★★の会社のビルに王冠',x:'ホールディングスまで育った会社は、屋上が金色になって王冠がのる。'},
   {v:13,d:'2026-10-12',t:'🎬 展示モード',x:'CPUの社長3人が自動で遊び続ける。学園祭の展示に。タップで終わる。'},
@@ -2026,6 +2032,7 @@ $('fastBtn').addEventListener('click',()=>{S.fast=!S.fast;store.set('azakei-city
 // 会社カード：建物をタップすると、盤面の上にその会社の歴史と稼ぎを出す
 function renderCoCard(){
   const el=$('coCard'); if(!el) return;
+  if(document.activeElement&&document.activeElement.id==='ccName') return; // 社名を入力中は、書きかえない
   const g=S.R&&S.R.g, at=S.insp, t=at&&g&&g[at[0]][at[1]];
   if(!t){el.hidden=true;return}
   const[r,c]=at, e=finished()?NE()-1:eraNow(); // ゲームが終わったあとは、最後の時代で数える
@@ -2035,13 +2042,19 @@ function renderCoCard(){
   el.innerHTML=`<button class="cc-x" type="button" aria-label="とじる">✕</button>
     <div class="cc-top"><span class="cc-ic k-${t.k}">${ic(t.k)}</span><span><b>${esc(t.name||T[t.k].name)}${(t.lv||1)>1?` <i class="cc-star">${'★'.repeat(t.lv-1)}</i>`:''}</b><small>${T[t.k].name}${old?' ・ <span class="cc-old">老舗</span>':''}</small></span></div>
     <div class="cc-owner" style="--oc:${ownerColor(t.ok)}">${t.ty&&TY[t.ty]?TY[t.ty].face:''} ${esc(t.nick||'—')}${mine&&t.nick!=='あなた'?'（あなた）':''}</div>
+    ${mine&&S.mode==="local"&&S.game&&!S.game.demo&&t.n0!=null&&!S.game.chal?`<div class="cc-rename"><input id="ccName" maxlength="10" placeholder="新しい社名" value="${esc((S.game.cnames||{})[t.n0]||"")}"><button class="ghost" type="button" id="ccNameGo" data-n0="${t.n0}">✎ 名前を変える</button></div>`:""}
     <div class="cc-stats"><div><small>創業</small><b>${t.y0||'—'}</b></div><div><small>決算</small><b>${t.age||0}回</b></div><div><small>これまで</small><b>+${t.earn||0}</b></div><div><small>いまの稼ぎ</small><b class="cc-now">${v}</b></div></div>
     ${P.length?`<div class="cc-parts">${P.map(([l,x])=>`<span class="${x<0?'n':'p'}">${esc(l)} ${sg(x)}</span>`).join('')}</div>`:''}
     ${t.story&&t.story.length?`<ul class="cc-story">${t.story.slice(-3).map(s=>`<li><b>${s.y}</b> ${esc(s.t)}</li>`).join('')}</ul>`:''}
     ${nv!=null?`<p class="cc-next${risk?' n':''}">次の時代の予想 <b>${nv}</b>${risk?' ⚠ 倒産の危険':nv>v?' ↗':nv<v?' ↘':''}</p>`:''}`;
   el.hidden=false;
 }
-$('coCard').addEventListener('click',e=>{if(e.target.closest('.cc-x')){S.insp=null;render()}});
+$('coCard').addEventListener('click',e=>{if(e.target.closest('.cc-x')){S.insp=null;render();return}
+  const b=e.target.closest('#ccNameGo'); if(!b) return;
+  const v=$('ccName').value.trim().slice(0,10), n0=+b.dataset.n0; S.game.cnames=S.game.cnames||{};
+  if(v) S.game.cnames[n0]=v; else delete S.game.cnames[n0];
+  saveGame(); $('ccName').blur(); render(); sfx.pick(); toast(v?`🏢 社名を「${esc(v)}」にしました`:'社名を元に戻しました')});
+$('coCard').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='ccName')$('ccNameGo').click()});
 // 実況テロップ：トップ交代・ラスト1時代・大接戦を、盤面の真ん中に大きく出す
 function ticker(html,kind){
   const el=$('ticker'); if(!el) return;
@@ -2733,6 +2746,8 @@ function recordGame(me,rank,arr){
   if(me.goal){rec.goals++;if(me.goal.met)rec.goalsMet++}
   if(me.guess){rec.guesses++;if(me.guess.hit)rec.hits++}
   rec.busts+=me.bust||0; rec.lm+=me.lm||0;
+  // 街コードごとの自己ベスト（同じコードに何度も挑戦するとき）
+  {const cc=cityCode(S.game);if(cc&&humans().length===1){rec.codeBest=rec.codeBest||{};const o=rec.codeBest[cc];if(!o||me.score>o.score)rec.codeBest[cc]={score:me.score,date:todayStr(),prev:o?o.score:null,tries:(o?o.tries:0)+1};else o.tries=(o.tries||1)+1}}
   if(S.game.boss){if(rank===0)rec.bossW=(rec.bossW||0)+1;else rec.bossL=(rec.bossL||0)+1}
   // ライバル（CPU社長）ごとの対戦成績：ひとりで遊んだときだけ
   rec.vs=rec.vs||{}; const vsNow=[];
@@ -2845,7 +2860,7 @@ function showResult(){
     :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n街の名前：${cityName()}${cityCode(S.game)?`（街コード ${cityCode(S.game)}）`:''}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
   $('resultbg').innerHTML=`<div class="sheet result" role="dialog" aria-label="結果">
     <h3>${S.game&&S.game.chal?'チャレンジの結果':daily?`今日の街（${daily}）の結果`:S.game&&S.game.short?'ショート（6時代）の結果':'60年の結果'}</h3>
-    ${(()=>{const cc=S.mode==="local"&&cityCode(S.game);return cc?`<div class="citycode">🔢 この街のコード <b>${cc}</b><small>友だちが「くわしく設定して遊ぶ」でこのコードを入れると、同じ地図・同じ市場の順番で勝負できます</small></div>`:""})()}
+    ${(()=>{const cc=S.mode==="local"&&cityCode(S.game);return cc?`<div class="citycode">🔢 この街のコード <b>${cc}</b>${(()=>{const o=((store.get("azakei-city-rec")||{}).codeBest||{})[cc];return o&&o.tries>1?`<span class="cbest">このコードでのベスト <b>${o.score}点</b>（${o.tries}回目の挑戦）</span>`:""})()}<small>友だちが「くわしく設定して遊ぶ」でこのコードを入れると、同じ地図・同じ市場の順番で勝負できます</small></div>`:""})()}
     ${S.mode==="local"&&S.game?`<div class="cityname"><span>🏙️</span><input id="cityIn" maxlength="10" value="${esc(cityName())}" aria-label="街の名前"><button class="ghost" type="button" id="citySave">名前を変える</button></div>`:""}
     <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
@@ -3219,20 +3234,22 @@ function goalBias(R,ok,w){
 }
 function cpuPick(R,ty,ok,lvName){
   const L=CPULV[lvName||'normal']||CPULV.normal, g=R.g, cells=validCells(g), e=Math.floor(R.n/ERA), cand=[];
+  // CPUの迷い（ランダム）も、街のシード・手番・社長で決める → 同じ街コードで同じように打てば、CPUも同じ手になる
+  const rng=mulberry(((seedNow()>>>0)^Math.imul(R.n+1,2654435761)^seedOf(String(ok)))>>>0);
   for(const x of choices(R,ty)){
     if(x.k==='buy'){
-      for(const[r,c]of buyTargets(g,e,ok)){const s=simulateBuy(g,r,c,e,ty,R);cand.push({v:s.score+(L.fut+.9)*s.fut-(ty!=='turtle'&&s.fut<=BUST?L.risk*2:0)+Math.random()*L.noise,r,c,k:x.k,src:x.src,d:s.score,ch:[],lms:[],mq:s.mq})}
+      for(const[r,c]of buyTargets(g,e,ok)){const s=simulateBuy(g,r,c,e,ty,R);cand.push({v:s.score+(L.fut+.9)*s.fut-(ty!=='turtle'&&s.fut<=BUST?L.risk*2:0)+rng()*L.noise,r,c,k:x.k,src:x.src,d:s.score,ch:[],lms:[],mq:s.mq})}
       continue;
     }
     for(const[r,c]of cells){
       const s=simulate(g,r,c,x.k,e,ty,R);
-      cand.push({v:s.score+L.fut*s.fut-(isInd(x.k)&&ty!=='turtle'&&s.fut<=BUST?L.risk:0)+Math.random()*L.noise,r,c,k:x.k,src:x.src,d:s.score,fut:s.fut,ch:s.changes,lms:s.lms,mq:s.mq});
+      cand.push({v:s.score+L.fut*s.fut-(isInd(x.k)&&ty!=='turtle'&&s.fut<=BUST?L.risk:0)+rng()*L.noise,r,c,k:x.k,src:x.src,d:s.score,fut:s.fut,ch:s.changes,lms:s.lms,mq:s.mq});
     }
   }
   if(!cand.length) return null;
   const gb=goalBias(R,ok,L.goal); for(const x of cand) x.v+=gb(x);
   cand.sort((a,b)=>b.v-a.v);
-  return cand[Math.floor(Math.random()*Math.min(L.top,cand.length))];
+  return cand[Math.floor(rng()*Math.min(L.top,cand.length))];
 }
 // CPU社長のひとこと（タイプごとの口ぐせ）
 const TALK={
