@@ -674,6 +674,12 @@ html.bigtext{zoom:1.1}
 .demobar b{color:var(--gold)}
 .demobar u{color:var(--muted)}
 body:has(.demobar:not([hidden])) .tray{display:none}
+.codeRow{display:flex;gap:8px;align-items:center}
+.codeRow input{flex:1;min-width:0;font:inherit;font-family:var(--mono);font-size:15px;letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink)}
+.codeNote{font-size:12.5px;color:var(--gold);margin:6px 0 0}
+.citycode{margin:6px 0 10px;padding:10px 14px;border-radius:12px;border:1px dashed var(--gold);display:grid;gap:2px;text-align:center;font-size:13px}
+.citycode b{font-family:var(--mono);font-size:20px;letter-spacing:.08em;color:var(--gold);user-select:all}
+.citycode small{color:var(--muted);font-size:11.5px}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -1961,6 +1967,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:15,d:'2026-10-13',t:'🔢 街コードで友だちと勝負',x:'結果画面のコードを友だちが入れると、同じ地図・同じ市場の順番で遊べる。'},
   {v:14,d:'2026-10-12',t:'👑 ★★の会社のビルに王冠',x:'ホールディングスまで育った会社は、屋上が金色になって王冠がのる。'},
   {v:13,d:'2026-10-12',t:'🎬 展示モード',x:'CPUの社長3人が自動で遊び続ける。学園祭の展示に。タップで終わる。'},
   {v:12,d:'2026-10-12',t:'ライバルの「時代リアクション」',x:'新しい時代が始まると、CPU社長が自分の会社の追い風・向かい風にひとこと。'},
@@ -2260,11 +2267,12 @@ function renderPre0(){
 function faceOf(ty){return ty&&TY[ty]?TY[ty].face:'・'}
 function renderRank(){
   const R=S.R, mk=myKey(), arr=Object.values(R.own).sort((a,b)=>b.score-a.score), many=S.mode==='local'&&humans().length>1;
-  $('hudMeLab').textContent=many?`${viewerP()?.nick||''}社長のスコア`:'あなたのスコア';
+  const demo=S.mode==='local'&&S.game&&S.game.demo; // 展示モードは、トップの社長のスコアを出す
+  $('hudMeLab').textContent=demo?'トップの社長':many?`${viewerP()?.nick||''}社長のスコア`:'あなたのスコア';
   if(!arr.length){$('rank').innerHTML=`<li class="empty" style="display:block">まだ誰も建てていません。最初の一手を。</li>`;$('myRank').textContent='まだ0手';$('hudMe').textContent='0';return}
-  const mi=arr.findIndex(o=>o.key===mk);
+  const mi=demo?0:arr.findIndex(o=>o.key===mk);
   $('hudMe').textContent=mi>=0?arr[mi].score:0;
-  $('myRank').textContent=mi>=0?`${arr.length}人中 ${mi+1}位${mi>0?`（1位まで ${arr[0].score-arr[mi].score}）`:''}`:'まだ建てていません';
+  if(demo){$('myRank').textContent=`${esc(arr[0].nick)} が1位`}else $('myRank').textContent=mi>=0?`${arr.length}人中 ${mi+1}位${mi>0?`（1位まで ${arr[0].score-arr[mi].score}）`:''}`:'まだ建てていません';
   if(S.mode==='local'&&S.game&&S.game.chal){const c=CHAL.find(x=>x.id===S.game.chal),g=gdp(R.g,eraNow()),nx=c.star.find(s=>g<s);$('myRank').textContent=nx?`いまのGDP ${g} ・ 次の★まで あと${nx-g}`:`いまのGDP ${g} ・ ★★★ペース！`}
   $('rank').innerHTML=arr.slice(0,8).map((o,i)=>`<li class="${o.key===mk?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span class="who"><span class="pdot" style="--oc:${ownerColor(o.key)}"></span>${esc(o.nick)||'名無し'}<small>名所${o.lm}・お題${o.mq}</small></span><span class="sc">${o.score}</span></li>`).join('');
 }
@@ -2834,9 +2842,10 @@ function showResult(){
   const xp=me?awardXP(me,mi,R):null;
   const text=many
     ?`AZAKEI CITY 1964→2022 対戦結果\n${arr.map((o,i)=>`${i+1}位 ${o.nick}（${TY[o.ty]?.name||''}）${o.score}点`).join('\n')}`
-    :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n街の名前：${cityName()}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
+    :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n街の名前：${cityName()}${cityCode(S.game)?`（街コード ${cityCode(S.game)}）`:''}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
   $('resultbg').innerHTML=`<div class="sheet result" role="dialog" aria-label="結果">
     <h3>${S.game&&S.game.chal?'チャレンジの結果':daily?`今日の街（${daily}）の結果`:S.game&&S.game.short?'ショート（6時代）の結果':'60年の結果'}</h3>
+    ${(()=>{const cc=S.mode==="local"&&cityCode(S.game);return cc?`<div class="citycode">🔢 この街のコード <b>${cc}</b><small>友だちが「くわしく設定して遊ぶ」でこのコードを入れると、同じ地図・同じ市場の順番で勝負できます</small></div>`:""})()}
     ${S.mode==="local"&&S.game?`<div class="cityname"><span>🏙️</span><input id="cityIn" maxlength="10" value="${esc(cityName())}" aria-label="街の名前"><button class="ghost" type="button" id="citySave">名前を変える</button></div>`:""}
     <p class="lead">${many?`優勝 ${TY[win.ty]?.face||''} ${esc(sh(win.nick))}`:`${TY[me.ty]?.face||''} ${esc(sh(me.nick))} ・ ${mi+1}位`}</p>
     <div class="title">${many?esc(sh(win.nick))+'、AZAKEI CITY の億万長者':titleFor(me,mi)}</div>
@@ -2953,6 +2962,7 @@ function drawSetup(){
     ${SU.rows.slice(0,n).map((r,i)=>`<div class="prow"><span class="pn">${i+1}P</span><input id="pn${i}" maxlength="12" placeholder="社長名" value="${esc(r.nick)}" autocomplete="off">
       <div class="tys">${TYK.map(k=>`<button type="button" class="ty-${k}" data-row="${i}" data-ty="${k}" aria-pressed="${r.ty===k}">${TY[k].face} ${TY[k].name}</button>`).join('')}<button type="button" class="dg" data-diag="${i}">4問で診断</button></div></div>`).join('')}
     ${cpus?`<p class="cpurow">＋ CPU ${cpus}人（${CPUN.slice(0,cpus).join("・")}）が一緒に街をつくります。</p>${SU.daily?"":`<div class="slab">CPUの強さ</div><div class="seg">${[["easy","やさしい","気まぐれに建てる"],["normal","ふつう","いまと次の時代を見る"],["hard","つよい","先を読み、倒産を避ける"]].map(([v,l,s])=>`<button type="button" data-cpu="${v}" aria-pressed="${SU.cpu===v}">${l}<small>${s}</small></button>`).join("")}</div>`}`:'<p class="cpurow">CPUなし。人間だけの真剣勝負。</p>'}
+    ${SU.daily?'':`<div class="slab">街コード（友だちと同じ街で勝負するとき）</div><div class="codeRow"><input id="codeIn" maxlength="12" placeholder="例：SZN1ABC123" value="${esc(SU.code||'')}" autocomplete="off" spellcheck="false"><button class="ghost" type="button" id="codeGo">このコードで遊ぶ</button></div>${SU.code?`<p class="codeNote">🔢 コード <b>${esc(SU.code)}</b> の街で遊びます（長さ・ルール・CPUの強さ・人数はコードに合わせました）</p>`:''}`}
     <button class="go" type="button" id="startGame"${ready?'':' disabled'}>${ready?'この街で始める':'全員の社長タイプを選んでください'}</button>
     ${S.game&&S.game.tiles.length&&!finished()?'<p class="foot">いまの街は消えて、新しい街になります。</p><button class="ghost" type="button" data-close="1">いまの街にもどる</button>':''}
   </div>`;
@@ -2991,9 +3001,20 @@ function bossHTML(){
   const lv=myLv(), r=store.get('azakei-city-rec')||{}, w=r.bossW||0, l=r.bossL||0, open=lv>=BOSS.lv;
   return `<button type="button" class="bosscard${open?'':' locked'}" data-h="boss"><span class="bc-face">👑</span><span><b>ボス戦：${BOSS.nick}に挑む</b><small>${open?`最初から${BOSS.head}点を持つ資産家と、1対1・6時代。勝てば経験値＋${BOSS.xp}${w+l?`（${w}勝${l}敗）`:''}`:`🔒 社長ランク Lv.${BOSS.lv} から挑めます`}</small></span><em>${open?'挑む ▶':`Lv.${BOSS.lv}`}</em></button>`;
 }
+// 🔢 街コード：同じ地図・同じ市場の順番で遊べる。長さ(S/F)・ルール(K=かんたん/Z=ぜんぶ)・CPUの強さ(E/N/H)・人数(1〜4)・シード(36進)
+function cityCode(g){if(!g||g.daily||g.chal||g.boss||g.demo)return null;const h=g.players.filter(p=>!p.cpu).length;return `${g.short?'S':'F'}${g.simple?'K':'Z'}${({easy:'E',normal:'N',hard:'H'})[g.cpu]||'N'}${h}${(g.seed>>>0).toString(36).toUpperCase()}`}
+function parseCode(s){const m=String(s||'').trim().toUpperCase().match(/^([SF])([KZ])([ENH])([1-4])([0-9A-Z]{1,7})$/);if(!m)return null;return {short:m[1]==='S',simple:m[2]==='K',cpu:({E:'easy',N:'normal',H:'hard'})[m[3]],n:+m[4],seed:parseInt(m[5],36)}}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#codeGo')) return;
+  const v=$('codeIn').value, p=parseCode(v);
+  if(!p){toast('🔢 コードの形がちがうようです（例：SZN1ABC123）');return}
+  readNames(); Object.assign(SU,{seed:p.seed,short:p.short,simple:p.simple,cpu:p.cpu,n:p.n,daily:false,code:v.trim().toUpperCase()}); drawSetup(); sfx.pick();
+});
 function startGame(){
   readNames();
-  const n=SU.n, today=todayStr(), seed=SU.daily?seedOf('azakei-'+today):Math.floor(Math.random()*1e9);
+  // コードを入れたあとで設定を変えたら、コードは使わない（別の街になるため）
+  if(SU.code){const p=parseCode(SU.code);if(!p||p.n!==SU.n||p.short!==!!SU.short||p.simple!==!!SU.simple||p.cpu!==SU.cpu)SU.seed=null}
+  const n=SU.n, today=todayStr(), seed=SU.daily?seedOf('azakei-'+today):SU.seed!=null?SU.seed:Math.floor(Math.random()*1e9); SU.seed=null; SU.code=null;
   const players=SU.rows.slice(0,n).map((r,i)=>({key:"h"+(i+1),nick:(r.nick||"").trim()||(n>1?`${i+1}P`:"あなた"),ty:r.ty||TYK[i%TYK.length],cpu:false}));
   const rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
   if(SU.boss) players.push({key:"cpu1",nick:BOSS.nick,ty:BOSS.ty,cpu:true});
@@ -3563,7 +3584,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="short"><span class="mi">⏱️</span><b>ショートで遊ぶ</b><small>大事件の6時代だけ。サクッと1ゲーム</small></button>
       <button class="mbtn" type="button" data-h="chal"><span class="mi">🏆</span><b>チャレンジ</b><small>歴史の一場面をひとりで攻略。★を集めよう（★${CHAL.reduce((s,c)=>s+(chalBest()[c.id]||0),0)}/${CHAL.length*3}）</small></button>
       <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
-      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?'はじめての人はここから（絵でわかる${BOOK.length}ページ）':'絵でわかる${BOOK.length}ページ'}</small></button>
+      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?`はじめての人はここから（絵でわかる${BOOK.length}ページ）`:`絵でわかる${BOOK.length}ページ`}</small></button>
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
       <button class="mbtn" type="button" data-h="museum"><span class="mi">📚</span><b>経済ミュージアム</b><small>1964〜2022年の経済を、年表とグラフで</small></button>
       <button class="mbtn" type="button" data-h="demo"><span class="mi">🎬</span><b>展示モード</b><small>CPUが自動で遊び続ける。学園祭の展示に</small></button>
