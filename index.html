@@ -738,6 +738,16 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .ms.done{color:var(--muted)}
 .ms.done span:nth-child(2){text-decoration:line-through}
 .ms.done .ms-ck{background:#3ad283;border-color:#3ad283;color:#0b2a17}
+.pl{display:grid;gap:6px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);text-align:left}
+.plr{display:grid;grid-template-columns:minmax(0,9.5em) 1fr auto auto;gap:8px;align-items:center;font-size:12.5px}
+.pln{display:flex;align-items:center;gap:4px;flex-wrap:wrap;color:var(--c,var(--ink));font-weight:800}
+.pln svg{width:15px;height:15px}
+.pln em{font-style:normal;font-size:10px;padding:1px 6px;border-radius:99px;background:rgba(255,200,58,.18);color:var(--gold)}
+.pln em.bz{background:rgba(255,107,94,.15);color:#ff6b5e}
+.plb{height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.plb i{display:block;height:100%;border-radius:inherit;background:var(--c,#ffc83a)}
+.plr b{font-family:var(--mono);text-align:right}
+.plr small{font-family:var(--mono);color:var(--muted);width:3em;text-align:right}
 .bestco{display:grid;gap:8px;margin:12px 0;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));background:linear-gradient(135deg,rgba(255,200,58,.08),rgba(255,255,255,.03));text-align:left}
 .bc-in{display:flex;align-items:center;gap:12px}
 .bc-main{flex:1;min-width:0}
@@ -1530,7 +1540,7 @@ function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):
   return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
 function replay(tiles,seed,onStep){
   POLMAP={}; EVON={};
-  const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, cos=[], D=deck(seed); let n=0, ruins=[], di=0, mk=[], lastPay={};
+  const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, cos=[], allB=[], D=deck(seed); let n=0, ruins=[], di=0, mk=[], lastPay={};
   const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
   refill();
   const O=(k,nick,ty)=>{const o=own[k]||(own[k]={key:k,nick:'',ty:'',score:0,build:0,settle:0,built:0,bust:0,grow:0,goal:null,crown:0,buys:0,lm:0,mq:0,kinds:{}});if(nick)o.nick=nick;if(ty)o.ty=ty;return o};
@@ -1556,7 +1566,7 @@ function replay(tiles,seed,onStep){
       quest(e,t.r,t.c,x.k,true,t,o);
     }else{
       if(!valid(g,t.r,t.c)) continue;
-      g[t.r][t.c]={k:t.k,ok:t.ok,nick:t.nick,ty:t.ty,lv:1,n0:n,name:(S.mode==="local"&&S.game&&S.game.seed===seed&&S.game.cnames&&S.game.cnames[n])||cname(seed,n,t.k),y0:H(e).y,earn:0,age:0,story:[]}; if(isInd(t.k)) cos.push(g[t.r][t.c]);
+      g[t.r][t.c]={k:t.k,ok:t.ok,nick:t.nick,ty:t.ty,lv:1,n0:n,name:(S.mode==="local"&&S.game&&S.game.seed===seed&&S.game.cnames&&S.game.cnames[n])||cname(seed,n,t.k),y0:H(e).y,earn:0,age:0,story:[]}; if(isInd(t.k)) cos.push(g[t.r][t.c]); allB.push(g[t.r][t.c]);
       const sc=lionx(t.ty,gdp(g,e)-before), o=O(t.ok,t.nick,t.ty);
       o.score+=sc; o.build+=sc; o.built++; o.kinds[t.k]=(o.kinds[t.k]||0)+1;
       log.push({type:'b',nick:t.nick,k:t.k,d:sc,ok:t.ok,n,name:g[t.r][t.c].name});
@@ -1574,7 +1584,7 @@ function replay(tiles,seed,onStep){
     if(n%ERA===0){
       const rep={e,y:H(e).y,gdp:gdp(g,e),bust:[],grow:[],pay:{},cells:[],ind:{}};
       const vals=[];
-      for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.ok!=null){const v=out(g,r,c,e);vals.push([r,c,v]);const oo=O(x.ok);if(isInd(x.k))rep.ind[x.ok]=(rep.ind[x.ok]||0)+1;oo.score+=v;oo.settle+=v;x.earn=(x.earn||0)+v;x.age=(x.age||0)+1;rep.pay[x.ok]=(rep.pay[x.ok]||0)+v}}
+      for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.ok!=null){const v=out(g,r,c,e);vals.push([r,c,v]);const oo=O(x.ok);if(isInd(x.k))rep.ind[x.ok]=(rep.ind[x.ok]||0)+1;oo.score+=v;oo.settle+=v;x.earn=(x.earn||0)+v;x.eb=x.eb||{};x.eb[x.ok]=(x.eb[x.ok]||0)+v;x.age=(x.age||0)+1;rep.pay[x.ok]=(rep.pay[x.ok]||0)+v}}
       ruins=[];
       for(const[r,c,v]of vals){const x=g[r][c];
         if(v<=BUST&&canBust(x)){if(x.story){x.story.push({y:rep.y,t:"倒産"});x.dead=rep.y}rep.bust.push({k:x.k,ok:x.ok,nick:x.nick,name:x.name});O(x.ok).bust++;g[r][c]=null;ruins.push([r,c]);rep.cells.push([r,c,v,'bust',x.k,x.lv||1])}
@@ -1597,7 +1607,7 @@ function replay(tiles,seed,onStep){
   if(goalOn()&&n>=ERA*NE()) for(const o of Object.values(own)){const gp=goalProg(g,o,seed);o.goal={id:gp.G.id,met:gp.met};if(gp.met)o.score+=goalPts()}
   // 🔍 ライバルの目標の予想：当たれば ＋30（ショート ＋15）
   if(goalOn()&&n>=ERA*NE()&&S.game.guess&&own[S.game.guess.by]){const gs=S.game.guess,o=own[gs.by];o.guess={...gs,hit:goalOf(seed,gs.target).id===gs.id};if(o.guess.hit)o.score+=guessPts()}
-  return {g,own,log,hist,eras,n,ruins,claimed,mq,lastPay,cos,market:mk,peek:[D(di),D(di+1),D(di+2)]};
+  return {g,own,log,hist,eras,n,ruins,claimed,mq,lastPay,cos,allBld:allB,market:mk,peek:[D(di),D(di+1),D(di+2)]};
 }
 
 /* ---------- sound ---------- */
@@ -2118,6 +2128,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:29,d:'2026-10-16',t:'📊 あなたの決算書',x:'結果画面に、産業別の稼ぎを横棒グラフで。主力事業や、倒産した産業がひと目でわかる。'},
   {v:28,d:'2026-10-15',t:'⚙ 設定をひとまとめ・🏛 名所図鑑',x:'☰メニューの「設定」で、音・文字の大きさ・早送り・立体・向き・テーマをスイッチで。社長手帳に、完成させた名所の図鑑。'},
   {v:27,d:'2026-10-15',t:'🏛 名所に旗が立つ・ニュータウンの条件を見直し',x:'名所を完成させた建物の屋上に、その社長の色の旗。ニュータウンは「住宅を4つつなげる（形は自由）」に。'},
   {v:26,d:'2026-10-15',t:'⚓ 名所が11に（港湾地区・駅前ビル街・IT研究都市）',x:'川や駅を使う名所が登場。早い者勝ちで＋30。'},
@@ -2917,6 +2928,14 @@ function xpFor(me,rank,R){
 // 通算記録と自己ベスト（この端末に保存）。awardXP と同じく、1ゲームに1回だけ記録する
 // あなたの最強企業：この試合でいちばん稼いだ、自分の会社（倒産した会社もふくむ）
 const myCos=(R,mk)=>(R.cos||[]).filter(x=>x.ok===mk&&(x.earn||0)>0).sort((a,b)=>b.earn-a.earn);
+// 📊 あなたの決算書：産業別に、決算でいくら稼いだか（倒産した会社の分もふくむ）
+function plHTML(R,mk){
+  const by={}, bust={};
+  for(const x of R.allBld||[]){ const v=(x.eb&&x.eb[mk])||0; if(v>0) by[x.k]=(by[x.k]||0)+v; if(x.dead&&x.ok===mk) bust[x.k]=(bust[x.k]||0)+1 }
+  const rows=Object.entries(by).sort((a,b)=>b[1]-a[1]); if(!rows.length) return '';
+  const tot=rows.reduce((s,r)=>s+r[1],0), mx=rows[0][1];
+  return `<div class="pl"><div class="slab">📊 あなたの決算書（産業別の稼ぎ）</div>${rows.map(([k,v],i)=>`<div class="plr k-${k}"><span class="pln">${ic(k)}${T[k].name}${i===0?'<em>主力事業</em>':''}${bust[k]?`<em class="bz">⚠ 倒産${bust[k]}社</em>`:''}</span><span class="plb"><i style="width:${Math.max(4,Math.round(v/mx*100))}%"></i></span><b>+${v}</b><small>${Math.round(v/tot*100)}%</small></div>`).join('')}<p class="mnote">決算で受け取った稼ぎの合計 <b>+${tot}</b>（建てた瞬間のスコアや、名所・お題のボーナスはふくまない）</p></div>`;
+}
 function bestCoHTML(R,mk){
   const x=myCos(R,mk)[0]; if(!x) return '';
   return `<div class="bestco"><div class="slab">あなたの最強企業</div>
@@ -3100,6 +3119,7 @@ function showResult(){
     ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}${me&&me.guess?(()=>{const gs=me.guess,p=arr.find(o=>o.key===gs.target),G=GOALS.find(x=>x.id===gs.id);return `<div class="${gs.hit?"ok":""}"><span>🔍 あなたの予想：${p?esc(sh(p.nick)):""}は <b>${G.name}</b></span><em>${gs.hit?`的中！ ＋${guessPts()}`:"はずれ"}</em></div>`})():""}</div>`:""}
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
     ${recapHTML(R,arr,mk)}
+    ${plHTML(R,mk)}
     ${bestCoHTML(R,mk)}
     <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div><div class="tlctl"><button type="button" class="tltg" id="tlToggle" aria-label="再生・一時停止">❚❚</button><input type="range" id="tlRange" min="0" max="1" value="0" aria-label="何手目を見るか"><div class="tlev" id="tlEv"></div></div></div>
     <div class="tblwrap"><table class="eras"><thead><tr><th>年代</th><th>できごと</th><th>GDP</th><th>倒産</th><th>成長</th></tr></thead><tbody>
