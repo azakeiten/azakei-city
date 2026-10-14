@@ -874,6 +874,7 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .vsrow b{font-family:var(--mono)}
 .goalpick .rivals{margin-top:10px;font-size:13px;line-height:1.7}
 .goalpick .rivals small{color:var(--muted)}
+.goalpick .rivals .rsay{font-style:normal;display:block;font-size:12px;color:var(--muted);margin:0 0 4px 1.6em}
 .pbline{margin:10px 0;padding:12px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(255,200,58,.22),rgba(255,154,58,.12));border:1px solid var(--gold);font-size:14px;text-align:left;animation:gpop 1s ease .3s both}
 .pbline b{color:var(--gold)}
 .recs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;width:100%}
@@ -1611,6 +1612,19 @@ const SEASONS={halloween:{ic:'🎃',name:'ハロウィン',until:'10月31日',ba
 function seasonNow(){const d=new Date(),m=d.getMonth()+1,day=d.getDate();return m===10?'halloween':(m===12&&day<=25)?'xmas':null}
 function seasonHTML(){const s=seasonNow();if(!s)return '';const S2=SEASONS[s],got=(store.get('azakei-city-badges')||{})[S2.badge];return `<div class="seasonpill">${S2.ic} <b>${S2.name}期間</b>（${S2.until}まで）・街がいつもとちがう！${got?' ✓ 限定バッジ獲得ずみ':' 1ゲーム遊ぶと限定バッジ'}</div>`}
 const CPUN=['駅前の社長','となりの社長','港町の社長'];
+// ライバル社長：8人の中から、ゲームごとに選ばれる（タイプと口ぐせは決まっている）
+const RIVALS=[
+  {nick:'駅前の社長',ty:'lion',say:'駅前は、ぜんぶうちのビルにする！'},
+  {nick:'となりの社長',ty:'turtle',say:'となり同士、ゆっくりいきましょう'},
+  {nick:'港町の社長',ty:'rabbit',say:'港はいつだって、にぎやかなのがいい'},
+  {nick:'坂の上の社長',ty:'fox',say:'坂の上から、街ぜんぶが見えるよ'},
+  {nick:'商店街の会長',ty:'rabbit',say:'みんなで買い物、楽しいね！'},
+  {nick:'川沿いの社長',ty:'turtle',say:'川の流れのように、あせらずに'},
+  {nick:'鉄道好きの社長',ty:'lion',say:'線路の先に、もうけがある！'},
+  {nick:'丘の上のお嬢さま社長',ty:'fox',say:'数字は、うそをつきませんわ'}
+];
+function pickRivals(seed,k){const rnd=mulberry((seed^0x7a11)>>>0),a=RIVALS.slice().sort(()=>rnd()-.5);return a.slice(0,k)}
+const rivalSay=nick=>(RIVALS.find(r=>r.nick===nick)||{}).say;
 const S={mode:'local',sel:null,cell:null,insp:null,busy:false,risk:false,pause:false,
   nick:store.get('azakei-city-nick')||'', sound:store.get('azakei-city-sound')!==false,
   tyShared:store.get('azakei-city-ty-shared'),
@@ -2018,6 +2032,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:21,d:'2026-10-14',t:'🧑‍💼 ライバル社長が8人に',x:'毎回ちがう顔ぶれがやってくる。それぞれ決まったタイプと口ぐせ、対戦成績つき。'},
   {v:20,d:'2026-10-14',t:'🎃 季節イベント：10月はハロウィン',x:'10月は街にかぼちゃのランタン、12月はイルミネーションとツリー。期間中に1ゲーム遊ぶと限定バッジ。'},
   {v:19,d:'2026-10-14',t:'📷 街のアルバム',x:'ゲームを終えるたびに、完成した街の写真が社長手帳に貼られる（最新8枚）。写真をタップすると大きくなる。'},
   {v:18,d:'2026-10-14',t:'🏅 バッジが22個に',x:'ボス撃破・新聞にのった・ホールディングス3社・物知り社長・同じ街に再挑戦・展示モードを見た。バッジにアイコンも付いた。'},
@@ -3047,7 +3062,7 @@ function drawSetup(){
     <div class="seg">${[1,2,3,4].map(i=>`<button type="button" data-n="${i}" aria-pressed="${n===i}"${SU.daily&&i>1?' disabled':''}>${i}人</button>`).join('')}</div>
     ${SU.rows.slice(0,n).map((r,i)=>`<div class="prow"><span class="pn">${i+1}P</span><input id="pn${i}" maxlength="12" placeholder="社長名" value="${esc(r.nick)}" autocomplete="off">
       <div class="tys">${TYK.map(k=>`<button type="button" class="ty-${k}" data-row="${i}" data-ty="${k}" aria-pressed="${r.ty===k}">${TY[k].face} ${TY[k].name}</button>`).join('')}<button type="button" class="dg" data-diag="${i}">4問で診断</button></div></div>`).join('')}
-    ${cpus?`<p class="cpurow">＋ CPU ${cpus}人（${CPUN.slice(0,cpus).join("・")}）が一緒に街をつくります。</p>${SU.daily?"":`<div class="slab">CPUの強さ</div><div class="seg">${[["easy","やさしい","気まぐれに建てる"],["normal","ふつう","いまと次の時代を見る"],["hard","つよい","先を読み、倒産を避ける"]].map(([v,l,s])=>`<button type="button" data-cpu="${v}" aria-pressed="${SU.cpu===v}">${l}<small>${s}</small></button>`).join("")}</div>`}`:'<p class="cpurow">CPUなし。人間だけの真剣勝負。</p>'}
+    ${cpus?`<p class="cpurow">＋ CPU ${cpus}人が一緒に街をつくります（8人のライバル社長から、毎回だれかがやってくる）。</p>${SU.daily?"":`<div class="slab">CPUの強さ</div><div class="seg">${[["easy","やさしい","気まぐれに建てる"],["normal","ふつう","いまと次の時代を見る"],["hard","つよい","先を読み、倒産を避ける"]].map(([v,l,s])=>`<button type="button" data-cpu="${v}" aria-pressed="${SU.cpu===v}">${l}<small>${s}</small></button>`).join("")}</div>`}`:'<p class="cpurow">CPUなし。人間だけの真剣勝負。</p>'}
     ${SU.daily?'':`<div class="slab">街コード（友だちと同じ街で勝負するとき）</div><div class="codeRow"><input id="codeIn" maxlength="12" placeholder="例：SZN1ABC123" value="${esc(SU.code||'')}" autocomplete="off" spellcheck="false"><button class="ghost" type="button" id="codeGo">このコードで遊ぶ</button></div>${SU.code?`<p class="codeNote">🔢 コード <b>${esc(SU.code)}</b> の街で遊びます（長さ・ルール・CPUの強さ・人数はコードに合わせました）</p>`:''}`}
     <button class="go" type="button" id="startGame"${ready?'':' disabled'}>${ready?'この街で始める':'全員の社長タイプを選んでください'}</button>
     ${S.game&&S.game.tiles.length&&!finished()?'<p class="foot">いまの街は消えて、新しい街になります。</p><button class="ghost" type="button" data-close="1">いまの街にもどる</button>':''}
@@ -3059,7 +3074,7 @@ function startDemo(){
   if(!S.demoKeep) S.demoKeep=S.game; // 終わったら元のゲームに戻す
   clearTimeout(ticker.w); S.tick=null; // 前の試合の実況が、あとから出ないように
   const seed=Math.floor(Math.random()*1e9), rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
-  S.game={seed,short:true,simple:false,cpu:'hard',demo:true,players:CPUN.map((n,i)=>({key:'cpu'+(i+1),nick:n,ty:cp[i],cpu:true})),tiles:[]};
+  S.game={seed,short:true,simple:false,cpu:'hard',demo:true,players:pickRivals(seed,3).map((rv,i)=>({key:'cpu'+(i+1),nick:rv.nick,ty:rv.ty,cpu:true})),tiles:[]};
   S.demo=true; S.fastKeep=S.fastKeep??S.fast; S.fast=true;
   {const got=store.get('azakei-city-badges')||{};if(!got.demo){got.demo=todayStr();store.set('azakei-city-badges',got);setTimeout(()=>toast('🎬 バッジ「展示モードを見た」をゲット！'),1500)}}
   S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false; S.policy=false; S.viewer='cpu1';
@@ -3105,7 +3120,7 @@ function startGame(){
   const players=SU.rows.slice(0,n).map((r,i)=>({key:"h"+(i+1),nick:(r.nick||"").trim()||(n>1?`${i+1}P`:"あなた"),ty:r.ty||TYK[i%TYK.length],cpu:false}));
   const rnd=mulberry(seed^0x5a5a), cp=TYK.slice().sort(()=>rnd()-.5);
   if(SU.boss) players.push({key:"cpu1",nick:BOSS.nick,ty:BOSS.ty,cpu:true});
-  else for(let i=0;i<Math.max(0,3-n);i++) players.push({key:'cpu'+(i+1),nick:CPUN[i],ty:cp[i],cpu:true});
+  else pickRivals(seed,Math.max(0,3-n)).forEach((rv,i)=>players.push({key:'cpu'+(i+1),nick:rv.nick,ty:rv.ty,cpu:true}));
   S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,simple:!SU.daily&&SU.simple,cpu:SU.boss?"boss":SU.daily?"normal":SU.cpu,boss:!!SU.boss,players,tiles:[]}; if(!SU.boss) store.set("azakei-city-cpu",SU.cpu); SU.boss=false;
   store.set('azakei-city-names',SU.rows.map(r=>r.nick)); store.set('azakei-city-ty-local',SU.rows[0].ty);
   if(n===1&&players[0].nick!=='あなた'){S.nick=players[0].nick;store.set('azakei-city-nick',S.nick);$('nick').value=S.nick}
@@ -3130,7 +3145,7 @@ function pickGoals(hs,done){
       <h3>どっちを目指す？</h3>
       <p class="lead">ゲームの最後に達成していたら <b>＋${pts}</b>。ライバルには最後までひみつ。</p>
       <div class="gp">${[A,B].map(G=>`<button type="button" class="gpc" data-g="${G.id}"><b>${G.name}</b><span>${G.d}</span><em>＋${pts}</em></button>`).join('')}</div>
-      ${many?"":`<p class="rivals">今日のライバル：${S.game.players.filter(x=>x.cpu).map(x=>`${TY[x.ty].face} ${esc(x.nick)}<small>（${vsTxt(x.nick)}）</small>`).join("　")}</p>`}
+      ${many?"":`<p class="rivals">今日のライバル：${S.game.players.filter(x=>x.cpu).map(x=>`${TY[x.ty].face} ${esc(x.nick)}<small>（${vsTxt(x.nick)}）</small>${rivalSay(x.nick)?`<i class="rsay">「${esc(rivalSay(x.nick))}」</i>`:""}`).join("<br>")}</p>`}
       <p class="small" style="color:var(--muted);margin-top:8px">建物の種類を集める目標は、時代のNEWSとの相性も考えよう。</p>
     </div>`;
     bg.hidden=false; bg.querySelector('.gpc').focus();
