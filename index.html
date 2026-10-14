@@ -686,6 +686,14 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .citycode .cbest{font-size:12.5px;color:var(--ink)}
 .citycode .cbest b{font-size:14px;letter-spacing:0}
 .citycode small{color:var(--muted);font-size:11.5px}
+.album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px 10px;width:100%;margin:10px 0 4px}
+.photo{margin:0;padding:6px 6px 8px;background:#f7f2e6;border-radius:4px;box-shadow:0 6px 16px rgba(0,0,0,.35);transform:rotate(var(--tilt));transition:transform .2s;cursor:zoom-in;color:#2a1d00}
+.photo:hover{transform:rotate(0) scale(1.03)}
+.photo img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:2px}
+.photo figcaption{display:grid;gap:1px;margin-top:5px;text-align:left}
+.photo b{font-family:"Shippori Mincho B1",serif;font-size:13px}
+.photo small{font-size:10.5px;color:#6a5a3a}
+.photo.big{grid-column:1/-1;transform:none;cursor:zoom-out}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -1991,6 +1999,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:19,d:'2026-10-14',t:'📷 街のアルバム',x:'ゲームを終えるたびに、完成した街の写真が社長手帳に貼られる（最新8枚）。写真をタップすると大きくなる。'},
   {v:18,d:'2026-10-14',t:'🏅 バッジが22個に',x:'ボス撃破・新聞にのった・ホールディングス3社・物知り社長・同じ街に再挑戦・展示モードを見た。バッジにアイコンも付いた。'},
   {v:17,d:'2026-10-14',t:'📰 新聞に「今期の注目企業」・時代の色合い',x:'決算でいちばん稼いだ会社が新聞にのる。立体の街は、昭和はセピア、令和は青みがかった色に。'},
   {v:16,d:'2026-10-13',t:'🏢 自分の会社に名前を付けられる',x:'会社カードの「✎ 名前を変える」で。育つと「○○本店」「○○ホールディングス」に。街コードの勝負は、CPUの手も同じになった。'},
@@ -2033,7 +2042,7 @@ function showMuseum(){
 }
 function showBook(){
   const got=store.get('azakei-city-badges')||{}, n=BADGES.filter(b=>got[b.id]).length;
-  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3>${rankChip(+(store.get("azakei-city-xp")||0))}<div class="slab" style="margin-top:12px">通算記録</div>${recordsHTML()}<div class="slab" style="margin-top:12px">殿堂入り企業</div>${fameHTML()}<div class="slab" style="margin-top:12px">バッジ</div><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p><span class="rk-bar badgebar"><i style="width:${Math.round(n/BADGES.length*100)}%"></i></span>
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3>${rankChip(+(store.get("azakei-city-xp")||0))}<div class="slab" style="margin-top:12px">通算記録</div>${recordsHTML()}<div class="slab" style="margin-top:12px">📷 街のアルバム</div>${albumHTML()}<div class="slab" style="margin-top:12px">殿堂入り企業</div>${fameHTML()}<div class="slab" style="margin-top:12px">バッジ</div><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p><span class="rk-bar badgebar"><i style="width:${Math.round(n/BADGES.length*100)}%"></i></span>
     <div class="book">${BADGES.map(b=>`<div class="badge${got[b.id]?' got':''}"><span class="bm">${got[b.id]?(b.ic||'★'):'？'}</span><span><b>${b.name}</b><small>${b.hint}${got[b.id]?`（${got[b.id]}）`:''}</small></span></div>`).join('')}</div>
     <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
   $('typebg').hidden=false;
@@ -2762,6 +2771,25 @@ function fameHTML(){
   const f=(store.get('azakei-city-rec')||{}).fame||[];
   return f.length?`<ol class="fame">${f.map((x,i)=>`<li><span class="fm-no">${i+1}</span><span class="cc-ic k-${x.k}">${ic(x.k)}</span><span><b>${esc(x.name)}${(x.lv||1)>1?` <i class="cc-star">${'★'.repeat(x.lv-1)}</i>`:''}</b><small>${x.y0}年創業 ・ ${MODEN[x.mode]||'チャレンジ'} ・ ${x.date}</small></span><em>+${x.earn}</em></li>`).join('')}</ol>`:'<p class="empty">1ゲーム遊ぶと、あなたの会社がここに残ります。</p>';
 }
+// 📷 街のアルバム：ゲームを終えるたびに、完成した街の写真を社長手帳に残す（最新8枚・この端末に保存）
+function saveAlbum(R,me,mi,arr){
+  if(!S.game||S.game.albumed||S.game.demo||S.mode!=='local') return;
+  S.game.albumed=true; saveGame();
+  try{
+    const cv=document.createElement('canvas'); cv.width=300; cv.height=200;
+    const cells=R.g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
+    isoDraw(cv,cells,'reiwa',0,{focus:[[0,0],[0,N-1],[N-1,0],[N-1,N-1]],time:.9,grade:true,theme:themeNow()});
+    const img=cv.toDataURL('image/jpeg',.72);
+    const list=(store.get('azakei-city-album')||[]);
+    list.unshift({img,name:cityName(),date:todayStr(),rank:mi+1,of:arr.length,score:me?me.score:0,gdp:R.hist.at(-1)||0,chal:!!S.game.chal,boss:!!S.game.boss});
+    store.set('azakei-city-album',list.slice(0,8));
+  }catch(e){}
+}
+function albumHTML(){
+  const list=store.get('azakei-city-album')||[];
+  return list.length?`<div class="album">${list.map((a,i)=>`<figure class="photo" style="--tilt:${(i%3-1)*1.4}deg"><img src="${a.img}" alt="${esc(a.name)}の写真" loading="lazy"><figcaption><b>${esc(a.name)}</b><small>${a.date}・${a.chal?'チャレンジ':a.boss?'ボス戦':`${a.of}人中${a.rank}位`}・${a.score}点</small></figcaption></figure>`).join('')}</div>`:'<p class="empty">1ゲーム終えると、完成した街の写真がここに貼られます。</p>';
+}
+document.addEventListener('click',e=>{const p=e.target.closest('.album .photo');if(p)p.classList.toggle('big')});
 function recordGame(me,rank,arr){
   const rec=store.get('azakei-city-rec')||{games:0,wins:0,goals:0,goalsMet:0,guesses:0,hits:0,busts:0,lm:0,best:{}};
   rec.games++; if(rank===0&&arr.length>1) rec.wins++;
@@ -2877,6 +2905,7 @@ function showResult(){
   const peak=R.eras.reduce((a,b)=>b.gdp>a.gdp?b:a,R.eras[0]||{gdp:0,y:'-'});
   const daily=S.mode==='local'&&S.game&&S.game.daily;
   const xp=me?awardXP(me,mi,R):null;
+  saveAlbum(R,me,mi,arr);
   const text=many
     ?`AZAKEI CITY 1964→2022 対戦結果\n${arr.map((o,i)=>`${i+1}位 ${o.nick}（${TY[o.ty]?.name||''}）${o.score}点`).join('\n')}`
     :`AZAKEI CITY 1964→2022${daily?`【今日の街 ${daily}】`:''}\n街の名前：${cityName()}${cityCode(S.game)?`（街コード ${cityCode(S.game)}）`:''}\n${TY[me.ty]?.name||''}社長「${me.nick}」${mi+1}位 / ${me.score}点\n称号：${titleFor(me,mi)}${me.goal?`\n🎯 ${GOALS.find(x=>x.id===me.goal.id)?.name||''} ${me.goal.met?'達成':'ならず'}`:''}\n名所 ${me.lm} ・ お題 ${me.mq} ・ 買収 ${me.buys} ・ 倒産 ${me.bust}\n最高GDP ${peak.gdp}（${peak.y}年代）`;
