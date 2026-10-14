@@ -1094,6 +1094,10 @@ body.drawer .side{transform:none}
 .tutor .tt b{color:var(--paper-red)}
 .tutor .tx{border:1px solid #cdbb8d;background:none;border-radius:8px;padding:5px 10px;font-size:12px;color:#6a5a3a}
 .tutor .go{width:auto;padding:8px 16px;font-size:14px}
+/* 吹き出しは指をじゃましない（ボタンだけ押せる）。盤面の上に出すときは小さめに */
+.tutor{pointer-events:none}.tutor button{pointer-events:auto}
+.tutor.up{padding:8px 12px;gap:6px 10px;opacity:.97}.tutor.up .tt{font-size:13px;min-width:12em}.tutor.up .tx{padding:3px 8px;font-size:11px}
+.fixbar{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:60;width:auto;padding:10px 18px;border-radius:999px;border:0;background:#ff6b5e;color:#fff;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:pop .35s ease}
 .pulse{position:relative;animation:pulsering 1.4s ease-in-out infinite;border-radius:14px}
 @keyframes pulsering{0%,100%{box-shadow:0 0 0 0 rgba(255,200,58,.0)}50%{box-shadow:0 0 0 6px rgba(255,200,58,.55)}}
 .tray .hintbtn.undo{border-color:var(--line);background:#191c3c}
@@ -1178,6 +1182,7 @@ body.drawer .side{transform:none}
   </div>
 </div>
 <div class="tutor" id="tutor" hidden role="status" aria-live="polite"></div>
+<button type="button" class="fixbar" id="fixbar" hidden>😵 うまく動かない？ ここをタップで直す</button>
 <div class="tray" id="tray" aria-label="手札（市場のカード）">
   <div class="tray-in">
     <div class="tray-top"><div class="tray-msg" id="trayMsg"></div><button class="hintbtn undo" id="undoBtn" type="button" hidden>↶ 1手もどす</button><button class="hintbtn fastbtn" id="fastBtn" type="button" aria-pressed="false" title="CPUの番を早送り" hidden>⏩</button><button class="hintbtn" id="hintBtn" type="button">💡 ヒント</button></div>
@@ -2172,6 +2177,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:34,d:'2026-10-18',t:'🛠 スマホで遊べなくなる問題を直した・👆 タップしやすく',x:'はじめての街のガイドの吹き出しが盤面にかぶって、マスを押せないことがありました。吹き出しは盤面の上に出て、指をじゃましません。少しずれてタップしても、近くの建てられるマスを選びます。⚙設定からガイドをもう一度見られます。'},
   {v:33,d:'2026-10-17',t:'✋ 拡大中はドラッグで移動・🏛 名所チャンスのお知らせ',x:'ズームしたら、盤面をドラッグして見る場所を動かせる。手札で名所を完成できるときは、手札の上で知らせる。'},
   {v:32,d:'2026-10-16',t:'🔍 立体の街をズーム',x:'2本指のピンチ、マウスのホイール、盤面の＋−ボタンで、最大2倍まで拡大できる。'},
   {v:31,d:'2026-10-16',t:'🏛 名所のにぎわい効果',x:'完成した名所のまわり8マスにある自分の建物は、ずっと稼ぎ＋1。タイムラプスでも、1手ごとに時間が進んで影が動く。'},
@@ -2556,7 +2562,7 @@ function renderGuess(){
   const gs=goalOn()&&humans().length===1&&S.game.guess;
   if(gs){const p=S.game.players.find(x=>x.key===gs.target),G=GOALS.find(x=>x.id===gs.id);el.hidden=false;el.classList.add('done');el.innerHTML=`🔍 予想済み`;el.onclick=()=>toast(`🔍 あなたの予想：${esc(sh(p.nick))}は「${G.name}」<br>答えは結果画面で。当たれば ＋${guessPts()}`);return}
   el.classList.remove('done');
-  if(!canGuess()){el.hidden=true;return}
+  if(!canGuess()||tutorOn()){el.hidden=true;return} // はじめての街では、まず基本だけ
   el.hidden=false; el.innerHTML=`🔍 ライバルの目標を予想 <i>＋${guessPts()}</i>`; el.onclick=showGuess;
 }
 function showGuess(){
@@ -2630,19 +2636,23 @@ function renderTutor(){
   const me=humans()[0].key, built=S.game.tiles.filter(t=>t.ok===me&&t.k!=='pol'&&t.k!=='pass').length;
   const card=selCard(), lk=locked();
   let step, text, target=null;
-  if(built>=3){step=4;text='決算は8手ごと。稼ぎがスコアに入って、稼ぎ2以下の会社は<b>倒産</b>。左上の<b>👑時代レース</b>で、この時代に一番稼ぎを伸ばすと＋20！'}
-  else if(lk){step=built?3:1;text=built?'ナイス！ <b>となりの建物</b>しだいで稼ぎが変わります。ライバルの番が終わったら、また手札から。':'ライバルの番です。少し待ってね。'}
-  else if(!card){step=1;text='① 下の<b>手札</b>から、カードを1枚タップ';target=$('market')}
-  else if(!S.cell){step=2;text=`② 盤面の<b>光っているマス</b>をタップ。数字は「増えるスコア」。${card.k==='buy'?'':'迷ったら💡ヒント'}`;target=view3d()?$('board3d'):$('board')}
-  else{step=3;text='③ <b>「ここに建てる」</b>をタップ！';target=document.querySelector('#dock .go')}
+  if(built>=3){step=4;text='さいごに1つだけ！ <b>8手ごとに決算</b>があって、建物の稼ぎが点になるよ。稼ぎが少ない会社（2以下）は<b>倒産</b>しちゃうから、となりの組み合わせを工夫しよう'}
+  else if(lk){step=built?3:1;text=built?'ナイス！🎉 建物は<b>となりの建物</b>しだいで稼ぎが変わるよ。ライバルが打つあいだ、ちょっと待ってね':'ライバルの番です。ちょっと待ってね'}
+  else if(!card){step=1;text=built?'あなたの番！ また<b>手札</b>からカードを1枚えらぼう':'① まずは下の<b>手札</b>から、カードを1枚タップしよう';target=$('market')}
+  else if(!S.cell){step=2;text=`② <b>光っているマス</b>をタップ。マスの数字は「もらえる点」だよ${card.k==='buy'?'':'。迷ったら💡ヒント'}`;target=view3d()?$('board3d'):$('board')}
+  else{step=3;text='③ <b>「ここに建てる」</b>を押せば完成！ ほかのマスに変えてもOK';target=document.querySelector('#dock .go')}
   el.hidden=false;
   el.innerHTML=`<span class="tn">はじめての街 ${Math.min(step,4)}/4</span><span class="tt">${text}</span>${step===4?'<button type="button" class="go" id="tutDone">わかった！</button>':'<button type="button" class="tx" id="tutSkip">ガイドを閉じる</button>'}`;
   if(target) target.classList.add("pulse");
-  const ti=document.querySelector(".tray-in"); if(ti) el.style.bottom=Math.round(innerHeight-ti.getBoundingClientRect().top+14)+"px";
+  // 吹き出しは盤面をふさがない：マスを選ぶあいだ（②③）は盤面の「上の空」に、それ以外は手札の上に出す
+  const bd=view3d()?$('board3d'):$('board'), br=bd&&bd.getBoundingClientRect(), up=(step===2||step===3)&&br&&br.height>0;
+  el.classList.toggle('up',!!up);
+  if(up){el.style.bottom='auto';el.style.top=Math.max(8,Math.round(br.top+8))+'px'}
+  else{el.style.top='auto';const ti=document.querySelector(".tray-in"); if(ti) el.style.bottom=Math.round(innerHeight-ti.getBoundingClientRect().top+14)+"px"}
   const done=()=>{store.set('azakei-city-tut2',1);el.hidden=true;document.querySelectorAll('.pulse').forEach(x=>x.classList.remove('pulse'));sfx.end()};
   const b=$('tutDone')||$('tutSkip'); if(b) b.onclick=done;
   // ガイドを最後まで進めたら、次の楽しみ（ひみつの目標）へ。最初のゲームは目標選びをとばしているので、ここで選ぶ
-  if($('tutDone')) $('tutDone').onclick=()=>{done();if(goalOn()&&S.game&&!(S.game.goals&&S.game.goals[me])){toast('🎉 <b>基本はこれでおしまい！</b><br>ここからは「ひみつの目標」で勝負。1つ選ぼう');setTimeout(()=>pickGoals(humans(),()=>render()),900)}};
+  if($('tutDone')) $('tutDone').onclick=()=>{done();if(goalOn()&&S.game&&!(S.game.goals&&S.game.goals[me])){el.innerHTML="";toast('🎉 <b>基本はこれでおしまい！</b><br>ここからは「ひみつの目標」で勝負。1つ選ぼう');setTimeout(function go(){if(S.pause||S.policy||!$("paperbg").hidden||!$("polbg").hidden){setTimeout(go,600);return} /* 新聞や会議のあとで出す */ if($("goalbg").hidden&&!(S.game.goals&&S.game.goals[me]))pickGoals(humans(),()=>render())},900)}};
 }
 /* ---------- 1手もどす（ひとりのゲームだけ。今日の街はなし） ---------- */
 function canUndo(){
@@ -2671,8 +2681,8 @@ function renderSteps(){
   $('hintBtn').disabled=lk;
   $('tray').dataset.wait=lk?'1':'';
   $('trayMsg').innerHTML=lk?esc($('steps').dataset.msg||'')
-    :!card?'<b>カード</b>を1枚えらぼう'+((c=>c?`<span class="lmchance">🏛 ${T[c.k].name}で「${c.lm.name}」が完成できる！</span>`:'')(S.mode==='local'&&!(S.game&&S.game.demo)?lmChance():null))
-    :!S.cell?(card.k==='buy'?'「買収」と出ている<b>会社</b>をタップ':'数字の出ている<b>マス</b>をタップ（数字＝増えるスコア）')
+    :!card?'<b>カード</b>を1枚えらぼう'+((c=>c?`<span class="lmchance">🏛 ${T[c.k].name}で「${c.lm.name}」が完成できる！</span>`:'')(S.mode==='local'&&!(S.game&&S.game.demo)&&!tutorOn()?lmChance():null))
+    :!S.cell?(card.k==='buy'?'「買収」と出ている<b>会社</b>をタップ':'数字の出ている<b>マス</b>をタップ（数字＝もらえる点）')
     :'もう一度タップか<b>「ここに建てる」</b>';
 }
 // 🏛 名所チャンス：いまの手札で名所を完成できる場所があれば知らせる（同じ手番では1回だけ計算）
@@ -2717,6 +2727,7 @@ function settingsHTML(){
     ${sw('sound','🔊','音（効果音とBGM）',$('sound')?.getAttribute('aria-pressed')!=='false')}
     ${sw('big','🔠','文字を大きく',!!store.get('azakei-city-big'),'画面全体を少し大きく')}
     ${sw('fast','⏩','CPUの番を早送り',!!S.fast)}
+    ${sw('guide','🧭','はじめての街ガイド',!store.get('azakei-city-tut2'),'ONで、遊び方の吹き出しをもう一度')}
     ${sw('view','🏙️','立体の街で遊ぶ',view3d(),'OFFで平面の盤面')}
     <button type="button" class="setrow" data-set="rot"><span class="si">↻</span><span class="sl">立体の街の向き<small>押すたびに90°回る</small></span><b class="sv">${(V3.rot||0)*90}°</b></button>
     ${S.mode==='local'?themePicker():''}</div>`;
@@ -2724,6 +2735,7 @@ function settingsHTML(){
 $('tools').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
   if(k==='sound')$('sound').click(); else if(k==='big')$('bigText').click(); else if(k==='view')$('cityBtn').click(); else if(k==='rot')$('rotBtn').click();
   else if(k==='fast'){S.fast=!S.fast;store.set('azakei-city-fast',S.fast);renderFast()}
+  else if(k==='guide'){store.set('azakei-city-tut2',store.get('azakei-city-tut2')?null:1);render()}
   setTimeout(renderTools,30)});
 function renderTools(){
   let h='';
@@ -3622,7 +3634,13 @@ $('board').addEventListener('click',e=>{
 // 立体の盤面：タップしたマスを地面の位置から求める。マウスなら、乗せたマスを白い枠で示す
 // 文字を大きくしている（画面ズーム）ときも、タップした場所と盤面の座標がずれないように
 const xy3d=e=>{const cv=$('board3d'),rc=cv.getBoundingClientRect(),s=rc.width/(cv.clientWidth||rc.width)||1;return [(e.clientX-rc.left)/s,(e.clientY-rc.top)/s]};
-$('board3d').addEventListener('click',e=>{if(V3.dragged){V3.dragged=false;return}if(!V3.geo||!S.R)return;const p=isoPick(V3.geo,...xy3d(e));if(p)cellClick(...unrotRC(p[0],p[1]))});
+$('board3d').addEventListener('click',e=>{if(V3.dragged){V3.dragged=false;return}if(!V3.geo||!S.R)return;const xy=xy3d(e);let p=isoPick(V3.geo,...xy);if(p)p=unrotRC(p[0],p[1]);
+  // 👆 指でのタップは少しずれやすい。カードを選んでいるときは、いちばん近い「建てられるマス」に吸いつける
+  const card=selCard();
+  if(card&&card.k!=='buy'&&!locked()&&!(p&&valid(S.R.g,p[0],p[1]))){const g=V3.geo,A=(xy[0]-g.x0)/(g.tw/2),B=(xy[1]-g.y0-g.th/2)/(g.th/2);let best=null,bd=.95;
+    for(const[r,c]of validCells(S.R.g)){const[rr,cc]=rotRC(r,c),d=Math.hypot(rr-(B-A)/2,cc-(A+B)/2);if(d<bd){bd=d;best=[r,c]}}
+    if(best)p=best}
+  if(p)cellClick(p[0],p[1])});
 $('board3d').addEventListener('mousemove',e=>{if(!V3.geo)return;let p=isoPick(V3.geo,...xy3d(e));if(p)p=unrotRC(p[0],p[1]);const k=p?p.join('_'):'';if(k!==(V3.hover||[]).join('_')){V3.hover=p;drawBoard3d()}});
 $('board3d').addEventListener('mouseleave',()=>{V3.hover=null;drawBoard3d()});
 function cellClick(r,c){
@@ -3980,8 +3998,31 @@ if(!HASCLAUDE) document.querySelector(".tabs").hidden=true;
 $('mShared').disabled=true; $('mShared').title='共有の街に接続中…';
 legend(); paintSound(); setTab(store.get('azakei-city-tab')||'rank');
 setView(store.get('azakei-city-view')||'3d');
-if(S.game){const tp=turnPlayer();S.viewer=tp&&!tp.cpu?tp.key:(humans()[0]||{}).key}
-render();
+// 🛟 古いバージョンの保存データで動かなくなったら、その試合だけ別に取っておいて、新しく始められるようにする
+try{
+  if(S.game&&!(Array.isArray(S.game.tiles)&&Array.isArray(S.game.players)&&S.game.players.length)) throw new Error('bad save');
+  if(S.game){const tp=turnPlayer();S.viewer=tp&&!tp.cpu?tp.key:(humans()[0]||{}).key}
+  render();
+}catch(err){
+  try{store.set('azakei-city-game4-bad',S.game)}catch(_){}
+  S.game=null; store.set('azakei-city-game4',null); S.viewer=null;
+  render(); setTimeout(()=>toast('🛟 前の試合のデータが読みこめなかったので、新しい街から始めます'),600);
+}
+// 🛟 万一エラーで止まったら、「なおす」ボタンを出す（押すと、待ち状態を解いて、いまの番から再開）
+function unstick(){
+  S.busy=false;S.pause=false;S.policy=false;S.sel=S.cell=S.insp=null;
+  ['paperbg','polbg'].forEach(id=>{const x=$(id);if(x)x.hidden=true});
+  $('fixbar').hidden=true;
+  try{render();if(S.mode==='local'&&S.game&&!finished())advance()}catch(e){location.reload()}
+}
+addEventListener('error',()=>{const fb=$('fixbar');if(fb&&fb.hidden&&document.body.classList.contains('playing'))fb.hidden=false});
+$('fixbar').onclick=unstick;
+// ⏱ 見はり番：ライバルの番のまま8秒以上なにも起きなければ、自動でつづきを動かす
+{let last=-1,since=Date.now();setInterval(()=>{
+  if(S.mode!=='local'||!S.game||S.game.demo||S.pause||S.policy||S.homeOpen||finished()){since=Date.now();return}
+  const n=S.game.tiles.length; if(n!==last){last=n;since=Date.now();return}
+  const tp=turnPlayer(); if(tp&&tp.cpu&&Date.now()-since>8000){since=Date.now();S.busy=false;advance()}
+},2000)}
 showHome();
 if(!store.get('azakei-city-seen-rules')){$('rulesBox').open=true;store.set('azakei-city-seen-rules',true)}
 (async()=>{
