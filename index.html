@@ -606,6 +606,7 @@ body.v3d .zoombox{display:flex}
 .zoombox button:hover{color:var(--gold)}
 #zoomLv{font-family:var(--mono);font-size:10px;color:var(--gold);min-height:0}
 .board3d{touch-action:pan-y}
+body.zoomed .board3d{touch-action:none;cursor:grab}
 .rotbtn:hover{border-color:var(--gold);color:var(--gold)}
 .citybtn{position:absolute;right:10px;top:10px;z-index:5;border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);background:rgba(18,20,43,.85);color:var(--gold);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;backdrop-filter:blur(4px)}
 /* ゲーム中のお知らせは、上のバーにかぶらないよう、その下に出す */
@@ -730,6 +731,7 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .lmc small{font-size:10.5px;color:var(--muted);line-height:1.4}
 .lmc.got{border-style:solid;border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
 .lmc.got .lmi{background:linear-gradient(135deg,#ffe48a,#ffc83a)}
+.lmchance{display:inline-block;margin-left:8px;padding:2px 10px;border-radius:99px;background:rgba(255,200,58,.15);border:1px solid rgba(255,200,58,.5);color:var(--gold);font-size:12px;font-weight:800;animation:gmk 2s ease-in-out infinite}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -1763,7 +1765,7 @@ function isoDraw(cv,cells,age,t,opt){
     const topY=y0+(b0-pad)*th/2-th*4.5; if(topY>Hh*.14) y0-=(topY-Hh*.14)*.5;
   }
   // 🔍 ズーム：画面のまん中を中心に拡大（1〜2倍）
-  if(opt.zoom&&opt.zoom!==1){const z=opt.zoom;tw*=z;th=tw/2;x0=W/2+(x0-W/2)*z;y0=Hh*.55+(y0-Hh*.55)*z}
+  if(opt.zoom&&opt.zoom!==1){const z=opt.zoom;tw*=z;th=tw/2;x0=W/2+(x0-W/2)*z;y0=Hh*.55+(y0-Hh*.55)*z;if(opt.pan){x0+=opt.pan[0];y0+=opt.pan[1]}}
   const geo={tw,th,x0,y0};
   const pt=(r,c)=>[x0+(c-r)*tw/2, y0+(c+r)*th/2];
   const poly=(p,fill,stroke,lw)=>{ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.5;ctx.stroke()}};
@@ -1926,7 +1928,15 @@ addEventListener('resize',()=>{clearTimeout(fit3d.t);fit3d.t=setTimeout(drawBoar
 V3.rot=+(store.get('azakei-city-rot')||0)%4;
 // 🔍 立体の街のズーム：ピンチ・ホイール・＋−ボタン（1〜2倍）
 V3.zoom=1;
-function setZoom(z){V3.zoom=Math.max(1,Math.min(2,Math.round(z*100)/100));const zl=$('zoomLv');if(zl)zl.textContent=V3.zoom>1.01?`×${V3.zoom.toFixed(1)}`:'';drawBoard3d()}
+// 拡大中は、ドラッグで見る場所を動かせる（ドラッグしたときは、タップあつかいにしない）
+V3.pan=[0,0];
+{let st=null;const cv=$('board3d');
+ cv.addEventListener('pointerdown',e=>{if(V3.zoom>1.01) st={x:e.clientX,y:e.clientY,p:V3.pan.slice(),drag:false}});
+ cv.addEventListener('pointermove',e=>{if(!st)return;const dx=e.clientX-st.x,dy=e.clientY-st.y;if(!st.drag&&Math.hypot(dx,dy)<6)return;st.drag=true;
+   const W=cv.clientWidth,Hh=cv.clientHeight,lim=z=>(z-1)*.6;V3.pan=[Math.max(-W*lim(V3.zoom),Math.min(W*lim(V3.zoom),st.p[0]+dx)),Math.max(-Hh*lim(V3.zoom),Math.min(Hh*lim(V3.zoom),st.p[1]+dy))];drawBoard3d()});
+ const end=()=>{if(st&&st.drag)V3.dragged=true;st=null};
+ cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end); cv.addEventListener('pointerleave',()=>{st=null});}
+function setZoom(z){V3.zoom=Math.max(1,Math.min(2,Math.round(z*100)/100));if(V3.zoom<=1.01)V3.pan=[0,0];document.body.classList.toggle("zoomed",V3.zoom>1.01);const zl=$('zoomLv');if(zl)zl.textContent=V3.zoom>1.01?`×${V3.zoom.toFixed(1)}`:'';drawBoard3d()}
 $('board3d').addEventListener('wheel',e=>{if(!view3d())return;e.preventDefault();setZoom(V3.zoom*(e.deltaY<0?1.12:1/1.12))},{passive:false});
 {let d0=0,z0=1;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
  $('board3d').addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e.touches);z0=V3.zoom}},{passive:true});
@@ -1951,7 +1961,7 @@ function drawBoard3d(){
   const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
   fit3d(cv);
   const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
-  const opt={zoom:V3.zoom||1,season:seasonNow(),grade:true,amb:!reduced(),theme:themeNow(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
+  const opt={zoom:V3.zoom||1,pan:V3.pan,season:seasonNow(),grade:true,amb:!reduced(),theme:themeNow(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
   if(k&&!lk){
     opt.ghost=true; opt.valid={};
@@ -2162,6 +2172,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:33,d:'2026-10-17',t:'✋ 拡大中はドラッグで移動・🏛 名所チャンスのお知らせ',x:'ズームしたら、盤面をドラッグして見る場所を動かせる。手札で名所を完成できるときは、手札の上で知らせる。'},
   {v:32,d:'2026-10-16',t:'🔍 立体の街をズーム',x:'2本指のピンチ、マウスのホイール、盤面の＋−ボタンで、最大2倍まで拡大できる。'},
   {v:31,d:'2026-10-16',t:'🏛 名所のにぎわい効果',x:'完成した名所のまわり8マスにある自分の建物は、ずっと稼ぎ＋1。タイムラプスでも、1手ごとに時間が進んで影が動く。'},
   {v:30,d:'2026-10-16',t:'🌤 建物に影がついた',x:'立体の街で、朝は右に長く・昼は短く・夕方は左に長く、建物が影を落とす。'},
@@ -2660,9 +2671,18 @@ function renderSteps(){
   $('hintBtn').disabled=lk;
   $('tray').dataset.wait=lk?'1':'';
   $('trayMsg').innerHTML=lk?esc($('steps').dataset.msg||'')
-    :!card?'<b>カード</b>を1枚えらぼう'
+    :!card?'<b>カード</b>を1枚えらぼう'+((c=>c?`<span class="lmchance">🏛 ${T[c.k].name}で「${c.lm.name}」が完成できる！</span>`:'')(S.mode==='local'&&!(S.game&&S.game.demo)?lmChance():null))
     :!S.cell?(card.k==='buy'?'「買収」と出ている<b>会社</b>をタップ':'数字の出ている<b>マス</b>をタップ（数字＝増えるスコア）')
     :'もう一度タップか<b>「ここに建てる」</b>';
+}
+// 🏛 名所チャンス：いまの手札で名所を完成できる場所があれば知らせる（同じ手番では1回だけ計算）
+function lmChance(){
+  const R=S.R, ty=myTy(); if(!R||!ty) return null;
+  const key=(S.game?S.game.seed:0)+'/'+R.n+'/'+myKey(); if(S.lmc&&S.lmc.key===key) return S.lmc.res;
+  let res=null; const g=R.g, cells=validCells(g), mk=myKey();
+  for(const x of choices(R,ty)){ if(res||x.k==='buy') continue;
+    for(const[r,c]of cells){ const g2=g.map(row=>row.slice()); g2[r][c]={k:x.k,ok:mk}; const ids=newLms(g2,r,c,R.claimed); if(ids.length){res={k:x.k,lm:LM.find(l=>l.id===ids[0])};break} } }
+  S.lmc={key,res}; return res;
 }
 $('dock').addEventListener('click',e=>{if(e.target.closest('[data-cancel]')){S.sel=null;S.cell=null;sfx.pick();render()}});
 // ヒント：いま一番よさそうな一手を選んで見せる（理由はプレビューに出る）
@@ -3602,7 +3622,7 @@ $('board').addEventListener('click',e=>{
 // 立体の盤面：タップしたマスを地面の位置から求める。マウスなら、乗せたマスを白い枠で示す
 // 文字を大きくしている（画面ズーム）ときも、タップした場所と盤面の座標がずれないように
 const xy3d=e=>{const cv=$('board3d'),rc=cv.getBoundingClientRect(),s=rc.width/(cv.clientWidth||rc.width)||1;return [(e.clientX-rc.left)/s,(e.clientY-rc.top)/s]};
-$('board3d').addEventListener('click',e=>{if(!V3.geo||!S.R)return;const p=isoPick(V3.geo,...xy3d(e));if(p)cellClick(...unrotRC(p[0],p[1]))});
+$('board3d').addEventListener('click',e=>{if(V3.dragged){V3.dragged=false;return}if(!V3.geo||!S.R)return;const p=isoPick(V3.geo,...xy3d(e));if(p)cellClick(...unrotRC(p[0],p[1]))});
 $('board3d').addEventListener('mousemove',e=>{if(!V3.geo)return;let p=isoPick(V3.geo,...xy3d(e));if(p)p=unrotRC(p[0],p[1]);const k=p?p.join('_'):'';if(k!==(V3.hover||[]).join('_')){V3.hover=p;drawBoard3d()}});
 $('board3d').addEventListener('mouseleave',()=>{V3.hover=null;drawBoard3d()});
 function cellClick(r,c){
