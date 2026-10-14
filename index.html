@@ -696,6 +696,14 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .photo.big{grid-column:1/-1;transform:none;cursor:zoom-out}
 .seasonpill{font-size:12.5px;padding:6px 14px;border-radius:999px;border:1px solid #e8711a;background:linear-gradient(90deg,rgba(232,113,26,.18),rgba(120,40,140,.18));color:var(--ink);max-width:100%}
 .seasonpill b{color:#ffb15a}
+.term{all:unset;cursor:help;border-bottom:1.5px dotted currentColor;color:inherit;font:inherit;padding:0 1px}
+.term:hover,.term:focus-visible{background:rgba(255,200,58,.25);border-radius:3px}
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:8px;text-align:left}
+.gl{padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);display:grid;gap:3px;font-size:12.5px;line-height:1.55}
+.gl b{font-size:14px}
+.gl span{color:var(--muted)}
+.gl.seen{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
+.gl.seen b::after{content:" ✓";color:var(--gold);font-size:12px}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -1987,6 +1995,7 @@ const BADGES=[
   {id:'quiz10',ic:'🎓',name:'物知り社長',hint:'時代クイズに通算10問正解'},
   {id:'code2',ic:'🔢',name:'同じ街に再挑戦',hint:'同じ街コードで2回以上遊ぶ'},
   {id:'demo',ic:'🎬',name:'展示モードを見た',hint:'ホーム画面の「展示モード」を見る'},
+  {id:'dict',ic:'📖',name:'ことば博士',hint:'経済ことば辞典のことばを10個しらべる（新聞などで点線のことばをタップ）'},
   {id:'halloween',ic:'🎃',name:'ハロウィンの社長',hint:'10月に1ゲーム最後まで遊ぶ（期間限定）'},
   {id:'xmas',ic:'🎄',name:'イルミネーションの街',hint:'12月1日〜25日に1ゲーム最後まで遊ぶ（期間限定）'},
   {id:'newyear',ic:'🎍',name:'新春の社長',hint:'1月1日〜7日に1ゲーム最後まで遊ぶ（期間限定）'},
@@ -2028,6 +2037,37 @@ function checkBadges(){
   S.game.badged=true; S.game.fresh=fresh; saveGame();
   return fresh;
 }
+// 📖 経済ことば辞典：新聞やミュージアムの文章のことばをタップすると、意味が出る
+const GLOSS={
+  '産油国':'石油（原油）をたくさん掘り出して、世界に売っている国。',
+  '原油':'地下からくみ上げたままの石油。ガソリンやプラスチックの原料になる。',
+  '円高':'円の値打ちが上がること。1ドルを買うのに必要な円が少なくなる。輸入品は安くなり、輸出する会社には不利。',
+  '円安':'円の値打ちが下がること。1ドルを買うのに必要な円が多くなる。輸入品は高くなり、輸出する会社には有利。',
+  '輸出':'国内でつくった物やサービスを、外国に売ること。',
+  '輸入':'外国でつくられた物やサービスを、国内に買い入れること。',
+  '株価':'会社の「株」の値段。会社がもうかりそうだと思われると上がる。',
+  '地価':'土地の値段。',
+  '不良債権':'貸したお金のうち、返してもらえなくなりそうなもの。銀行の大きな損になる。',
+  '金融緩和':'国の中央銀行が金利を下げたりして、お金を借りやすくすること。景気をよくするためにおこなう。',
+  '金融危機':'銀行や証券会社が次々に困って、お金の流れが止まってしまうこと。',
+  '投資銀行':'会社の株の発行や合併などを手伝ったり、大きなお金を運用したりする金融機関。',
+  '投資':'もうけを期待して、会社や事業にお金を出すこと。',
+  '破綻':'会社などが、借りたお金を返せなくなって、続けられなくなること。',
+  '値上げ':'物やサービスの値段を上げること。原料が高くなったり、円安で輸入品が高くなったりすると起きやすい。',
+  '資源':'石油・ガス・鉄鉱石など、物をつくる元になる自然の材料。',
+  'ネット通販':'インターネットで注文して、家に届けてもらう買い物。',
+  '外出自粛':'感染症などをふせぐため、出かけるのをひかえること。'
+};
+const GLOSS_RE=new RegExp(Object.keys(GLOSS).sort((a,b)=>b.length-a.length).join('|'),'g');
+// esc() 済みの文章に、ことばのリンクを付ける
+const linkTerms=s=>esc(s).replace(GLOSS_RE,w=>`<button type="button" class="term" data-term="${w}">${w}</button>`);
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.term'); if(!b) return; e.stopPropagation();
+  const w=b.dataset.term, seen=store.get('azakei-city-terms')||{}; seen[w]=1; store.set('azakei-city-terms',seen);
+  toast(`📖 <b>${esc(w)}</b><br>${esc(GLOSS[w])}`);
+  if(Object.keys(seen).length>=10){const got=store.get('azakei-city-badges')||{};if(!got.dict){got.dict=todayStr();store.set('azakei-city-badges',got);setTimeout(()=>toast('📖 バッジ「ことば博士」をゲット！'),2200)}}
+},true);
+function glossHTML(){const seen=store.get('azakei-city-terms')||{};return `<div class="gloss">${Object.entries(GLOSS).map(([w,d])=>`<div class="gl${seen[w]?' seen':''}"><b>${w}</b><span>${esc(d)}</span></div>`).join('')}</div><p class="mnote">しらべたことば ${Object.keys(seen).filter(w=>GLOSS[w]).length} / ${Object.keys(GLOSS).length}（新聞やミュージアムの文章で、点線のことばをタップ）</p>`}
 // 📚 経済ミュージアム：ゲームに出てくる60年の経済を、年表とグラフでまとめて読む
 function museumChart(){
   const sm=innerWidth<640, W=sm?360:640,Hh=sm?230:220,pl=36,pr=40,pt=16,pb=28, y0=1964,y1=2022, X=y=>pl+(y-y0)/(y1-y0)*(W-pl-pr);
@@ -2041,6 +2081,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:23,d:'2026-10-15',t:'📖 経済ことば辞典',x:'新聞やミュージアムの点線のことば（円高・不良債権・金融緩和など）をタップすると意味が出る。10個しらべるとバッジ。'},
   {v:22,d:'2026-10-15',t:'🎍🌸🎆 季節イベントが1年中に',x:'お正月は門松、春は桜、夏は毎晩花火。それぞれ限定バッジつき。はじめての人は、ガイドを終えると「ひみつの目標」選びへ。'},
   {v:21,d:'2026-10-14',t:'🧑‍💼 ライバル社長が8人に',x:'毎回ちがう顔ぶれがやってくる。それぞれ決まったタイプと口ぐせ、対戦成績つき。'},
   {v:20,d:'2026-10-14',t:'🎃 季節イベント：10月はハロウィン',x:'10月は街にかぼちゃのランタン、12月はイルミネーションとツリー。期間中に1ゲーム遊ぶと限定バッジ。'},
@@ -2072,7 +2113,7 @@ function showUpdates(){
 }
 function showMuseum(){
   const cards=HIST.map((h,i)=>{const E=EVENTS[i],Q=QUIZ[i],x=NUMS[i];return `<article class="mcard2">
-    <div class="mc-y"><b>${h.y}</b><small>${h.w}</small></div><h4>${esc(h.n)}</h4><p>${esc(h.d)}</p>
+    <div class="mc-y"><b>${h.y}</b><small>${h.w}</small></div><h4>${esc(h.n)}</h4><p>${linkTerms(h.d)}</p>
     <div class="chips">${chipRow(h.r)}</div>
     <div class="mc-row"><span>📢 速報</span>${esc(E.t)}（${T[E.k].name} ${E.v>0?'＋':'−'}${Math.abs(E.v)}）</div>
     <div class="mc-row"><span>💴 数字</span>1ドル ${x.usd}円・初任給 ${x.pay.toFixed(1)}万円</div>
@@ -2082,6 +2123,7 @@ function showMuseum(){
     <h3>📚 経済ミュージアム</h3><p class="lead">AZAKEI CITY の60年に出てくる、本当の経済の出来事。ゲームのNEWSの点数は、AZAKEI MARKET 歴史モードと同じです。</p>
     <div class="slab">60年の数字</div>${museumChart()}
     <div class="slab" style="margin-top:14px">12の時代</div><div class="mgrid">${cards}</div>
+    <div class="slab" style="margin-top:14px">📖 経済ことば辞典</div>${glossHTML()}
     <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
   $('typebg').hidden=false; $('typebg').querySelector('.sheet').scrollTop=0;
 }
@@ -2676,7 +2718,7 @@ function showPaper(){
   $('paperbg').innerHTML=`<div class="paper" role="dialog" aria-label="決算と時代の変化">
     <div class="mast"><span>AZAKEI 経済新聞</span><small>${fin?'令和4年':ev.w}</small><span>${fin?'最終号':'号外'}</span></div>
     ${fin?`<div class="yr">2022</div><h3>${S.game&&S.game.chal?"チャレンジ、決算完了":"60年の決算、完了"}</h3><p>${S.game&&S.game.chal?"この時代を、街ごと乗りこえました。結果を見てみよう。":"東京オリンピックから資源高まで。この街は、日本の60年を生き抜きました。"}</p>`
-         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${esc(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>${numsHTML(e)}${quizHTML(e)}`}
+         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${linkTerms(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>${numsHTML(e)}${quizHTML(e)}`}
     <div class="box"><div class="hd">${done.y}年代（${done.n}）の決算</div>
       <div>街のGDP <b>${rep.gdp}</b></div>
       <div>${payLine}</div>
