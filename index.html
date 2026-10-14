@@ -757,6 +757,7 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .cc-rename{display:flex;gap:6px}
 .cc-rename input{flex:1;min-width:0;font:inherit;font-size:13px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink)}
 .cc-rename .ghost{padding:4px 10px;font-size:12px;white-space:nowrap}
+.cc-lm{font-size:12.5px;font-weight:800;color:var(--gold);padding:5px 9px;border-radius:9px;background:rgba(255,200,58,.1);border:1px solid rgba(255,200,58,.35)}
 .cc-parts{display:flex;flex-wrap:wrap;gap:4px}
 .cc-parts span{font-size:11.5px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06)}
 .cc-parts .p{color:#3ad283}.cc-parts .n{color:#ff6b5e}
@@ -1206,7 +1207,7 @@ const LM=[
   {id:'ind',name:'工業地帯',hint:'エネルギー1・製造2・運輸1 をつなげる'},
   {id:'shop',name:'商店街',hint:'小売3・住宅3 をつなげる'},
   {id:'fin',name:'金融街',hint:'金融を3つつなげる'},
-  {id:'town',name:'ニュータウン',hint:'住宅を2×2のかたまりに'},
+  {id:'town',name:'ニュータウン',hint:'住宅を4つつなげる（形は自由）'},
   {id:'media',name:'放送センター',hint:'メディア2・住宅3 をつなげる'},
   {id:'school',name:'学園都市',hint:'学校の上下左右のうち3つを住宅に'},
   {id:'hub',name:'物流ハブ',hint:'運輸の上下左右を4種類の建物でうめる'},
@@ -1367,11 +1368,7 @@ function lmAt(g,r,c,id){
     case 'port':{if(!need(compCount(g,r,c,['tr','ma']),{tr:2,ma:1}))return false;
       // つながった運輸のどれかが川のとなりにあるか
       const seen=new Set([r+'_'+c]),q=[[r,c]];while(q.length){const[R,C]=q.pop();if(g[R][C].k==='tr'&&around(g,R,C,D4).includes('river'))return true;for(const[dr,dc]of D4){const a=R+dr,b=C+dc,id=a+'_'+b;if(inb(a,b)&&!seen.has(id)&&g[a][b]&&['tr','ma'].includes(g[a][b].k)){seen.add(id);q.push([a,b])}}}return false}
-    case 'town':
-      if(!g[r][c]||g[r][c].k!=='ho') return false;
-      for(const[a,b]of[[0,0],[-1,0],[0,-1],[-1,-1]]){const R=r+a,C=c+b;
-        if([[0,0],[1,0],[0,1],[1,1]].every(([x,y])=>inb(R+x,C+y)&&g[R+x][C+y]&&g[R+x][C+y].k==='ho')) return true}
-      return false;
+    case 'town': return need(compCount(g,r,c,['ho']),{ho:4});
     default:
       for(let R=r-1;R<=r+1;R++)for(let C=c-1;C<=c+1;C++){
         if(!inb(R,C)||!g[R][C]) continue; const k=g[R][C].k;
@@ -1833,6 +1830,11 @@ function isoDraw(cv,cells,age,t,opt){
     ctx.fillStyle=sk?'rgba(255,183,213,.9)':'rgba(255,255,255,.9)';
     for(let i=0;i<(sk?28:46);i++){const sp=sk?22+(i%4)*6:18+(i%5)*5, x=((i*83.7)%W+Math.sin(tt*.8+i)*14+tt*(sk?12:4))%W, y=((i*61.3)%Hh+tt*sp)%Hh;
       ctx.beginPath(); if(sk) ctx.ellipse(x,y,3.2,1.8,tt*1.5+i,0,Math.PI*2); else ctx.arc(x,y,1.2+(i%3)*.6,0,Math.PI*2); ctx.fill()}}
+  // 🏛 名所の旗：完成させた建物の屋上に、完成させた社長の色の旗
+  if(opt.lms)for(const m of opt.lms){const top=tops[m.r+'_'+m.c];if(!top)continue;const[x,y]=top[0],ph=th*1.5;
+    ctx.strokeStyle='#e8e2d0';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-ph);ctx.stroke();
+    const wv=Math.sin(((t||0)/350)+m.r)*2;ctx.fillStyle=ownerColor(m.ok);ctx.beginPath();ctx.moveTo(x,y-ph);ctx.lineTo(x+tw*.26,y-ph+th*.22+wv);ctx.lineTo(x,y-ph+th*.44);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#ffc83a';ctx.beginPath();ctx.arc(x,y-ph,2.2,0,Math.PI*2);ctx.fill()}
   // 時代の色合い：昭和はほんのりセピア、令和は少し青みがかった、すっきりした色
   if(opt.grade&&(age==='showa'||age==='reiwa')){ctx.save();
     if(age==='showa'){ctx.globalCompositeOperation='multiply';ctx.fillStyle='rgba(255,226,180,.55)'}
@@ -1878,6 +1880,7 @@ function rotOpt(opt,cells){
   opt.hover=P(opt.hover); opt.insp=P(opt.insp); opt.pick=P(opt.pick); opt.focus=opt.focus.map(P);
   opt.valid=K(opt.valid); opt.deltas=K(opt.deltas); opt.grow=K(opt.grow); opt.sinks=K(opt.sinks);
   opt.floats=opt.floats.map(f=>{const[r,c]=rotRC(f.r,f.c);return {...f,r,c}});
+  if(opt.lms) opt.lms=opt.lms.map(m=>{const[r,c]=rotRC(m.r,m.c);return {...m,r,c}});
   const out=Array.from({length:N},()=>Array(N).fill(null));
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const[a,b]=rotRC(r,c);out[a][b]=cells[r][c]}
   return out;
@@ -1899,6 +1902,7 @@ function drawBoard3d(){
   opt.grow={}; opt.floats=[]; opt.sinks={};
   for(const a of V3.anims){const p=(now-a.t0)/a.dur;if(a.type==='grow')opt.grow[a.r+'_'+a.c]=1-Math.pow(1-p,3);else if(a.type==='sink')opt.sinks[a.r+'_'+a.c]={k:a.k,lv:a.lv,p:Math.pow(p,1.6)};else opt.floats.push({r:a.r,c:a.c,text:a.text,neg:a.neg,big:a.big,voice:a.type==='v',p})}
   const cells=g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null));
+  opt.lms=Object.values(R.claimed).filter(v=>v&&v.r!=null).map(v=>({r:v.r,c:v.c,ok:v.ok}));
   V3.geo=isoDraw(cv,rotOpt(opt,cells),finished()?"reiwa":H(e).age,now,opt);
   cancelAnimationFrame(V3.raf);
   clearTimeout(V3.amb);
@@ -2096,6 +2100,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:27,d:'2026-10-15',t:'🏛 名所に旗が立つ・ニュータウンの条件を見直し',x:'名所を完成させた建物の屋上に、その社長の色の旗。ニュータウンは「住宅を4つつなげる（形は自由）」に。'},
   {v:26,d:'2026-10-15',t:'⚓ 名所が11に（港湾地区・駅前ビル街・IT研究都市）',x:'川や駅を使う名所が登場。早い者勝ちで＋30。'},
   {v:25,d:'2026-10-15',t:'🎉 1位で紙吹雪・ライバルの試合後のひとこと',x:'1位や自己ベスト更新で紙吹雪。結果画面で、ライバル社長が勝ち負けにひとこと。'},
   {v:24,d:'2026-10-15',t:'🎞️ タイムラプスを1手ずつ見返せる',x:'結果画面のタイムラプスに、スライダーと再生ボタン。好きな手で止めると「だれが何を建てたか」が出る。'},
@@ -2178,6 +2183,7 @@ function renderCoCard(){
     <div class="cc-top"><span class="cc-ic k-${t.k}">${ic(t.k)}</span><span><b>${esc(t.name||T[t.k].name)}${(t.lv||1)>1?` <i class="cc-star">${'★'.repeat(t.lv-1)}</i>`:''}</b><small>${T[t.k].name}${old?' ・ <span class="cc-old">老舗</span>':''}</small></span></div>
     <div class="cc-owner" style="--oc:${ownerColor(t.ok)}">${t.ty&&TY[t.ty]?TY[t.ty].face:''} ${esc(t.nick||'—')}${mine&&t.nick!=='あなた'?'（あなた）':''}</div>
     ${mine&&S.mode==="local"&&S.game&&!S.game.demo&&t.n0!=null&&!S.game.chal?`<div class="cc-rename"><input id="ccName" maxlength="10" placeholder="新しい社名" value="${esc((S.game.cnames||{})[t.n0]||"")}"><button class="ghost" type="button" id="ccNameGo" data-n0="${t.n0}">✎ 名前を変える</button></div>`:""}
+    ${Object.entries(S.R.claimed).filter(([,v])=>v&&v.r===r&&v.c===c).map(([id,v])=>`<div class="cc-lm">🏛 名所「${LM.find(l=>l.id===id)?.name||id}」を完成させた建物（${esc(v.nick||"")}）</div>`).join("")}
     <div class="cc-stats"><div><small>創業</small><b>${t.y0||'—'}</b></div><div><small>決算</small><b>${t.age||0}回</b></div><div><small>これまで</small><b>+${t.earn||0}</b></div><div><small>いまの稼ぎ</small><b class="cc-now">${v}</b></div></div>
     ${P.length?`<div class="cc-parts">${P.map(([l,x])=>`<span class="${x<0?'n':'p'}">${esc(l)} ${sg(x)}</span>`).join('')}</div>`:''}
     ${t.story&&t.story.length?`<ul class="cc-story">${t.story.slice(-3).map(s=>`<li><b>${s.y}</b> ${esc(s.t)}</li>`).join('')}</ul>`:''}
