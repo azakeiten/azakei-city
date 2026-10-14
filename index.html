@@ -1765,6 +1765,19 @@ function isoDraw(cv,cells,age,t,opt){
   }
   if(opt.hover){const[x,y]=pt(opt.hover[0],opt.hover[1]);poly(dia(x,y,.92),null,'rgba(255,255,255,.8)',1.5)}
   if(opt.insp){const[x,y]=pt(opt.insp[0],opt.insp[1]);poly(dia(x,y,.98),null,'#fff',2)}
+  // 🌤 建物の影：昼のあいだだけ。朝は右に長く、昼は短く、夕方は左に長く（建物を描く前に、地面にまとめて描く）
+  if(!night&&opt.shadow!==false){
+    const tt=tm==null?.4:tm, ang=(tt-.4)/.4, len=.5+Math.abs(ang)*.8, sx=-ang*tw*1.1, sy=th*.45;
+    ctx.save();ctx.fillStyle='rgba(15,25,55,.32)';
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){const t2=cells[r][c];if(!t2||TERR[t2.k])continue;const S3=isoStyle(t2.k,age);if(!S3)continue;
+      const[x,y]=pt(r,c),hw=tw/2*S3.w,hh=th/2*S3.w,cy=y+th/2,h=th*S3.h*2*(1+.4*((t2.lv||1)-1)),k=h/th*len,dx=sx*k/2,dy=sy*k/2;
+      const base=[[x,cy-hh],[x+hw,cy],[x,cy+hh],[x-hw,cy]],P=[...base,...base.map(([a,b])=>[a+dx,b+dy])];
+      // 8点の外周（凸包）を1つの形として塗る
+      const pts=P.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]),cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]),lo=[],up=[];
+      for(const p of pts){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}
+      for(const p of pts.slice().reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}
+      const hull=lo.slice(0,-1).concat(up.slice(0,-1));ctx.beginPath();hull.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();ctx.fill()}
+    ctx.restore()}
   // 車：建物のある区画のまわりの道を走る（夜はヘッドライト）
   if(opt.amb){
     let r0=N,r1=-1,c0=N,c1=-1,nb=0;
@@ -2128,6 +2141,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:30,d:'2026-10-16',t:'🌤 建物に影がついた',x:'立体の街で、朝は右に長く・昼は短く・夕方は左に長く、建物が影を落とす。'},
   {v:29,d:'2026-10-16',t:'📊 あなたの決算書',x:'結果画面に、産業別の稼ぎを横棒グラフで。主力事業や、倒産した産業がひと目でわかる。'},
   {v:28,d:'2026-10-15',t:'⚙ 設定をひとまとめ・🏛 名所図鑑',x:'☰メニューの「設定」で、音・文字の大きさ・早送り・立体・向き・テーマをスイッチで。社長手帳に、完成させた名所の図鑑。'},
   {v:27,d:'2026-10-15',t:'🏛 名所に旗が立つ・ニュータウンの条件を見直し',x:'名所を完成させた建物の屋上に、その社長の色の旗。ニュータウンは「住宅を4つつなげる（形は自由）」に。'},
