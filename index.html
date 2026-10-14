@@ -600,6 +600,12 @@ body.v3d .board3d{display:block}
 .cityhint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.75);background:rgba(10,10,30,.5);padding:3px 10px;border-radius:999px}
 .rotbtn{display:none;position:absolute;right:10px;top:48px;z-index:5;width:36px;height:36px;border-radius:999px;border:1px solid var(--line);background:rgba(18,20,43,.85);color:var(--ink);font-size:18px;font-weight:800;padding:0;backdrop-filter:blur(4px)}
 body.v3d .rotbtn{display:grid;place-items:center}
+.zoombox{display:none;position:absolute;right:10px;top:90px;z-index:5;flex-direction:column;align-items:center;gap:2px;padding:3px;border-radius:999px;border:1px solid var(--line);background:rgba(18,20,43,.85);backdrop-filter:blur(4px)}
+body.v3d .zoombox{display:flex}
+.zoombox button{width:30px;height:30px;border-radius:50%;border:0;background:none;color:var(--ink);font-size:18px;font-weight:800;padding:0}
+.zoombox button:hover{color:var(--gold)}
+#zoomLv{font-family:var(--mono);font-size:10px;color:var(--gold);min-height:0}
+.board3d{touch-action:pan-y}
 .rotbtn:hover{border-color:var(--gold);color:var(--gold)}
 .citybtn{position:absolute;right:10px;top:10px;z-index:5;border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);background:rgba(18,20,43,.85);color:var(--gold);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;backdrop-filter:blur(4px)}
 /* ゲーム中のお知らせは、上のバーにかぶらないよう、その下に出す */
@@ -766,7 +772,7 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .fm-no{font-family:var(--mono);font-weight:800;color:var(--muted);width:14px}
 .fame .cc-ic{width:30px;height:30px}
 .fame .cc-ic svg{width:18px;height:18px}
-.cocard{position:absolute;right:10px;top:92px;z-index:8;width:min(300px,calc(100% - 20px));padding:12px 14px;border-radius:16px;background:rgba(14,16,40,.94);border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.45);backdrop-filter:blur(8px);text-align:left;font-size:13px;display:grid;gap:8px;animation:ccin .2s ease}
+.cocard{position:absolute;right:54px;top:52px;z-index:8;width:min(300px,calc(100% - 20px));padding:12px 14px;border-radius:16px;background:rgba(14,16,40,.94);border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.45);backdrop-filter:blur(8px);text-align:left;font-size:13px;display:grid;gap:8px;animation:ccin .2s ease}
 @keyframes ccin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .cc-x{position:absolute;right:8px;top:8px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);padding:0}
 .cc-top{display:flex;align-items:center;gap:10px;padding-right:30px}
@@ -1121,7 +1127,7 @@ body.drawer .side{transform:none}
       <div class="turn" id="turn" hidden></div>
       <div class="talk" id="talk" hidden aria-live="polite"></div>
       <div class="coach" id="coach" hidden></div>
-      <div class="boardbox"><div class="minirace" id="miniRace" hidden></div><div class="ticker" id="ticker" aria-live="polite" hidden></div><div class="cocard" id="coCard" role="dialog" aria-label="会社カード" hidden></div><button type="button" class="goalchip" id="goalChip" hidden></button><button type="button" class="guessbtn" id="guessBtn" hidden></button><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button><button class="rotbtn" id="rotBtn" type="button" title="街を90°回す" aria-label="街を90度回す">↻</button></div>
+      <div class="boardbox"><div class="minirace" id="miniRace" hidden></div><div class="ticker" id="ticker" aria-live="polite" hidden></div><div class="cocard" id="coCard" role="dialog" aria-label="会社カード" hidden></div><button type="button" class="goalchip" id="goalChip" hidden></button><button type="button" class="guessbtn" id="guessBtn" hidden></button><div class="board" id="board" role="grid" aria-label="街の区画 11×11"></div><canvas class="board3d" id="board3d" aria-label="立体の街。建てたいマスをタップ"></canvas><button class="citybtn" id="cityBtn" type="button" aria-pressed="false">🏙 立体で見る</button><button class="rotbtn" id="rotBtn" type="button" title="街を90°回す" aria-label="街を90度回す">↻</button><div class="zoombox"><button type="button" id="zoomIn" aria-label="拡大">＋</button><span id="zoomLv"></span><button type="button" id="zoomOut" aria-label="縮小">−</button></div></div>
       <div class="under">
         <span class="small" id="count"></span><span class="small" id="countSub"></span>
         <label for="riskT"><input type="checkbox" id="riskT"> 倒産しそうな建物に印</label>
@@ -1756,6 +1762,8 @@ function isoDraw(cv,cells,age,t,opt){
     // 縦長の画面（スマホ）では、街が下にくっつかないよう、上の空きを半分ずつに
     const topY=y0+(b0-pad)*th/2-th*4.5; if(topY>Hh*.14) y0-=(topY-Hh*.14)*.5;
   }
+  // 🔍 ズーム：画面のまん中を中心に拡大（1〜2倍）
+  if(opt.zoom&&opt.zoom!==1){const z=opt.zoom;tw*=z;th=tw/2;x0=W/2+(x0-W/2)*z;y0=Hh*.55+(y0-Hh*.55)*z}
   const geo={tw,th,x0,y0};
   const pt=(r,c)=>[x0+(c-r)*tw/2, y0+(c+r)*th/2];
   const poly=(p,fill,stroke,lw)=>{ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.5;ctx.stroke()}};
@@ -1916,6 +1924,15 @@ function fit3d(cv){
 addEventListener('resize',()=>{clearTimeout(fit3d.t);fit3d.t=setTimeout(drawBoard3d,120)});
 // ↻ 立体の街を90°ずつ回す（見た目だけ。盤面のマスの番号はそのまま）
 V3.rot=+(store.get('azakei-city-rot')||0)%4;
+// 🔍 立体の街のズーム：ピンチ・ホイール・＋−ボタン（1〜2倍）
+V3.zoom=1;
+function setZoom(z){V3.zoom=Math.max(1,Math.min(2,Math.round(z*100)/100));const zl=$('zoomLv');if(zl)zl.textContent=V3.zoom>1.01?`×${V3.zoom.toFixed(1)}`:'';drawBoard3d()}
+$('board3d').addEventListener('wheel',e=>{if(!view3d())return;e.preventDefault();setZoom(V3.zoom*(e.deltaY<0?1.12:1/1.12))},{passive:false});
+{let d0=0,z0=1;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+ $('board3d').addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e.touches);z0=V3.zoom}},{passive:true});
+ $('board3d').addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();setZoom(z0*dist(e.touches)/d0)}},{passive:false});
+ $('board3d').addEventListener('touchend',e=>{if(e.touches.length<2)d0=0},{passive:true});}
+$('zoomIn').onclick=()=>setZoom(V3.zoom+.25); $('zoomOut').onclick=()=>setZoom(V3.zoom-.25);
 $('rotBtn').addEventListener('click',()=>{V3.rot=(V3.rot+1)%4;store.set('azakei-city-rot',V3.rot);V3.hover=null;sfx.pick();drawBoard3d()});
 function rotRC(r,c,k){k=((k??V3.rot)%4+4)%4;for(let i=0;i<k;i++){const t=r;r=c;c=N-1-t}return [r,c]}
 const unrotRC=(r,c)=>rotRC(r,c,4-V3.rot);
@@ -1934,7 +1951,7 @@ function drawBoard3d(){
   const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
   fit3d(cv);
   const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
-  const opt={season:seasonNow(),grade:true,amb:!reduced(),theme:themeNow(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
+  const opt={zoom:V3.zoom||1,season:seasonNow(),grade:true,amb:!reduced(),theme:themeNow(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
   if(k&&!lk){
     opt.ghost=true; opt.valid={};
@@ -2145,6 +2162,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:32,d:'2026-10-16',t:'🔍 立体の街をズーム',x:'2本指のピンチ、マウスのホイール、盤面の＋−ボタンで、最大2倍まで拡大できる。'},
   {v:31,d:'2026-10-16',t:'🏛 名所のにぎわい効果',x:'完成した名所のまわり8マスにある自分の建物は、ずっと稼ぎ＋1。タイムラプスでも、1手ごとに時間が進んで影が動く。'},
   {v:30,d:'2026-10-16',t:'🌤 建物に影がついた',x:'立体の街で、朝は右に長く・昼は短く・夕方は左に長く、建物が影を落とす。'},
   {v:29,d:'2026-10-16',t:'📊 あなたの決算書',x:'結果画面に、産業別の稼ぎを横棒グラフで。主力事業や、倒産した産業がひと目でわかる。'},
