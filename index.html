@@ -1153,7 +1153,7 @@ body.drawer .side{transform:none}
           <button type="button" role="tab" data-tab="rules" id="t-rules">あそびかた</button>
         </div>
         <div class="tabpane" id="p-rank" role="tabpanel"><ol class="rank" id="rank"></ol></div>
-        <div class="tabpane" id="p-lm" role="tabpanel" hidden><p class="tabnote">最初に完成させた社長に＋30。早い者勝ち。</p><div class="lms" id="lms"></div></div>
+        <div class="tabpane" id="p-lm" role="tabpanel" hidden><p class="tabnote">最初に完成させた社長に＋30。早い者勝ち。さらに、名所のまわり8マスにある自分の建物は、ずっと稼ぎ＋1（🏛 にぎわい）。</p><div class="lms" id="lms"></div></div>
         <div class="tabpane" id="p-log" role="tabpanel" hidden><ul class="log" id="log"></ul></div>
         <div class="tabpane" id="p-rules" role="tabpanel" hidden>
           <p class="tabnote">覚えるのは、この3つだけ。</p>
@@ -1329,6 +1329,9 @@ var POLMAP={};
 const EVAT=4;
 const BOSS={nick:'麻布の大旦那',ty:'fox',lv:4,xp:50,head:150}; // ボス戦の相手（社長ランク Lv.4 から）
 var EVON={};
+// 🏛 名所のにぎわい：完成した名所のまわり8マスの、同じ社長の建物は稼ぎ＋1（2つ重なれば＋2まで）
+var LMPOS=[];
+function lmAdd(add,g,r,c){const t=g[r][c];if(!t||t.ok==null)return;const n=LMPOS.filter(p=>p.ok===t.ok&&Math.abs(p.r-r)<=1&&Math.abs(p.c-c)<=1).length;if(n)add("🏛 名所のにぎわい",Math.min(2,n))}
 const EVENTS=[
   {t:'新幹線の開業で、出張や旅行がブームに',k:'tr',v:1},
   {t:'石油の節約で、街のネオン広告が消える',k:'me',v:-1},
@@ -1368,6 +1371,7 @@ function parts(g,r,c,era){
   add('★ 成長',LVB*((t.lv||1)-1));
   polAdd(add,k,era);
   evAdd(add,k,era);
+  lmAdd(add,g,r,c);
   add(`NEWS（${H(era).y}）`,newsOf(g,r,c,era),1);
   return P;
 }
@@ -1539,7 +1543,7 @@ var NOBUY=false, SIMPLE=false; // ひとりのゲームでは買収カードを�
 function deck(seed){const rnd=mulberry(seed),KS=NOBUY?KEYS.filter(k=>k!=="buy"):KEYS,tot=KS.reduce((s,k)=>s+W[k],0),cards=[];
   return i=>{while(cards.length<=i){let x=rnd()*tot,p="ho";for(const k of KS){x-=W[k];if(x<0){p=k;break}}cards.push(p)}return cards[i]}}
 function replay(tiles,seed,onStep){
-  POLMAP={}; EVON={};
+  POLMAP={}; EVON={}; LMPOS=[];
   const g=grid0(seed), own={}, log=[], hist=[0], eras=[], claimed={}, mq={}, cos=[], allB=[], D=deck(seed); let n=0, ruins=[], di=0, mk=[], lastPay={};
   const refill=()=>{mk=[];for(let j=0;j<MKT;j++)mk.push(D(di++))};
   refill();
@@ -1571,7 +1575,7 @@ function replay(tiles,seed,onStep){
       o.score+=sc; o.build+=sc; o.built++; o.kinds[t.k]=(o.kinds[t.k]||0)+1;
       log.push({type:'b',nick:t.nick,k:t.k,d:sc,ok:t.ok,n,name:g[t.r][t.c].name});
       for(const id of newLms(g,t.r,t.c,claimed)){
-        claimed[id]={ok:t.ok,nick:t.nick,n,r:t.r,c:t.c}; o.score+=LMBONUS; o.lm++;
+        claimed[id]={ok:t.ok,nick:t.nick,n,r:t.r,c:t.c}; LMPOS.push({r:t.r,c:t.c,ok:t.ok}); o.score+=LMBONUS; o.lm++;
         log.push({type:'l',id,nick:t.nick,ok:t.ok,n});
       }
       quest(e,t.r,t.c,t.k,false,t,o);
@@ -2141,6 +2145,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:31,d:'2026-10-16',t:'🏛 名所のにぎわい効果',x:'完成した名所のまわり8マスにある自分の建物は、ずっと稼ぎ＋1。タイムラプスでも、1手ごとに時間が進んで影が動く。'},
   {v:30,d:'2026-10-16',t:'🌤 建物に影がついた',x:'立体の街で、朝は右に長く・昼は短く・夕方は左に長く、建物が影を落とす。'},
   {v:29,d:'2026-10-16',t:'📊 あなたの決算書',x:'結果画面に、産業別の稼ぎを横棒グラフで。主力事業や、倒産した産業がひと目でわかる。'},
   {v:28,d:'2026-10-15',t:'⚙ 設定をひとまとめ・🏛 名所図鑑',x:'☰メニューの「設定」で、音・文字の大きさ・早送り・立体・向き・テーマをスイッチで。社長手帳に、完成させた名所の図鑑。'},
@@ -2848,7 +2853,7 @@ function playTimelapse(){
   let i=0, playing=!reduced();
   const draw=k=>{
     i=Math.max(0,Math.min(frames.length,k)); const f=i?frames[i-1]:null;
-    isoDraw(cv,f?f.cells:start,f?H(f.e).age:'showa',0,{grade:true,time:f&&f.settled?.9:.35});
+    isoDraw(cv,f?f.cells:start,f?H(f.e).age:'showa',0,{grade:true,time:!f?.05:f.settled?.9:(f.n%ERA)/ERA*.95});
     $('tly').textContent=f?H(f.e).y+(f.settled?' 決算':''):'1964'; $('tln').textContent=f&&!f.settled?H(f.e).n:''; $('tlg').textContent=f?`GDP ${f.gdp}`:'';
     if(rg){rg.max=frames.length;rg.value=i} if(ev) ev.innerHTML=evText(f);
   };
@@ -3712,7 +3717,7 @@ const BOOK=[
       </ul></div>
     <div class="bk-box">マスを選ぶと、<b>この先の稼ぎ予想</b>が棒グラフで出ます。赤い棒は倒産の危険。</div>`},
   {t:'名所と、時代のお題',h:()=>`
-    <p><b>名所</b>は、最初に完成させた社長に<b>＋30</b>。早い者勝ち。</p>
+    <p><b>名所</b>は、最初に完成させた社長に<b>＋30</b>。早い者勝ち。さらに、完成した名所の<b>まわり8マス</b>にある自分の建物は、ずっと<b>稼ぎ＋1</b>（🏛 名所のにぎわい）。</p>
     <div class="bk-grid">${LM.map(l=>`<div class="bk-box" style="margin:0"><b>${l.name}</b><br>${l.hint}</div>`).join('')}</div>
     <p style="margin-top:10px"><b>時代のお題</b>は、時代ごとに歴史にちなんだお題が1つ。その時代のうちに最初に達成すると<b>＋15</b>。</p>
     <div class="bk-box">例（1964年）：${MQT[0]}</div>`},
@@ -3780,15 +3785,15 @@ $('openBook2').onclick=()=>showRulebook(0);
 /* ---------- チャレンジ（歴史シナリオ・ひとりで★を集める） ---------- */
 // star：最後の街のGDPの目標（★1 / ★2 / ★3）
 const CHAL=[
-  {id:'c1',name:'東京オリンピック',yr:'1964',eras:[0],star:[37,47,60],d:'新幹線と首都高の時代。8手で、街の土台をつくれ。',hint:'運輸と製造が追い風。運輸を2つ並べると、時代のお題も達成。'},
-  {id:'c2',name:'オイルショックを乗り切れ',yr:'1964→1973',eras:[0,1],star:[70,87,94],d:'高度成長から、突然の石油危機へ。',hint:'1973年は運輸−3・製造−2。エネルギーに乗り換えるか、保険で守ろう。'},
-  {id:'c3',name:'バブルの宴と崩壊',yr:'1988→1991',eras:[3,4],star:[65,79,88],d:'株と土地が急上昇。そして、はじける。',hint:'1988年は金融とメディアが+3。でも1991年、金融は−3。'},
-  {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[76,86,96],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
-  {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[108,140,160],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'},
-  // ★の基準は、CPU（ふつう／つよい）で14回ずつ遊ばせた結果から決めた
-  {id:'c6',name:'プラザ合意と円高',yr:'1985',eras:[2],star:[36,45,57],d:'円が急上昇。輸出はきびしく、輸入と海外旅行が得をする。8手の勝負。',hint:'1985年は製造−2。運輸+3、金融と小売が+2。'},
-  {id:'c7',name:'リーマン・ショックを生き延びろ',yr:'1999→2008',eras:[6,7],star:[44,56,66],d:'ITバブルで金融とメディアが絶好調。そして、世界金融危機。',hint:'1999年は金融・メディアが+3。2008年は金融−3、製造とメディアも−2。保険と小売で守ろう。'},
-  {id:'c8',name:'60年ダイジェスト',yr:'1964→2022',eras:[0,3,7,11],star:[135,165,200],d:'東京オリンピック、バブル、リーマン・ショック、資源高。4つの大事件を一気に。',hint:'時代ごとに追い風がまるで違う。市場が入れ替わるたびに、乗り換えを考えよう。'}
+  {id:'c1',name:'東京オリンピック',yr:'1964',eras:[0],star:[43,64,75],d:'新幹線と首都高の時代。8手で、街の土台をつくれ。',hint:'運輸と製造が追い風。運輸を2つ並べると、時代のお題も達成。'},
+  {id:'c2',name:'オイルショックを乗り切れ',yr:'1964→1973',eras:[0,1],star:[78,95,112],d:'高度成長から、突然の石油危機へ。',hint:'1973年は運輸−3・製造−2。エネルギーに乗り換えるか、保険で守ろう。'},
+  {id:'c3',name:'バブルの宴と崩壊',yr:'1988→1991',eras:[3,4],star:[66,93,103],d:'株と土地が急上昇。そして、はじける。',hint:'1988年は金融とメディアが+3。でも1991年、金融は−3。'},
+  {id:'c4',name:'ネットの時代',yr:'1995→2008',eras:[5,6,7],star:[85,98,110],d:'インターネット元年からITバブル、そしてリーマン・ショック。',hint:'メディアと製造で稼ぎ、2008年の暴落の前に保険を。'},
+  {id:'c5',name:'令和の街',yr:'2013→2022',eras:[9,10,11],star:[131,170,184],d:'訪日客、巣ごもり、資源高。変化の激しい10年。',hint:'2020年は運輸−3。小売とメディアが+3。2022年はエネルギーと製造。'},
+  // ★の基準は、CPU（ふつう／つよい）で遊ばせた結果から決めた（名所のにぎわい効果を入れたあとに測り直し）
+  {id:'c6',name:'プラザ合意と円高',yr:'1985',eras:[2],star:[34,56,71],d:'円が急上昇。輸出はきびしく、輸入と海外旅行が得をする。8手の勝負。',hint:'1985年は製造−2。運輸+3、金融と小売が+2。'},
+  {id:'c7',name:'リーマン・ショックを生き延びろ',yr:'1999→2008',eras:[6,7],star:[50,67,82],d:'ITバブルで金融とメディアが絶好調。そして、世界金融危機。',hint:'1999年は金融・メディアが+3。2008年は金融−3、製造とメディアも−2。保険と小売で守ろう。'},
+  {id:'c8',name:'60年ダイジェスト',yr:'1964→2022',eras:[0,3,7,11],star:[167,226,251],d:'東京オリンピック、バブル、リーマン・ショック、資源高。4つの大事件を一気に。',hint:'時代ごとに追い風がまるで違う。市場が入れ替わるたびに、乗り換えを考えよう。'}
 ];
 const chalBest=()=>store.get('azakei-city-chal')||{};
 const starsOf=(c,gdp)=>c.star.filter(s=>gdp>=s).length;
