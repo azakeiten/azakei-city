@@ -412,6 +412,8 @@ ol.rules b{color:var(--ink)}
 .paper .qa button.right{background:#d8efd9;border-color:#1d6b32;color:#1d6b32}
 .paper .qa button.wrong{opacity:.55}
 .paper .quiz .qx{margin-top:8px;font-size:12px;font-weight:700;color:#5a4520}
+.paper .feat{margin-top:4px;padding:5px 8px;border-left:3px solid #7a5a1e;background:rgba(122,90,30,.08)}
+.paper .feat.mine{border-left-color:#c2412d;background:rgba(194,65,45,.1)}
 .paper .nums{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(60,40,10,.35);font-family:var(--body);display:grid;gap:5px}
 .paper .nums .slab{color:#7a5a1e;margin:0}
 .paper .num{display:grid;grid-template-columns:6.5em 1fr auto auto;align-items:center;gap:8px;font-size:12.5px;font-weight:700}
@@ -1762,6 +1764,11 @@ function isoDraw(cv,cells,age,t,opt){
     ctx.fillStyle=sk?'rgba(255,183,213,.9)':'rgba(255,255,255,.9)';
     for(let i=0;i<(sk?28:46);i++){const sp=sk?22+(i%4)*6:18+(i%5)*5, x=((i*83.7)%W+Math.sin(tt*.8+i)*14+tt*(sk?12:4))%W, y=((i*61.3)%Hh+tt*sp)%Hh;
       ctx.beginPath(); if(sk) ctx.ellipse(x,y,3.2,1.8,tt*1.5+i,0,Math.PI*2); else ctx.arc(x,y,1.2+(i%3)*.6,0,Math.PI*2); ctx.fill()}}
+  // 時代の色合い：昭和はほんのりセピア、令和は少し青みがかった、すっきりした色
+  if(opt.grade&&(age==='showa'||age==='reiwa')){ctx.save();
+    if(age==='showa'){ctx.globalCompositeOperation='multiply';ctx.fillStyle='rgba(255,226,180,.55)'}
+    else{ctx.globalCompositeOperation='soft-light';ctx.fillStyle='rgba(140,190,255,.35)'}
+    ctx.fillRect(0,0,W,Hh);ctx.restore()}
   // 文字は最後に（建物にかくれないように）
   const label=(x,y,text,col,size,bg)=>{ctx.font=`800 ${size}px "DM Mono",ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
     if(bg){const w=ctx.measureText(text).width+8;ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(x-w/2,y-size*.7,w,size*1.4,4);ctx.fill()}
@@ -1810,7 +1817,7 @@ function drawBoard3d(){
   const cv=$('board3d'); if(!cv||!view3d()||!S.R) return;
   fit3d(cv);
   const R=S.R,g=R.g,e=eraNow(),card=selCard(),k=card?card.k:null,ty=myTy(),lk=locked(),mk=myKey();
-  const opt={amb:!reduced(),theme:themeNow(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
+  const opt={grade:true,amb:!reduced(),theme:themeNow(),weather:finished()?null:eraWeather(e),hover:V3.hover,insp:S.insp,focus:[],time:finished()?1:S.pause?.95:(R.n%ERA)/ERA*.95};
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){const x=g[r][c];if(x&&x.k!=="river"&&x.k!=="sta")opt.focus.push([r,c]);else if(valid(g,r,c))opt.focus.push([r,c])}
   if(k&&!lk){
     opt.ghost=true; opt.valid={};
@@ -1972,6 +1979,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:17,d:'2026-10-14',t:'📰 新聞に「今期の注目企業」・時代の色合い',x:'決算でいちばん稼いだ会社が新聞にのる。立体の街は、昭和はセピア、令和は青みがかった色に。'},
   {v:16,d:'2026-10-13',t:'🏢 自分の会社に名前を付けられる',x:'会社カードの「✎ 名前を変える」で。育つと「○○本店」「○○ホールディングス」に。街コードの勝負は、CPUの手も同じになった。'},
   {v:15,d:'2026-10-13',t:'🔢 街コードで友だちと勝負',x:'結果画面のコードを友だちが入れると、同じ地図・同じ市場の順番で遊べる。'},
   {v:14,d:'2026-10-12',t:'👑 ★★の会社のビルに王冠',x:'ホールディングスまで育った会社は、屋上が金色になって王冠がのる。'},
@@ -2606,6 +2614,7 @@ function showPaper(){
       <div>${rep.bust.length?`倒産 <b>${rep.bust.length}社</b>（${summarize(rep.bust)}）${names(rep.bust)?`<br><small>${esc(names(rep.bust))}</small>`:""}${!many&&myBust?` うちあなた ${myBust}社`:''}`:'倒産 なし'}</div>
       <div>${rep.grow.length?`成長 <span class="g">${rep.grow.length}社</span>（${summarize(rep.grow)}）${names(rep.grow)?`<br><small>${esc(names(rep.grow))}</small>`:""}${!many&&myGrow?` うちあなた ${myGrow}社`:''}`:'成長 なし'}</div>
       ${fin?"":`<div>次のお題：${MQT[HI(e)]}</div>`}${rep.crown?`<div>👑 時代の覇者：<b>${esc(sh(rep.crown.nick))}</b>（稼ぎを${rep.crown.gain}伸ばした）＋${CROWN}</div>`:""}
+      ${(()=>{const t=rep.cells.filter(x=>x[3]!=="bust").map(([r,c,v])=>({v,x:R.g[r][c]})).filter(o=>o.x&&o.x.ok&&o.x.name).sort((a,b)=>b.v-a.v)[0];if(!t)return "";const mine=t.x.ok===myKey();return `<div class="feat${mine?" mine":""}">📰 今期の注目企業：<b>${esc(t.x.name)}</b>（${esc(t.x.nick||"")}${mine&&t.x.nick!=="あなた"?"＝あなた":""}）稼ぎ <b>+${t.v}</b>${mine?"　おめでとう！":""}</div>`})()}
     </div>
     <div class="btns">${fin?`<button type="button" id="paperRes">結果を見る</button>`:`<button type="button" id="paperClose">街にもどる<i class="autobar"></i></button>`}</div></div>`;
   $('paperbg').hidden=false;
@@ -3628,7 +3637,7 @@ function homeCityLoop(city){
   const cv=$('homeCity'); if(!cv) return;
   const focus=[[0,0],[0,N-1],[N-1,0],[N-1,N-1]]; // 高いビルが切れないよう、地図全体をうつす
   const tick=()=>{if(!S.homeOpen||!document.body.contains(cv)) return;
-    isoDraw(cv,city.cells,city.age,performance.now(),{amb:!reduced(),theme:themeNow(),time:city.done?.9:.35,focus});
+    isoDraw(cv,city.cells,city.age,performance.now(),{grade:true,amb:!reduced(),theme:themeNow(),time:city.done?.9:.35,focus});
     if(!reduced()) setTimeout(()=>document.hidden?tick():requestAnimationFrame(tick),document.hidden?600:66);
     else if(!cv.clientWidth||cv.width<cv.clientWidth) setTimeout(tick,300)}; // 見えないあいだは、ゆっくり待つ
   tick();
