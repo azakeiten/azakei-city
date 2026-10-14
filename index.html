@@ -704,6 +704,8 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .gl span{color:var(--muted)}
 .gl.seen{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
 .gl.seen b::after{content:" ✓";color:var(--gold);font-size:12px}
+.confetti{position:fixed;inset:0;z-index:60;pointer-events:none}
+.vsrow .vsay{grid-column:1/-1;font-style:normal;font-size:12px;color:var(--muted)}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -799,6 +801,7 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .tlctl input[type=range]{width:100%;accent-color:#ffc83a}
 .tlev{grid-column:1/-1;font-size:12.5px;color:var(--ink);min-height:1.6em;text-align:left}
 .tlinfo{grid-template-columns:auto auto 1fr auto;align-items:baseline;gap:4px 12px!important;justify-items:start}
+@media (max-width:640px){.tlinfo{grid-template-columns:auto 1fr auto!important}.tlinfo .lab{grid-column:1/-1}.tlinfo #tln{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tlinfo #tlPlay{grid-column:1/-1;justify-self:start;padding:5px 12px}} /* スマホ：年号・時代名・GDPを1行に */
 
 /* challenge mode */
 .menu .mbtn:first-child{grid-column:span 2}
@@ -1626,14 +1629,14 @@ function seasonHTML(){const s=seasonNow();if(!s)return '';const S2=SEASONS[s],go
 const CPUN=['駅前の社長','となりの社長','港町の社長'];
 // ライバル社長：8人の中から、ゲームごとに選ばれる（タイプと口ぐせは決まっている）
 const RIVALS=[
-  {nick:'駅前の社長',ty:'lion',say:'駅前は、ぜんぶうちのビルにする！'},
-  {nick:'となりの社長',ty:'turtle',say:'となり同士、ゆっくりいきましょう'},
-  {nick:'港町の社長',ty:'rabbit',say:'港はいつだって、にぎやかなのがいい'},
-  {nick:'坂の上の社長',ty:'fox',say:'坂の上から、街ぜんぶが見えるよ'},
-  {nick:'商店街の会長',ty:'rabbit',say:'みんなで買い物、楽しいね！'},
-  {nick:'川沿いの社長',ty:'turtle',say:'川の流れのように、あせらずに'},
-  {nick:'鉄道好きの社長',ty:'lion',say:'線路の先に、もうけがある！'},
-  {nick:'丘の上のお嬢さま社長',ty:'fox',say:'数字は、うそをつきませんわ'}
+  {nick:'駅前の社長',ty:'lion',say:'駅前は、ぜんぶうちのビルにする！',w:'見たか！ 駅前はおれの街だ！',l:'くっ…次は駅前ごと取り返す！'},
+  {nick:'となりの社長',ty:'turtle',say:'となり同士、ゆっくりいきましょう',w:'コツコツが、いちばん強いんですよ',l:'いやあ、おみごと。またとなりで勝負しましょう'},
+  {nick:'港町の社長',ty:'rabbit',say:'港はいつだって、にぎやかなのがいい',w:'やったー！ 今日は港でお祝いだ！',l:'負けたけど、楽しかった〜！'},
+  {nick:'坂の上の社長',ty:'fox',say:'坂の上から、街ぜんぶが見えるよ',w:'ぜんぶ、坂の上から見えていたよ',l:'ふむ…きみの手は、坂の上からも読めなかった'},
+  {nick:'商店街の会長',ty:'rabbit',say:'みんなで買い物、楽しいね！',w:'商店街の大売り出しだ〜！',l:'くやしい！ でも、また遊びに来てね！'},
+  {nick:'川沿いの社長',ty:'turtle',say:'川の流れのように、あせらずに',w:'流れは、こちらに来ていましたね',l:'川の流れが変わりましたな。おみごと'},
+  {nick:'鉄道好きの社長',ty:'lion',say:'線路の先に、もうけがある！',w:'終点まで、先頭は私だ！',l:'くっ、乗りおくれた…次は始発から行く！'},
+  {nick:'丘の上のお嬢さま社長',ty:'fox',say:'数字は、うそをつきませんわ',w:'ほら、数字はうそをつきませんでしょう？',l:'…次は、数字で負けませんわ'}
 ];
 function pickRivals(seed,k){const rnd=mulberry((seed^0x7a11)>>>0),a=RIVALS.slice().sort(()=>rnd()-.5);return a.slice(0,k)}
 const rivalSay=nick=>(RIVALS.find(r=>r.nick===nick)||{}).say;
@@ -2085,6 +2088,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:25,d:'2026-10-15',t:'🎉 1位で紙吹雪・ライバルの試合後のひとこと',x:'1位や自己ベスト更新で紙吹雪。結果画面で、ライバル社長が勝ち負けにひとこと。'},
   {v:24,d:'2026-10-15',t:'🎞️ タイムラプスを1手ずつ見返せる',x:'結果画面のタイムラプスに、スライダーと再生ボタン。好きな手で止めると「だれが何を建てたか」が出る。'},
   {v:23,d:'2026-10-15',t:'📖 経済ことば辞典',x:'新聞やミュージアムの点線のことば（円高・不良債権・金融緩和など）をタップすると意味が出る。10個しらべるとバッジ。'},
   {v:22,d:'2026-10-15',t:'🎍🌸🎆 季節イベントが1年中に',x:'お正月は門松、春は桜、夏は毎晩花火。それぞれ限定バッジつき。はじめての人は、ガイドを終えると「ひみつの目標」選びへ。'},
@@ -2918,7 +2922,7 @@ function recordGame(me,rank,arr){
 const MODEN={full:'フル（12時代）',short:'ショート',daily:'今日の街'};
 const vsRec=nick=>((store.get('azakei-city-rec')||{}).vs||{})[nick];
 const vsTxt=nick=>{const v=vsRec(nick);return v&&(v.w+v.l)?`あなたの${v.w}勝${v.l}敗`:'初対戦'};
-function vsHTML(list){return list&&list.length?`<div class="vsbox"><div class="slab">ライバルとの対戦成績</div>${list.map(x=>`<div class="vsrow ${x.win?'win':'lose'}"><span>${TY[x.ty]?.face||''} ${esc(x.nick)}</span><em>${x.win?'勝ち':'負け'}</em><b>${x.w}勝${x.l}敗</b></div>`).join('')}</div>`:''}
+function vsHTML(list){return list&&list.length?`<div class="vsbox"><div class="slab">ライバルとの対戦成績</div>${list.map(x=>{const rv=RIVALS.find(r=>r.nick===x.nick),line=rv?(x.win?rv.l:rv.w):"";return `<div class="vsrow ${x.win?"win":"lose"}"><span>${TY[x.ty]?.face||""} ${esc(x.nick)}</span><em>${x.win?"勝ち":"負け"}</em><b>${x.w}勝${x.l}敗</b>${line?`<i class="vsay">「${esc(line)}」</i>`:""}</div>`}).join("")}</div>`:""}
 function pbHTML(pb){return pb?`<div class="pbline">🏆 <b>自己ベスト${pb.prev==null?'':'更新'}！</b> ${MODEN[pb.mode]} ${pb.score}点${pb.prev==null?'（はじめての記録）':`（これまで ${pb.prev}点）`}</div>`:''}
 function recordsHTML(){
   const r=store.get('azakei-city-rec'); if(!r||(!r.games&&!r.quizN)) return '<p class="empty">まだ記録がありません。1ゲーム遊ぶと、ここに記録がたまります。</p>';
@@ -3002,6 +3006,18 @@ function recapHTML(R,arr,mk){
     ${series.length>1?`<svg class="rchart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="社長ごとのスコアの伸び">${grid}${ticks}${lines}${labels}</svg>`:''}
     ${hl.length?`<div class="hls">${hl.map(h=>`<div class="hl"><span class="hi">${h[0]}</span><span><small>${h[1]}</small>${h[2]}</span></div>`).join('')}</div>`:''}</div>`;
 }
+// 🎉 紙吹雪：1位・自己ベスト・ボス撃破のとき（1ゲームに1回）
+function confetti(){
+  if(reduced()) return;
+  const cv=document.createElement('canvas'); cv.className='confetti'; document.body.appendChild(cv);
+  const W=cv.width=innerWidth, Hh=cv.height=innerHeight, ctx=cv.getContext('2d'), C=['#ffc83a','#ff6b5e','#4aa8ff','#3ad283','#ff9ad5','#b48cff'];
+  const P=Array.from({length:140},(_,i)=>({x:Math.random()*W,y:-20-Math.random()*Hh*.5,vx:(Math.random()-.5)*2.2,vy:2+Math.random()*3,r:Math.random()*6.28,vr:(Math.random()-.5)*.3,w:5+Math.random()*6,h:3+Math.random()*4,c:C[i%C.length]}));
+  const t0=performance.now();
+  const step=now=>{const t=now-t0;ctx.clearRect(0,0,W,Hh);
+    for(const p of P){p.x+=p.vx;p.y+=p.vy;p.vy+=.03;p.r+=p.vr;ctx.save();ctx.globalAlpha=t>2600?Math.max(0,1-(t-2600)/600):1;ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*1.7)));ctx.restore()}
+    if(t<3200) requestAnimationFrame(step); else cv.remove()};
+  requestAnimationFrame(step);
+}
 function showResult(){
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey();
   const hs=S.mode==='local'?humans():[], many=hs.length>1;
@@ -3038,6 +3054,7 @@ function showResult(){
     <div class="btns"><button class="go" type="button" id="again">新しい街をつくる</button><button class="ghost" type="button" id="openBook">社長手帳</button><button class="ghost" type="button" id="shareImg">📷 結果を画像に</button><button class="ghost" type="button" id="copyRes">結果をコピー</button><button class="ghost" type="button" id="closeRes">街をながめる</button></div>
   </div>`;
   $('resultbg').hidden=false; sfx.end();
+  if(S.game&&!S.game.confettied&&!S.game.demo&&((!many&&mi===0&&arr.length>1)||(xp&&xp.pb&&xp.pb.prev!=null))){S.game.confettied=true;saveGame();setTimeout(confetti,400)}
   // ランクのゲージを、少し待ってから伸ばす（ランクアップなら、ファンファーレ）
   setTimeout(()=>{const bar=$('resultbg').querySelector('.rankres .rk-bar i');if(bar)bar.style.width=bar.dataset.to+'%';if($('resultbg').querySelector('.rankres.up'))sfx.goal()},700);
   $('again').onclick=()=>{$('resultbg').hidden=true;showSetup()};
