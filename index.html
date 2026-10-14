@@ -706,6 +706,24 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .gl.seen b::after{content:" ✓";color:var(--gold);font-size:12px}
 .confetti{position:fixed;inset:0;z-index:60;pointer-events:none}
 .vsrow .vsay{grid-column:1/-1;font-style:normal;font-size:12px;color:var(--muted)}
+.settings{display:grid;gap:6px;margin-top:6px}
+.setrow{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);font:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+.setrow:hover{border-color:var(--gold)}
+.setrow .si{font-size:18px;text-align:center}
+.setrow small{display:block;font-size:11px;color:var(--muted);font-weight:700}
+.setrow .sv{font-family:var(--mono);color:var(--gold)}
+.sw{width:42px;height:24px;border-radius:99px;background:rgba(255,255,255,.15);position:relative;transition:background .2s}
+.sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.sw.on{background:#3ad283}
+.sw.on i{left:21px}
+.settings .themes{justify-content:flex-start;margin-top:4px}
+.lmbook{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;width:100%;margin:8px 0 4px}
+.lmc{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:center;padding:8px 10px;border-radius:12px;border:1px dashed var(--line);background:rgba(255,255,255,.03);text-align:left}
+.lmc .lmi{grid-row:span 2;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--night);color:var(--muted);font-weight:800;font-size:18px}
+.lmc b{font-size:13px}
+.lmc small{font-size:10.5px;color:var(--muted);line-height:1.4}
+.lmc.got{border-style:solid;border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
+.lmc.got .lmi{background:linear-gradient(135deg,#ffe48a,#ffc83a)}
 .homeprof{display:grid;justify-items:center;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .homeprof .slab{justify-self:start}
 .homeprof .rankchip,.homeprof .missions{width:min(520px,100%)}
@@ -1105,7 +1123,7 @@ body.drawer .side{transform:none}
       <div class="drawer-head"><b>くわしい情報</b><button class="tb-btn" id="drawerClose" type="button" aria-label="とじる">✕</button></div>
       <div class="drawer-me">
         <button class="me-chip" id="meChip" type="button" aria-label="社長タイプを変える"></button>
-        <button class="icon-btn" id="sound" type="button" aria-pressed="true">音 ON</button><button class="icon-btn" id="bigText" type="button" aria-pressed="false">文字 大</button>
+        <button class="icon-btn" id="sound" type="button" aria-pressed="true">音 ON</button><button class="icon-btn" id="bigText" type="button" aria-pressed="false" hidden>文字 大</button>
         <div class="tabs" role="group" aria-label="遊ぶ街"><button id="mShared" type="button" aria-pressed="false">みんなの街</button><button id="mLocal" type="button" aria-pressed="true">ひとり・友だち</button></div>
         <label class="nick" for="nick">社長名 <input id="nick" maxlength="12" placeholder="なまえ" autocomplete="off"></label>
       </div>
@@ -2100,6 +2118,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:28,d:'2026-10-15',t:'⚙ 設定をひとまとめ・🏛 名所図鑑',x:'☰メニューの「設定」で、音・文字の大きさ・早送り・立体・向き・テーマをスイッチで。社長手帳に、完成させた名所の図鑑。'},
   {v:27,d:'2026-10-15',t:'🏛 名所に旗が立つ・ニュータウンの条件を見直し',x:'名所を完成させた建物の屋上に、その社長の色の旗。ニュータウンは「住宅を4つつなげる（形は自由）」に。'},
   {v:26,d:'2026-10-15',t:'⚓ 名所が11に（港湾地区・駅前ビル街・IT研究都市）',x:'川や駅を使う名所が登場。早い者勝ちで＋30。'},
   {v:25,d:'2026-10-15',t:'🎉 1位で紙吹雪・ライバルの試合後のひとこと',x:'1位や自己ベスト更新で紙吹雪。結果画面で、ライバル社長が勝ち負けにひとこと。'},
@@ -2152,7 +2171,7 @@ function showMuseum(){
 }
 function showBook(){
   const got=store.get('azakei-city-badges')||{}, n=BADGES.filter(b=>got[b.id]).length;
-  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3>${rankChip(+(store.get("azakei-city-xp")||0))}<div class="slab" style="margin-top:12px">通算記録</div>${recordsHTML()}<div class="slab" style="margin-top:12px">📷 街のアルバム</div>${albumHTML()}<div class="slab" style="margin-top:12px">殿堂入り企業</div>${fameHTML()}<div class="slab" style="margin-top:12px">バッジ</div><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p><span class="rk-bar badgebar"><i style="width:${Math.round(n/BADGES.length*100)}%"></i></span>
+  $('typebg').innerHTML=`<div class="sheet" role="dialog" aria-label="社長手帳"><h3>社長手帳</h3>${rankChip(+(store.get("azakei-city-xp")||0))}<div class="slab" style="margin-top:12px">通算記録</div>${recordsHTML()}<div class="slab" style="margin-top:12px">🏛 名所図鑑</div>${lmBookHTML()}<div class="slab" style="margin-top:12px">📷 街のアルバム</div>${albumHTML()}<div class="slab" style="margin-top:12px">殿堂入り企業</div>${fameHTML()}<div class="slab" style="margin-top:12px">バッジ</div><p class="lead">この端末で集めたバッジ ${n} / ${BADGES.length}</p><span class="rk-bar badgebar"><i style="width:${Math.round(n/BADGES.length*100)}%"></i></span>
     <div class="book">${BADGES.map(b=>`<div class="badge${got[b.id]?' got':''}"><span class="bm">${got[b.id]?(b.ic||'★'):'？'}</span><span><b>${b.name}</b><small>${b.hint}${got[b.id]?`（${got[b.id]}）`:''}</small></span></div>`).join('')}</div>
     <div class="btns" style="margin-top:12px"><button class="ghost" type="button" data-close="1">とじる</button></div></div>`;
   $('typebg').hidden=false;
@@ -2623,13 +2642,28 @@ function renderCoach(){
 }
 let resetArm=false;
 $('tools').addEventListener('click',e=>{const th=e.target.closest('[data-theme]');if(th)pickTheme(th)});
+// ⚙ 設定：ばらばらだった切りかえを、☰メニューの1か所に（スイッチで ON / OFF）
+function settingsHTML(){
+  const sw=(id,ic,label,on,sub)=>`<button type="button" class="setrow" data-set="${id}" role="switch" aria-checked="${on}"><span class="si">${ic}</span><span class="sl">${label}${sub?`<small>${sub}</small>`:''}</span><span class="sw${on?' on':''}"><i></i></span></button>`;
+  return `<div class="settings"><div class="slab">⚙ 設定</div>
+    ${sw('sound','🔊','音（効果音とBGM）',$('sound')?.getAttribute('aria-pressed')!=='false')}
+    ${sw('big','🔠','文字を大きく',!!store.get('azakei-city-big'),'画面全体を少し大きく')}
+    ${sw('fast','⏩','CPUの番を早送り',!!S.fast)}
+    ${sw('view','🏙️','立体の街で遊ぶ',view3d(),'OFFで平面の盤面')}
+    <button type="button" class="setrow" data-set="rot"><span class="si">↻</span><span class="sl">立体の街の向き<small>押すたびに90°回る</small></span><b class="sv">${(V3.rot||0)*90}°</b></button>
+    ${S.mode==='local'?themePicker():''}</div>`;
+}
+$('tools').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
+  if(k==='sound')$('sound').click(); else if(k==='big')$('bigText').click(); else if(k==='view')$('cityBtn').click(); else if(k==='rot')$('rotBtn').click();
+  else if(k==='fast'){S.fast=!S.fast;store.set('azakei-city-fast',S.fast);renderFast()}
+  setTimeout(renderTools,30)});
 function renderTools(){
   let h='';
   {const got=store.get("azakei-city-badges")||{};h=`<button class="ghost" id="book" type="button">社長手帳 ${BADGES.filter(b=>got[b.id]).length}/${BADGES.length}</button>`;}
   if(S.mode==="local") h+=`<button class="ghost" id="newGame" type="button">新しい街をつくる（人数・モードを選ぶ）</button>`;
   else if(NET.owner) h+=`<button class="ghost${resetArm?' warn':''}" id="reset" type="button">${resetArm?'全員の建物を消します。もう一度押す':'みんなの街をリセット（オーナーのみ）'}</button>`;
   if(S.mode==='shared'&&NET.err) h+=`<p class="note">${esc(NET.err)}</p>`;
-  if(S.mode==='local') h+=themePicker();
+  h+=settingsHTML();
   $('tools').innerHTML=h;
   const b=$('reset'); if(b) b.onclick=resetShared;
   const n=$("newGame"); if(n) n.onclick=showSetup;
@@ -2914,12 +2948,19 @@ function albumHTML(){
   return list.length?`<div class="album">${list.map((a,i)=>`<figure class="photo" style="--tilt:${(i%3-1)*1.4}deg"><img src="${a.img}" alt="${esc(a.name)}の写真" loading="lazy"><figcaption><b>${esc(a.name)}</b><small>${a.date}・${a.chal?'チャレンジ':a.boss?'ボス戦':`${a.of}人中${a.rank}位`}・${a.score}点</small></figcaption></figure>`).join('')}</div>`:'<p class="empty">1ゲーム終えると、完成した街の写真がここに貼られます。</p>';
 }
 document.addEventListener('click',e=>{const p=e.target.closest('.album .photo');if(p)p.classList.toggle('big')});
+const LMIC={ind:'🏭',shop:'🛍️',fin:'🏦',town:'🏘️',media:'📡',school:'🎓',hub:'🚚',safe:'🛡️',port:'⚓',station:'🚉',tech:'💻'};
+function lmBookHTML(){
+  const got=(store.get('azakei-city-rec')||{}).lmGot||{}, n=LM.filter(l=>got[l.id]).length;
+  return `<p class="lead" style="margin:0">集めた名所 ${n} / ${LM.length}</p><div class="lmbook">${LM.map(l=>`<div class="lmc${got[l.id]?' got':''}"><span class="lmi">${got[l.id]?LMIC[l.id]||'🏛':'？'}</span><b>${l.name}</b><small>${got[l.id]?`はじめて完成：${got[l.id]}`:esc(l.hint)}</small></div>`).join('')}</div>`;
+}
 function recordGame(me,rank,arr){
   const rec=store.get('azakei-city-rec')||{games:0,wins:0,goals:0,goalsMet:0,guesses:0,hits:0,busts:0,lm:0,best:{}};
   rec.games++; if(rank===0&&arr.length>1) rec.wins++;
   if(me.goal){rec.goals++;if(me.goal.met)rec.goalsMet++}
   if(me.guess){rec.guesses++;if(me.guess.hit)rec.hits++}
   rec.busts+=me.bust||0; rec.lm+=me.lm||0;
+  // 🏛 名所図鑑：自分で完成させた名所を記録
+  rec.lmGot=rec.lmGot||{}; for(const[id,v]of Object.entries(S.R.claimed||{})) if(v&&v.ok===me.key&&!rec.lmGot[id]) rec.lmGot[id]=todayStr();
   // 街コードごとの自己ベスト（同じコードに何度も挑戦するとき）
   {const cc=cityCode(S.game);if(cc&&humans().length===1){rec.codeBest=rec.codeBest||{};const o=rec.codeBest[cc];if(!o||me.score>o.score)rec.codeBest[cc]={score:me.score,date:todayStr(),prev:o?o.score:null,tries:(o?o.tries:0)+1};else o.tries=(o.tries||1)+1}}
   if(S.game.boss){if(rank===0)rec.bossW=(rec.bossW||0)+1;else rec.bossL=(rec.bossL||0)+1}
