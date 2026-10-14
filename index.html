@@ -269,8 +269,14 @@ body.simple .polnow{display:none}
 .tray .mcard .ic{width:30px;height:30px}
 .tray[data-wait="1"] .tray-in{border-color:var(--line)}
 .tray .dock{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--gold) 10%,#191c3c)}
-.tray .dock .dt{flex:1;min-width:0;font-size:13px;font-weight:700}
+.tray .dock .dt{flex:1;min-width:0;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tray .dock .dt b{font-family:var(--display);color:var(--gold);font-size:20px;margin-left:6px}
+.tray .dock .dt small{display:block;margin-top:2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tray .dock .dt small .n{color:#ff8a7a;font-weight:800}
+.dbest,.dmore{display:inline-block;white-space:nowrap;vertical-align:middle;margin-left:4px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800}
+.dbest{background:color-mix(in srgb,var(--gold) 26%,transparent);color:var(--gold)}
+.dmore{background:rgba(255,255,255,.08);color:var(--muted)}
+@media (max-width:420px){.tray .dock{gap:6px}.tray .dock .go{padding:10px 14px}.tray .dock .x{padding:9px 8px}.tray .dock .dt b{font-size:18px;margin-left:4px}}
 .tray .dock .go{width:auto;padding:10px 22px}
 .tray .dock .x{border:1px solid var(--line);background:none;color:var(--muted);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:800}
 .wrap{padding-block-end:190px}
@@ -826,6 +832,10 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 @keyframes gpop{0%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(.95)}100%{transform:scale(1)}}
 .goalchip.met{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 30%,transparent)}
 .goalres{margin:10px 0;display:grid;gap:6px}
+.advice{margin:12px 0;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--glow,#4aa8ff) 10%,transparent);border:1px solid color-mix(in srgb,var(--glow,#4aa8ff) 30%,transparent);text-align:left}
+.advice p{margin:4px 0 8px;font-weight:800;font-size:14px}
+.advice .tip{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.6;margin-top:6px}
+.advice .tip>span:first-child{font-size:20px;line-height:1.2}
 .goalres div{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:13px;text-align:left}
 .goalres div.ok{border-color:var(--gold)}
 .goalres em{font-style:normal;font-weight:800;white-space:nowrap}
@@ -2177,6 +2187,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:35,d:'2026-10-19',t:'🌟 ベストの場所がわかる・💬 先輩からのアドバイス',x:'マスを選ぶと、手札の上に点の内わけ（稼ぎ＋まわり）と、「🌟ベスト」か「最大+◯のマスあり」が出ます。結果画面では、その試合の打ち方を見て、次に試すとよいことを先輩がアドバイスします。'},
   {v:34,d:'2026-10-18',t:'🛠 スマホで遊べなくなる問題を直した・👆 タップしやすく',x:'はじめての街のガイドの吹き出しが盤面にかぶって、マスを押せないことがありました。吹き出しは盤面の上に出て、指をじゃましません。少しずれてタップしても、近くの建てられるマスを選びます。⚙設定からガイドをもう一度見られます。'},
   {v:33,d:'2026-10-17',t:'✋ 拡大中はドラッグで移動・🏛 名所チャンスのお知らせ',x:'ズームしたら、盤面をドラッグして見る場所を動かせる。手札で名所を完成できるときは、手札の上で知らせる。'},
   {v:32,d:'2026-10-16',t:'🔍 立体の街をズーム',x:'2本指のピンチ、マウスのホイール、盤面の＋−ボタンで、最大2倍まで拡大できる。'},
@@ -2499,8 +2510,19 @@ function renderPre0(){
     <p class="sub">盤面の小さな数字が、まわりの建物の増減です。赤い棒は、その時代の決算で倒産する危険（稼ぎ2以下）。</p>`;
   $('go').onclick=place;
   $('dock').hidden=false;
-  $('dock').innerHTML=`<div class="dt">${T[k].name}<b>${sg(s.score)}</b>${danger?' <span class="n" style="font-size:11px">倒産注意</span>':''}</div><button class="x" type="button" data-cancel="1">やめる</button><button class="go" type="button" id="go2">ここに建てる</button>`;
+  // 📝 スマホでも「なぜこの点？」がわかるように、内わけと「ベストの場所か」を1行で
+  const best=bestScore(k,e,ty,R), why=[`稼ぎ${s.own}`];
+  if(s.side) why.push(`まわり${sg(s.side)}`); if(ty==='lion') why.push('🦁×2'); if(s.lms.length) why.push(`◆名所+${LMBONUS*s.lms.length}`); if(s.mq) why.push('★お題');
+  const badge=s.score>=best?'<span class="dbest" title="このカードでいちばん点がとれるマス">🌟ベスト</span>':`<span class="dmore" title="もっと点がとれるマスがあります">↑最大${sg(best)}</span>`;
+  $('dock').innerHTML=`<div class="dt">${T[k].name}<b>${sg(s.score)}</b> ${badge}<small>${why.join(' ＋ ')}${danger?' ・<span class="n">⚠ 次の決算で倒産しそう</span>':''}</small></div><button class="x" type="button" data-cancel="1">やめる</button><button class="go" type="button" id="go2">ここに建てる</button>`;
   $('go2').onclick=place;
+}
+// このカードで、いちばん点がとれるマスの点（同じ局面・同じカードなら覚えておく）
+function bestScore(k,e,ty,R){
+  const key=`${S.mode}|${R.n}|${S.game?S.game.tiles.length:S.sharedTiles.length}|${k}|${ty}`;
+  if(S.bestc&&S.bestc.key===key) return S.bestc.v;
+  let v=-1e9; for(const[r,c]of validCells(R.g)) v=Math.max(v,simulate(R.g,r,c,k,e,ty,R).score);
+  S.bestc={key,v}; return v;
 }
 function faceOf(ty){return ty&&TY[ty]?TY[ty].face:'・'}
 function renderRank(){
@@ -3162,6 +3184,20 @@ function confetti(){
     if(t<3200) requestAnimationFrame(step); else cv.remove()};
   requestAnimationFrame(step);
 }
+// 💬 先輩からのアドバイス：その試合の打ち方を見て、次に試すとよいことを2つまで
+function adviceHTML(me,mi,arr){
+  if(!me) return '';
+  const tips=[], nk=Object.keys(me.kinds||{}).length;
+  if(me.bust>=2) tips.push(['💥',`倒産が${me.bust}回。マスを選んだときの「<b>⚠ 次の決算で倒産しそう</b>」に注意。相性のいいとなりに建てると長生きするよ`]);
+  if(!me.lm) tips.push(['🏛',`名所を完成させると<b>＋${LMBONUS}</b>の大ボーナス。手札の上に「名所チャンス」が出たら狙い目！`]);
+  if(nk<=2&&me.built>=4) tips.push(['🧩',`建てた種類が${nk}つだけ。いろんな産業をまぜると、となり同士の相性で稼ぎがふえるよ`]);
+  if(!me.crown) tips.push(['👑',`<b>時代レース</b>：その時代にいちばん稼ぎを伸ばすと＋${CROWN}。決算の前に、稼ぐ建物をまとめて建てよう`]);
+  if(!me.buys) tips.push(['🤝','「<b>買収</b>」カードを使うと、ライバルのもうかっている会社を自分のものにできるよ']);
+  const gap=arr[0]&&mi>0?arr[0].score-me.score:0;
+  const head=mi===0?'1位おめでとう！ さらに上をめざすなら：':gap<=30?`1位まであと${gap}点！ 次はこれを試してみよう：`:'次はこれを試してみよう：';
+  if(!tips.length) tips.push(['🎉','バランスばっちり！ 次は☰メニューの<b>チャレンジ</b>や<b>ボス戦</b>に挑戦してみよう']);
+  return `<div class="advice"><div class="slab">💬 先輩からのアドバイス</div><p>${head}</p>${tips.slice(0,2).map(([i,t])=>`<div class="tip"><span>${i}</span><span>${t}</span></div>`).join('')}</div>`;
+}
 function showResult(){
   const R=S.R, arr=Object.values(R.own).sort((a,b)=>b.score-a.score), mk=myKey();
   const hs=S.mode==='local'?humans():[], many=hs.length>1;
@@ -3183,6 +3219,7 @@ function showResult(){
     ${chalResultHTML()}
     ${S.game&&S.game.boss?(mi===0?`<div class="bossres win">👑 <b>${BOSS.nick}に勝った！</b><small>経験値＋${BOSS.xp}。ボスを倒した社長は、ほんのひとにぎり。</small></div>`:`<div class="bossres">👑 ${BOSS.nick}の勝ち…<small>あと${arr[0].score-me.score}点。作戦を変えて、また挑もう。</small></div>`):""}
     ${pbHTML(xp&&xp.pb)}
+    ${!many&&!(S.game&&S.game.demo)?adviceHTML(me,mi,arr):""}
     ${vsHTML(xp&&xp.vs)}
     ${rankResultHTML(xp)}
     ${arr.some(o=>o.goal)?`<div class="goalres"><div class="slab">🎯 ひみつの目標、発表</div>${arr.map(o=>{const G=GOALS.find(x=>x.id===o.goal?.id);return G?`<div class="${o.goal.met?"ok":""}"><span>${faceOf(o.ty)} ${esc(sh(o.nick))}：<b>${G.name}</b><br><small style="color:var(--muted)">${G.d}</small></span><em>${o.goal.met?`達成 ＋${goalPts()}`:"ならず"}</em></div>`:""}).join("")}${me&&me.guess?(()=>{const gs=me.guess,p=arr.find(o=>o.key===gs.target),G=GOALS.find(x=>x.id===gs.id);return `<div class="${gs.hit?"ok":""}"><span>🔍 あなたの予想：${p?esc(sh(p.nick)):""}は <b>${G.name}</b></span><em>${gs.hit?`的中！ ＋${guessPts()}`:"はずれ"}</em></div>`})():""}</div>`:""}
@@ -3947,7 +3984,7 @@ function quickStart(){
   SU.simple=!(store.get('azakei-city-badges')||{}).first;
   SU.rows=[{nick:S.nick||'',ty},{nick:'',ty:null},{nick:'',ty:null},{nick:'',ty:null}];
   startGame();
-  toast(`${TY[ty].face} <b>${TY[ty].name}社長</b>でスタート！ タイプは右上で変えられます`);
+  setTimeout(function later(){if(!$("goalbg").hidden){setTimeout(later,500);return} toast(`${TY[ty].face} <b>${TY[ty].name}社長</b>でスタート！ タイプは右上で変えられます`)},80); // 目標選びの画面にかぶらないよう、選んだあとで
 }
 // ホームの街：車と雲がゆっくり動く（ホームを閉じたら止まる）
 function homeCityLoop(city){
