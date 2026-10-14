@@ -1210,7 +1210,10 @@ const LM=[
   {id:'media',name:'放送センター',hint:'メディア2・住宅3 をつなげる'},
   {id:'school',name:'学園都市',hint:'学校の上下左右のうち3つを住宅に'},
   {id:'hub',name:'物流ハブ',hint:'運輸の上下左右を4種類の建物でうめる'},
-  {id:'safe',name:'安心の街',hint:'保険1つで産業5つを守る'}
+  {id:'safe',name:'安心の街',hint:'保険1つで産業5つを守る'},
+  {id:'port',name:'港湾地区',hint:'運輸2・製造1 をつなげる（運輸の1つは川のとなり）'},
+  {id:'station',name:'駅前ビル街',hint:'駅の上下左右のうち3つを、小売・メディア・金融でうめる'},
+  {id:'tech',name:'IT研究都市',hint:'学校1・メディア2・製造1 をつなげる'}
 ];
 // エコノミスト診断の4タイプ = 社長タイプ
 const TY={
@@ -1360,6 +1363,10 @@ function lmAt(g,r,c,id){
     case 'shop': return need(compCount(g,r,c,['re','ho']),{re:3,ho:3});
     case 'fin': return need(compCount(g,r,c,['fi']),{fi:3});
     case 'media': return need(compCount(g,r,c,['me','ho']),{me:2,ho:3});
+    case 'tech': return need(compCount(g,r,c,['sc','me','ma']),{sc:1,me:2,ma:1});
+    case 'port':{if(!need(compCount(g,r,c,['tr','ma']),{tr:2,ma:1}))return false;
+      // つながった運輸のどれかが川のとなりにあるか
+      const seen=new Set([r+'_'+c]),q=[[r,c]];while(q.length){const[R,C]=q.pop();if(g[R][C].k==='tr'&&around(g,R,C,D4).includes('river'))return true;for(const[dr,dc]of D4){const a=R+dr,b=C+dc,id=a+'_'+b;if(inb(a,b)&&!seen.has(id)&&g[a][b]&&['tr','ma'].includes(g[a][b].k)){seen.add(id);q.push([a,b])}}}return false}
     case 'town':
       if(!g[r][c]||g[r][c].k!=='ho') return false;
       for(const[a,b]of[[0,0],[-1,0],[0,-1],[-1,-1]]){const R=r+a,C=c+b;
@@ -1371,6 +1378,7 @@ function lmAt(g,r,c,id){
         if(id==='school'&&k==='sc'&&cnt(around(g,R,C,D4),x=>x==='ho')>=3) return true;
         if(id==='hub'&&k==='tr'){const n4=around(g,R,C,D4);if(n4.length===4&&new Set(n4).size===4) return true}
         if(id==='safe'&&k==='in'&&cnt(around(g,R,C,D8),isInd)>=5) return true;
+        if(id==='station'&&k==='sta'&&cnt(around(g,R,C,D4),x=>['re','me','fi'].includes(x))>=3) return true;
       }
       return false;
   }
@@ -2088,6 +2096,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:26,d:'2026-10-15',t:'⚓ 名所が11に（港湾地区・駅前ビル街・IT研究都市）',x:'川や駅を使う名所が登場。早い者勝ちで＋30。'},
   {v:25,d:'2026-10-15',t:'🎉 1位で紙吹雪・ライバルの試合後のひとこと',x:'1位や自己ベスト更新で紙吹雪。結果画面で、ライバル社長が勝ち負けにひとこと。'},
   {v:24,d:'2026-10-15',t:'🎞️ タイムラプスを1手ずつ見返せる',x:'結果画面のタイムラプスに、スライダーと再生ボタン。好きな手で止めると「だれが何を建てたか」が出る。'},
   {v:23,d:'2026-10-15',t:'📖 経済ことば辞典',x:'新聞やミュージアムの点線のことば（円高・不良債権・金融緩和など）をタップすると意味が出る。10個しらべるとバッジ。'},
