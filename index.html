@@ -794,6 +794,10 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .citybtn[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink)}
 .tlap{grid-template-columns:1fr!important;justify-items:stretch!important}
 .tlap canvas{width:100%!important;max-width:none!important;aspect-ratio:4/3!important;height:auto}
+.tlctl{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center}
+.tltg{width:38px;height:38px;border-radius:999px;border:1px solid var(--gold);background:none;color:var(--gold);font-size:14px;font-weight:800;padding:0}
+.tlctl input[type=range]{width:100%;accent-color:#ffc83a}
+.tlev{grid-column:1/-1;font-size:12.5px;color:var(--ink);min-height:1.6em;text-align:left}
 .tlinfo{grid-template-columns:auto auto 1fr auto;align-items:baseline;gap:4px 12px!important;justify-items:start}
 
 /* challenge mode */
@@ -1167,7 +1171,7 @@ const IND=['エネルギー','金融','製造','小売','運輸','メディア']
 const HIST=[
   {y:1964,w:'昭和39年',age:'showa',n:'東京オリンピック',d:'東海道新幹線や首都高速が開通し、建設と輸送が活気づく。中継を見るためテレビも売れた。',r:[2,1,3,1,3,1]},
   {y:1973,w:'昭和48年',age:'showa',n:'第一次オイルショック',d:'産油国が原油の供給を絞り、原油価格は約4倍に。モノを作る・運ぶコストが急上昇し、買いだめ騒ぎも起きた。',r:[3,0,-2,2,-3,0]},
-  {y:1985,w:'昭和60年',age:'showa',n:'プラザ合意で急激な円高',d:'先進国がドル高の是正で合意し、円が急上昇。輸出は打撃を受け、輸入品や海外旅行は割安になった。',r:[1,2,-2,2,3,0]},
+  {y:1985,w:'昭和60年',age:'showa',n:'プラザ合意で急激な円高',d:'先進国がドル高の是正で合意し、円が急上昇（円高）。輸出は打撃を受け、輸入品や海外旅行は割安になった。',r:[1,2,-2,2,3,0]},
   {y:1988,w:'昭和63年',age:'showa',n:'バブル景気',d:'株価と地価が急上昇。企業も個人もお金を使い、広告やレジャーが活気づいた。',r:[0,3,1,1,2,3]},
   {y:1991,w:'平成3年',age:'heisei',n:'バブル崩壊',d:'株価と地価が下落し、銀行は多額の不良債権を抱えた。安さを売りにする店が伸びた。',r:[1,-3,-1,2,0,-1]},
   {y:1995,w:'平成7年',age:'heisei',n:'インターネット元年',d:'Windows 95の発売で、パソコンとインターネットが一気に身近になった。',r:[0,0,3,0,1,3]},
@@ -2081,6 +2085,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:24,d:'2026-10-15',t:'🎞️ タイムラプスを1手ずつ見返せる',x:'結果画面のタイムラプスに、スライダーと再生ボタン。好きな手で止めると「だれが何を建てたか」が出る。'},
   {v:23,d:'2026-10-15',t:'📖 経済ことば辞典',x:'新聞やミュージアムの点線のことば（円高・不良債権・金融緩和など）をタップすると意味が出る。10個しらべるとバッジ。'},
   {v:22,d:'2026-10-15',t:'🎍🌸🎆 季節イベントが1年中に',x:'お正月は門松、春は桜、夏は毎晩花火。それぞれ限定バッジつき。はじめての人は、ガイドを終えると「ひみつの目標」選びへ。'},
   {v:21,d:'2026-10-14',t:'🧑‍💼 ライバル社長が8人に',x:'毎回ちがう顔ぶれがやってくる。それぞれ決まったタイプと口ぐせ、対戦成績つき。'},
@@ -2117,7 +2122,7 @@ function showMuseum(){
     <div class="chips">${chipRow(h.r)}</div>
     <div class="mc-row"><span>📢 速報</span>${esc(E.t)}（${T[E.k].name} ${E.v>0?'＋':'−'}${Math.abs(E.v)}）</div>
     <div class="mc-row"><span>💴 数字</span>1ドル ${x.usd}円・初任給 ${x.pay.toFixed(1)}万円</div>
-    <div class="mc-row"><span>💡 まめ知識</span>${esc(TIPS[i])}</div>
+    <div class="mc-row"><span>💡 まめ知識</span>${linkTerms(TIPS[i])}</div>
     <details><summary>📰 クイズ：${esc(Q.q)}</summary><p>答え：<b>${esc(Q.a[0])}</b>　${esc(Q.x)}</p></details></article>`}).join('');
   $('typebg').innerHTML=`<div class="sheet museum" role="dialog" aria-label="経済ミュージアム">
     <h3>📚 経済ミュージアム</h3><p class="lead">AZAKEI CITY の60年に出てくる、本当の経済の出来事。ゲームのNEWSの点数は、AZAKEI MARKET 歴史モードと同じです。</p>
@@ -2718,7 +2723,7 @@ function showPaper(){
   $('paperbg').innerHTML=`<div class="paper" role="dialog" aria-label="決算と時代の変化">
     <div class="mast"><span>AZAKEI 経済新聞</span><small>${fin?'令和4年':ev.w}</small><span>${fin?'最終号':'号外'}</span></div>
     ${fin?`<div class="yr">2022</div><h3>${S.game&&S.game.chal?"チャレンジ、決算完了":"60年の決算、完了"}</h3><p>${S.game&&S.game.chal?"この時代を、街ごと乗りこえました。結果を見てみよう。":"東京オリンピックから資源高まで。この街は、日本の60年を生き抜きました。"}</p>`
-         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${linkTerms(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${TIPS[HI(e)]}</div>${numsHTML(e)}${quizHTML(e)}`}
+         :`<div class="yr">${ev.y}<small>${ev.w}</small></div><h3>${esc(ev.n)}</h3><p>${linkTerms(ev.d)}</p><div class="chips">${chipRow(ev.r)}</div><div class="tip senpai">🎓 麻経の先輩「${SENPAI[HI(e)]}」</div><div class="tip">まめ知識　${linkTerms(TIPS[HI(e)])}</div>${numsHTML(e)}${quizHTML(e)}`}
     <div class="box"><div class="hd">${done.y}年代（${done.n}）の決算</div>
       <div>街のGDP <b>${rep.gdp}</b></div>
       <div>${payLine}</div>
@@ -2752,18 +2757,29 @@ let tlTimer=null;
 function playTimelapse(){
   const cv=$('tlc'); if(!cv) return;
   clearTimeout(tlTimer);
-  const frames=[];
-  replay(tiles(),seedNow(),(g,n,e,settled)=>{frames.push({n,e,settled,gdp:gdp(g,e),cells:g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null))})});
+  // 1手ずつの街（決算のあとも1コマ）。スライダーで好きな手に戻れる
+  const frames=[], R=replay(tiles(),seedNow(),(g,n,e,settled)=>{frames.push({n,e,settled,gdp:gdp(g,e),cells:g.map(row=>row.map(x=>x?{k:x.k,lv:x.lv||1,ok:x.ok}:null))})});
   const start=grid0(seedNow()).map(row=>row.map(x=>x?{k:x.k,lv:1}:null));
-  const draw=f=>{
-    isoDraw(cv,f?f.cells:start,f?H(f.e).age:'showa',0);
-    if(f){$('tly').textContent=H(f.e).y+(f.settled?' 決算':'');$('tln').textContent=f.settled?'':H(f.e).n;$('tlg').textContent=`GDP ${f.gdp}`}
+  const rg=$('tlRange'), tg=$('tlToggle'), ev=$('tlEv');
+  const evText=f=>{
+    if(!f) return '街のはじまり';
+    if(f.settled){const rep=R.eras.find(x=>x.e===f.e);return rep?`📊 ${rep.y}年代の決算：倒産 ${rep.bust.length}社・成長 ${rep.grow.length}社${rep.crown?`・👑 ${esc(sh(rep.crown.nick))}`:''}`:'決算'}
+    const L=R.log.find(x=>(x.type==='b'||x.type==='m')&&x.n===f.n-1);
+    return L?`${f.n}手目：${esc(L.nick||'')}が「${esc(L.name||T[L.k].name)}」を${L.type==='m'?'買収':'建てた'}（${sg(L.d)}）`:`${f.n}手目`;
   };
-  draw(null);
-  if(reduced()){if(frames.length)draw(frames.at(-1));return}
-  let i=0;
-  const step=()=>{if(i>=frames.length||$('resultbg').hidden)return;const f=frames[i++];draw(f);tlTimer=setTimeout(step,f.settled?480:60)};
-  tlTimer=setTimeout(step,400);
+  let i=0, playing=!reduced();
+  const draw=k=>{
+    i=Math.max(0,Math.min(frames.length,k)); const f=i?frames[i-1]:null;
+    isoDraw(cv,f?f.cells:start,f?H(f.e).age:'showa',0,{grade:true,time:f&&f.settled?.9:.35});
+    $('tly').textContent=f?H(f.e).y+(f.settled?' 決算':''):'1964'; $('tln').textContent=f&&!f.settled?H(f.e).n:''; $('tlg').textContent=f?`GDP ${f.gdp}`:'';
+    if(rg){rg.max=frames.length;rg.value=i} if(ev) ev.innerHTML=evText(f);
+  };
+  const setPlay=p=>{playing=p; if(tg) tg.textContent=p?'❚❚':'▶'; clearTimeout(tlTimer); if(p) tick()};
+  const tick=()=>{if(!playing||$('resultbg').hidden) return; if(i>=frames.length){setPlay(false);return} draw(i+1); const f=frames[i-1]; tlTimer=setTimeout(tick,f&&f.settled?520:90)};
+  if(rg) rg.oninput=()=>{setPlay(false);draw(+rg.value)};
+  if(tg) tg.onclick=()=>{if(!playing&&i>=frames.length) draw(0); setPlay(!playing)};
+  draw(reduced()?frames.length:0);
+  if(playing) tlTimer=setTimeout(()=>setPlay(true),400); else if(tg) tg.textContent='▶';
 }
 // 結果を1枚の画像に（街の立体図＋スコア＋称号）。スマホは共有メニュー、PCは保存
 // シェア画像の折れ線グラフ（結果画面のグラフと同じ考え方）
@@ -3013,7 +3029,7 @@ function showResult(){
     <div class="podium">${arr.map((o,i)=>`<div class="${(many?hs.some(h=>h.key===o.key):o.key===mk)?'me':''}"><span class="no">${i+1}</span><span class="face" style="--tc:var(--${o.ty||'muted'})">${faceOf(o.ty)}</span><span>${esc(o.nick)}${many&&hs.some(h=>h.key===o.key)?` <small style="color:var(--gold)">${titleFor(o,i)}</small>`:''}<br><small style="color:var(--muted)">建てた瞬間 ${sg(o.build)} ／ 決算 +${o.settle} ／ 名所 ${o.lm} ／ お題 ${o.mq} ／ 買収 ${o.buys} ／ 倒産 ${o.bust}</small></span><span class="sc">${o.score}</span></div>`).join('')}</div>
     ${recapHTML(R,arr,mk)}
     ${bestCoHTML(R,mk)}
-    <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div></div>
+    <div class="tlap"><canvas id="tlc" aria-label="街の成長タイムラプス"></canvas><div class="tlinfo"><span class="lab">街の成長タイムラプス</span><b id="tly">1964</b><span id="tln"></span><span id="tlg"></span><button class="ghost" type="button" id="tlPlay">もう一度再生</button></div><div class="tlctl"><button type="button" class="tltg" id="tlToggle" aria-label="再生・一時停止">❚❚</button><input type="range" id="tlRange" min="0" max="1" value="0" aria-label="何手目を見るか"><div class="tlev" id="tlEv"></div></div></div>
     <div class="tblwrap"><table class="eras"><thead><tr><th>年代</th><th>できごと</th><th>GDP</th><th>倒産</th><th>成長</th></tr></thead><tbody>
       ${R.eras.map(x=>`<tr${x===peak?' style="color:var(--gold)"':''}><td>${x.y}</td><td>${esc(H(x.e).n)}</td><td>${x.gdp}</td><td>${x.bust.length}</td><td>${x.grow.length}</td></tr>`).join('')}
     </tbody></table></div>
