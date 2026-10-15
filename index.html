@@ -333,6 +333,12 @@ body.simple .polnow{display:none}
 .labq small{display:block;font-weight:600;color:var(--muted);font-size:11px}
 .labbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
 .labsave{margin-top:12px}
+.labshare{margin-top:12px}
+.labshare .slab small{font-weight:600;color:var(--muted);margin-left:4px}
+.lsh{display:flex;gap:6px;margin-top:6px}
+.lsh input{flex:1;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#12142c;color:var(--ink);font-family:var(--mono);font-size:13px}
+.lsh input[readonly]{color:var(--gold)}
+.lsh .ghost{width:auto;flex:none;white-space:nowrap;padding:8px 12px}
 .labsave .slab small{font-weight:600;color:var(--muted);margin-left:4px}
 .lss{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}
 .ls{position:relative;min-width:0}
@@ -2285,6 +2291,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:39,d:'2026-10-23',t:'🔗 練習の街の形をコードで見せ合う',x:'練習の街で作った形が「AZK-…」という短いコードになります。コピーして友だちに送れば、相手は「読みこむ」で同じ形を開けます（公開サイトでは、リンクを開くだけで練習の街が開きます）。'},
   {v:38,d:'2026-10-22',t:'🏠 ホームを「あそぶ・まなぶ・きろく」に整理・⭐ お気に入りの形',x:'ホームのボタンを、あそぶ／まなぶ／きろくの3つに分けて、さがしやすくしました。練習の街では、作った並べ方を3つまで保存して、いつでも呼び出せます。'},
   {v:37,d:'2026-10-21',t:'🧪 練習の街（お題つき）',x:'ホームの「練習の街」で、点数やライバルを気にせず建物を自由に置けます。マスには稼ぎがすぐ出て、建物をタップすると計算の内わけが見られます。時代を選ぶとNEWSで稼ぎがどう変わるかもわかります。お題を5つクリアしよう！'},
   {v:36,d:'2026-10-20',t:'🤝 相性表・💡 ライバルの「ねらい」・✨ あなたの番',x:'手札の上の「🤝 相性」で、となりに置くと稼ぎがどう変わるかを一覧で見られます（選んでいるカードの行が光る）。ライバルが建てると、ふきだしに「金融を建てて +5・となりの住宅も +2」のように、そこに建てた理由が出ます。まねして学べる！ ライバルの番が終わると、手札が光って「あなたの番！」と知らせます。'},
@@ -2732,6 +2739,16 @@ function labCalc(){
 }
 // お気に入りの形の小さな見取り図（7×7）
 function labMini(cells){const m={};for(const[r,c,k]of cells)m[r+'_'+c]=k;let h='';for(let r=LAB0;r<LAB0+LABN;r++)for(let c=LAB0;c<LAB0+LABN;c++){const k=m[r+'_'+c];h+=`<i class="${k?'k-'+k:''}"></i>`}return h}
+// 🔗 形のコード：7×7の形を「AZK-」で始まる短い文字にする（空きの続きは数字、建物は1文字）
+const LABCH={ho:'h',re:'r',en:'e',ma:'m',tr:'t',fi:'f',me:'d',sc:'s',in:'i',river:'w',sta:'k'}, LABCK=Object.fromEntries(Object.entries(LABCH).map(([k,v])=>[v,k]));
+function labEncode(g){let s='',run=0;for(let r=LAB0;r<LAB0+LABN;r++)for(let c=LAB0;c<LAB0+LABN;c++){const t=g&&g[r][c];if(!t){run++;continue}if(run){s+=run;run=0}s+=LABCH[t.k]}return s?'AZK-'+s:''}
+function labDecode(code){
+  const m=String(code||'').trim().match(/AZK-([0-9a-z]+)/i); if(!m) return null;
+  const g=Array.from({length:N},()=>Array(N).fill(null)), body=m[1].toLowerCase(); let i=0,pos=0,cnt=0;
+  while(i<body.length){const d=body.slice(i).match(/^\d+/);if(d){pos+=+d[0];i+=d[0].length;continue}const k=LABCK[body[i]];if(!k||pos>=LABN*LABN)return null;g[LAB0+Math.floor(pos/LABN)][LAB0+pos%LABN]={k,lv:1};pos++;i++;cnt++}
+  return cnt&&pos<=LABN*LABN?g:null;
+}
+function labLink(code){return HASCLAUDE||!/^https?:/.test(location.protocol)?'':location.origin+location.pathname+'#lab='+code}
 function showLab(){
   if(!LAB.g) LAB.g=Array.from({length:N},()=>Array(N).fill(null));
   const bg=$('labbg'), L=labCalc(), Lq=labCalc.q=LAB.era<0?L:(()=>{const e=LAB.era;LAB.era=-1;const x=labCalc();LAB.era=e;return x})();
@@ -2755,12 +2772,19 @@ function showLab(){
       </div>
     </div>
     <div class="labsave"><div class="slab">⭐ お気に入りの形 <small>空きをタップで保存、保存した形はタップで呼び出し</small></div><div class="lss">${[0,1,2].map(i=>{const s=(store.get('azakei-city-labsave')||[])[i];return s?`<div class="ls"><button type="button" class="lsb" data-ss="${i}"><span class="lmini">${labMini(s.cells)}</span><span>形${i+1}<b>稼ぎ ${s.sum}</b></span></button><button type="button" class="lsx" data-sd="${i}" aria-label="形${i+1}を消す">✕</button></div>`:`<div class="ls"><button type="button" class="lsb empty" data-ss="${i}"${L.n?'':' disabled'}><span class="lmini">＋</span><span>空き<b>${L.n?'いまの形を保存':'建物を置くと保存できる'}</b></span></button></div>`}).join('')}</div></div>
+    <div class="labshare"><div class="slab">🔗 形をコードで見せ合う <small>コードを友だちに送ると、同じ形を開ける</small></div>
+      <div class="lsh"><input id="labCode" readonly value="${labEncode(LAB.g)}" placeholder="建物を置くとコードができる" aria-label="この形のコード"><button type="button" class="ghost" data-copy="1"${L.n?'':' disabled'}>${labLink('x')?'リンクをコピー':'コピー'}</button></div>
+      <div class="lsh"><input id="labIn" placeholder="もらったコード（AZK-…）を貼る" aria-label="もらったコード"><button type="button" class="ghost" data-load="1">読みこむ</button></div></div>
     <div class="labq"><div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
     <div class="labbtns"><button class="ghost" type="button" data-clear="1">ぜんぶ消す</button><button class="ghost" type="button" data-aff="1">🤝 相性表</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
   bg.hidden=false;
   bg.onclick=ev=>{
     if(ev.target===bg||ev.target.closest('[data-x]')){bg.hidden=true;return}
     if(ev.target.closest('[data-clear]')){LAB.g=null;LAB.pick=null;showLab();return}
+    if(ev.target.closest('[data-copy]')){const code=labEncode(LAB.g);if(!code)return;const txt=labLink(code)||code,el=$('labCode');
+      const ok=()=>toast(`🔗 ${labLink(code)?'リンク':'コード'}をコピーしました。友だちに送ろう`), ng=()=>{el.value=txt;el.select();toast('コードを長押し（右クリック）してコピーしてね')};
+      try{navigator.clipboard.writeText(txt).then(ok,ng)}catch(e){ng()} return}
+    if(ev.target.closest('[data-load]')){const g=labDecode($('labIn').value);if(!g){toast('コードが読めませんでした。AZK- から始まる文字を、まるごと貼ってね');return}LAB.g=g;LAB.pick=null;toast('📥 形を読みこみました');showLab();return}
     const ss=ev.target.closest('[data-ss]'); if(ss){const arr=store.get('azakei-city-labsave')||[],i=+ss.dataset.ss;
       if(arr[i]){LAB.g=Array.from({length:N},()=>Array(N).fill(null));for(const[r,c,k]of arr[i].cells)LAB.g[r][c]={k,lv:1};LAB.pick=null;toast(`⭐ 形${i+1}を呼び出しました`)}
       else{const cells=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(LAB.g[r][c])cells.push([r,c,LAB.g[r][c].k]);if(!cells.length)return;const was=LAB.era;LAB.era=-1;arr[i]={cells,sum:labCalc().sum};LAB.era=was;store.set('azakei-city-labsave',arr);toast(`⭐ 形${i+1}に保存しました`)}
@@ -4275,6 +4299,8 @@ $('fixbar').onclick=unstick;
   const tp=turnPlayer(); if(tp&&tp.cpu&&Date.now()-since>8000){since=Date.now();S.busy=false;advance()}
 },2000)}
 showHome();
+// 🔗 友だちから届いた「練習の街」のリンク（#lab=AZK-…）なら、その形で練習の街を開く
+if(/^#lab=/.test(location.hash)){const g=labDecode(decodeURIComponent(location.hash.slice(5)));if(g){LAB.g=g;showLab();setTimeout(()=>toast("📥 送られてきた形を開きました"),300)}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}
 if(!store.get('azakei-city-seen-rules')){$('rulesBox').open=true;store.set('azakei-city-seen-rules',true)}
 (async()=>{
   if(!window.claude||!window.claude.use){$('mShared').title='この画面では使えません';return}
