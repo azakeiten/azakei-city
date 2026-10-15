@@ -291,6 +291,50 @@ body.simple .polnow{display:none}
 /* overlays */
 .ov[hidden]{display:none}
 .ov{position:fixed;inset:0;background:rgba(6,7,20,.7);display:grid;place-items:center;padding:16px;z-index:20;overflow:auto}
+/* 🧪 練習の街 */
+.ov.labbg{z-index:40;display:block}
+.ov.labbg[hidden]{display:none}
+.ov.labbg>.sheet{margin:0 auto}
+.sheet.lab{width:100%;max-width:760px;box-sizing:border-box;text-align:left}
+.sheet.lab .slab small{font-weight:600;color:var(--muted);margin-left:6px}
+.labpal{display:flex;gap:6px;overflow-x:auto;padding:6px 2px 8px;-webkit-overflow-scrolling:touch}
+.lp{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:54px;padding:6px 6px;border-radius:12px;border:1px solid var(--line);background:#191c3c;color:var(--ink);font-size:11px;font-weight:800}
+.lp span{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:color-mix(in srgb,var(--c,#7fb0ff) 22%,transparent);color:var(--c,#7fb0ff);font-size:16px}
+.lp span svg{width:18px;height:18px}
+.lp.on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 50%,transparent);background:color-mix(in srgb,var(--gold) 12%,#191c3c)}
+.labmain{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px;align-items:start}
+.labgrid{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:3px;padding:6px;border-radius:14px;background:linear-gradient(160deg,#9ad37a,#6fb35a);aspect-ratio:1}
+.lc{position:relative;display:grid;place-items:center;aspect-ratio:1;border-radius:7px;border:0;padding:0;background:rgba(255,255,255,.28);color:var(--c,#2b5aa8);font-size:clamp(14px,4vw,20px);min-width:0}
+.lc:hover{background:rgba(255,255,255,.45)}
+.lc[class*="k-"]{background:color-mix(in srgb,var(--c,#5aa0ff) 55%,#20243f);color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.lc.k-river{background:#3d8fe0}
+.lc.k-sta{background:#c9c2b4}
+.lc svg{width:58%;height:58%}
+.lc b{position:absolute;right:2px;bottom:1px;min-width:16px;padding:0 3px;border-radius:6px;background:#1b1f3d;color:#fff;font-family:var(--mono);font-size:11px;line-height:16px}
+.lc b.hi{background:var(--gold);color:#2a1d00}
+.lc b.lo{background:#d9534f}
+.lc.on{outline:3px solid var(--gold);outline-offset:-1px;z-index:1}
+.labside{display:grid;gap:10px}
+.lablg{margin:6px 2px 0;font-size:11px;color:var(--muted);font-weight:700}
+.lablg b{display:inline-block;padding:0 5px;border-radius:5px;font-size:10.5px;color:#fff}.lablg b.hi{background:var(--gold);color:#2a1d00}.lablg b.lo{background:#d9534f}
+.labsum{display:grid;justify-items:center;padding:10px;border-radius:14px;background:color-mix(in srgb,var(--gold) 12%,#191c3c)}
+.labsum b{font-family:var(--display);font-size:34px;color:var(--gold);line-height:1.1}
+.labsum small{color:var(--muted);font-size:11px;font-weight:700}
+.labera{display:grid;gap:4px;font-size:12px;font-weight:800;color:var(--muted)}
+.labera select{padding:7px 8px;border-radius:10px;border:1px solid var(--line);background:#191c3c;color:var(--ink);font-size:13px}
+.labwhy{padding:10px;border-radius:12px;background:var(--paper);color:var(--paper-ink);font-size:12.5px;min-height:70px}
+.labwhy b{display:block;margin-bottom:4px;font-size:14px}
+.labwhy div{display:flex;justify-content:space-between;gap:8px;border-top:1px dashed #d8c9a0;padding:3px 0}
+.labwhy .p{color:#1d8a52;font-weight:800}.labwhy .m{color:#c0392b;font-weight:800}
+.labwhy p{margin:0;color:#6a5a3a}
+.labq{margin-top:12px;display:grid;gap:4px}
+.labq>div:not(.slab){display:flex;gap:8px;align-items:flex-start;font-size:13px;font-weight:700;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.04)}
+.labq>div.ok{background:rgba(58,210,131,.12);color:#8ff0bd}
+.labq small{display:block;font-weight:600;color:var(--muted);font-size:11px}
+.labbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.labbtns .go{width:auto;padding:10px 22px}
+.labbtns .ghost{width:auto}
+@media (max-width:640px){.labmain{grid-template-columns:1fr}.labside{grid-template-columns:1fr 1fr}.labwhy{grid-column:1/-1}.sheet.lab{padding-left:12px;padding-right:12px}}
 .paper{background:var(--paper);color:var(--paper-ink);width:min(470px,100%);border-radius:4px;padding:18px 20px 16px;box-shadow:0 30px 80px rgba(0,0,0,.5);
   transform:rotate(-1.2deg);animation:drop .5s cubic-bezier(.2,1.4,.4,1)}
 @keyframes drop{from{transform:rotate(-8deg) scale(.6);opacity:0}}
@@ -1235,6 +1279,7 @@ body.drawer .side{transform:none}
 <div class="ov" id="polbg" hidden></div>
 <div class="ov" id="goalbg" hidden></div>
 <div class="ov" id="affbg" hidden></div>
+<div class="ov labbg" id="labbg" hidden></div>
 
 <script>
 const N=11, MID=5, ERA=8, ERAS=12, MKT=5;
@@ -2214,6 +2259,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:37,d:'2026-10-21',t:'🧪 練習の街（お題つき）',x:'ホームの「練習の街」で、点数やライバルを気にせず建物を自由に置けます。マスには稼ぎがすぐ出て、建物をタップすると計算の内わけが見られます。時代を選ぶとNEWSで稼ぎがどう変わるかもわかります。お題を5つクリアしよう！'},
   {v:36,d:'2026-10-20',t:'🤝 相性表・💡 ライバルの「ねらい」・✨ あなたの番',x:'手札の上の「🤝 相性」で、となりに置くと稼ぎがどう変わるかを一覧で見られます（選んでいるカードの行が光る）。ライバルが建てると、ふきだしに「金融を建てて +5・となりの住宅も +2」のように、そこに建てた理由が出ます。まねして学べる！ ライバルの番が終わると、手札が光って「あなたの番！」と知らせます。'},
   {v:35,d:'2026-10-19',t:'🌟 ベストの場所がわかる・💬 先輩からのアドバイス',x:'マスを選ぶと、手札の上に点の内わけ（稼ぎ＋まわり）と、「🌟ベスト」か「最大+◯のマスあり」が出ます。結果画面では、その試合の打ち方を見て、次に試すとよいことを先輩がアドバイスします。'},
   {v:34,d:'2026-10-18',t:'🛠 スマホで遊べなくなる問題を直した・👆 タップしやすく',x:'はじめての街のガイドの吹き出しが盤面にかぶって、マスを押せないことがありました。吹き出しは盤面の上に出て、指をじゃましません。少しずれてタップしても、近くの建てられるマスを選びます。⚙設定からガイドをもう一度見られます。'},
@@ -2632,9 +2678,68 @@ function showAff(focus){
     <p class="lead">左の建物の <b>すぐとなり（上下左右）</b> に、上の建物があると…<span class="lg"><i class="p">＋ふえる</i><i class="m">−へる</i></span></p>
     <div class="affwrap"><table class="afft"><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
     <p class="sub">${focus?`<b>${T[focus].name}</b>の行を光らせています。`:''}緑が多い組み合わせで並べると、まとめて稼げます。金融・メディア・保険は、ななめのマスも数えます（保険は産業2つで＋1）。</p>
-    <button class="go" type="button" data-x="1">とじる</button></div>`;
+    <div class="labbtns"><button class="ghost" type="button" data-lab="1">🧪 練習の街でためす</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
   bg.hidden=false;
-  bg.onclick=ev=>{if(ev.target===bg||ev.target.closest('[data-x]'))bg.hidden=true};
+  bg.onclick=ev=>{if(ev.target===bg||ev.target.closest('[data-x]'))bg.hidden=true;else if(ev.target.closest('[data-lab]')){bg.hidden=true;if($('labbg').hidden)showLab()}};
+}
+/* ---------- 🧪 練習の街：点数を気にせず、自由に置いて「稼ぎのしくみ」をためす ---------- */
+const LAB_K=['ho','re','en','ma','tr','fi','me','sc','in','river','sta'], LAB0=2, LABN=7; // 11×11のまん中 7×7 を使う
+// お題（NEWSなし・ルールだけで判定）
+const LABQ=[
+  {id:'re6',t:'小売1つの稼ぎを 6 以上に',h:'小売は、となりの住宅1つで＋2',ok:L=>L.cells.some(x=>x.k==='re'&&x.v>=6)},
+  {id:'ma5',t:'製造1つの稼ぎを 5 以上に',h:'製造は、となりのエネルギーで＋2',ok:L=>L.cells.some(x=>x.k==='ma'&&x.v>=5)},
+  {id:'tr8',t:'運輸1つの稼ぎを 8 以上に',h:'運輸は、となりの「種類」の数×2',ok:L=>L.cells.some(x=>x.k==='tr'&&x.v>=8)},
+  {id:'ho4',t:'住宅1つの稼ぎを 4 以上に',h:'住宅は、となりの産業で＋1（エネルギーは−1）',ok:L=>L.cells.some(x=>x.k==='ho'&&x.v>=4)},
+  {id:'sum',t:'建物6つ以内で、合計 28 以上（むずかしい）',h:'おたがいに得する2種類を見つけて、ぎゅっとまとめよう',ok:L=>L.n>0&&L.n<=6&&L.sum>=28}
+];
+const LAB={g:null,k:'ho',era:-1,pick:null};
+function labCalc(){
+  const g=LAB.g, keep=[POLMAP,EVON,LMPOS]; POLMAP={};EVON={};LMPOS=[]; // 練習の街は、いまのゲームの政策・速報・名所に影響されない
+  const e=LAB.era<0?0:LAB.era, cells=[];
+  try{
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){const t=g[r][c];if(!t||TERR[t.k])continue;
+      let P=parts(g,r,c,e); if(LAB.era<0) P=P.filter(x=>!String(x[0]).startsWith('NEWS'));
+      cells.push({r,c,k:t.k,v:Math.max(0,P.reduce((s,x)=>s+x[1],0)),P})}
+  }finally{[POLMAP,EVON,LMPOS]=keep}
+  return {cells,sum:cells.reduce((s,x)=>s+x.v,0),n:cells.length};
+}
+function showLab(){
+  if(!LAB.g) LAB.g=Array.from({length:N},()=>Array(N).fill(null));
+  const bg=$('labbg'), L=labCalc(), Lq=labCalc.q=LAB.era<0?L:(()=>{const e=LAB.era;LAB.era=-1;const x=labCalc();LAB.era=e;return x})();
+  const done=store.get('azakei-city-lab')||{}; let fresh=[];
+  for(const q of LABQ) if(q.ok(Lq)&&!done[q.id]){done[q.id]=1;fresh.push(q)}
+  if(fresh.length){store.set('azakei-city-lab',done);setTimeout(()=>{toast(`🎉 お題クリア！「${fresh[0].t}」`);try{sfx.end()}catch(e){}if(LABQ.every(q=>done[q.id]))try{confetti()}catch(e){}},50)}
+  const vAt=(r,c)=>L.cells.find(x=>x.r===r&&x.c===c), pk=LAB.pick&&vAt(...LAB.pick);
+  let grid='';
+  for(let r=LAB0;r<LAB0+LABN;r++)for(let c=LAB0;c<LAB0+LABN;c++){const t=LAB.g[r][c],x=vAt(r,c),on=LAB.pick&&LAB.pick[0]===r&&LAB.pick[1]===c;
+    grid+=`<button type="button" class="lc${t?' k-'+t.k:''}${on?' on':''}" data-r="${r}" data-c="${c}" aria-label="${t?T[t.k].name+(x?' 稼ぎ'+x.v:''):'空き地'}">${t?(t.k==='river'?'🌊':t.k==='sta'?'🚉':ic(t.k)):''}${x?`<b class="${x.v>=6?'hi':x.v<=BUST?'lo':''}">${x.v}</b>`:''}</button>`}
+  const eras=FULL.map(i=>`<option value="${i}"${LAB.era===i?' selected':''}>${HIST[i].y} ${esc(HIST[i].n)}</option>`).join('');
+  bg.innerHTML=`<div class="sheet lab" role="dialog" aria-label="練習の街">
+    <div class="slab">🧪 練習の街 <small>点数・ライバルなし。自由に置いてためそう</small></div>
+    <div class="labpal">${LAB_K.map(k=>`<button type="button" class="lp k-${k}${LAB.k===k?' on':''}" data-k="${k}"><span>${k==='river'?'🌊':k==='sta'?'🚉':ic(k)}</span>${T[k].name}</button>`).join('')}<button type="button" class="lp${LAB.k==='x'?' on':''}" data-k="x"><span>🧹</span>けす</button></div>
+    <div class="labmain">
+      <div><div class="labgrid" style="--n:${LABN}">${grid}</div><p class="lablg">マスの数字＝稼ぎ　<b class="hi">金</b> 6以上　<b class="lo">赤</b> 2以下は決算で倒産の危険</p></div>
+      <div class="labside">
+        <div class="labsum"><small>街の稼ぎ合計</small><b>${L.sum}</b><small>建物 ${L.n}つ</small></div>
+        <label class="labera">時代のNEWS<select id="labEra"><option value="-1"${LAB.era<0?' selected':''}>なし（ルールだけ）</option>${eras}</select></label>
+        <div class="labwhy">${pk?`<b>${T[pk.k].name}の稼ぎ ${pk.v}</b>${pk.P.filter(x=>x[1]||/基本|隣|周り|守る/.test(x[0])).map(x=>`<div><span>${esc(x[0])}</span><span class="${x[1]>0?'p':x[1]<0?'m':''}">${x[1]>0?'+':''}${x[1]}</span></div>`).join('')}`:'<p>建物をタップすると、稼ぎの計算が見られるよ</p>'}</div>
+      </div>
+    </div>
+    <div class="labq"><div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
+    <div class="labbtns"><button class="ghost" type="button" data-clear="1">ぜんぶ消す</button><button class="ghost" type="button" data-aff="1">🤝 相性表</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
+  bg.hidden=false;
+  bg.onclick=ev=>{
+    if(ev.target===bg||ev.target.closest('[data-x]')){bg.hidden=true;return}
+    if(ev.target.closest('[data-clear]')){LAB.g=null;LAB.pick=null;showLab();return}
+    if(ev.target.closest('[data-aff]')){showAff(LAB.k in T&&!TERR[LAB.k]?LAB.k:null);$('affbg').style.zIndex=45;return}
+    const p=ev.target.closest('.lp'); if(p){LAB.k=p.dataset.k;showLab();return}
+    const b=ev.target.closest('.lc'); if(!b) return;
+    const r=+b.dataset.r,c=+b.dataset.c,t=LAB.g[r][c];
+    if(LAB.k==='x'||(t&&t.k===LAB.k)){if(t&&LAB.k!=='x'&&!(LAB.pick&&LAB.pick[0]===r&&LAB.pick[1]===c)){LAB.pick=[r,c]}else{LAB.g[r][c]=null;LAB.pick=null}}
+    else{LAB.g[r][c]={k:LAB.k,lv:1};LAB.pick=TERR[LAB.k]?null:[r,c];try{sfx.pick()}catch(e){}}
+    showLab();
+  };
+  $('labEra').onchange=e=>{LAB.era=+e.target.value;showLab()};
 }
 function showGuess(){
   if(!canGuess()) return;
@@ -4032,6 +4137,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
       <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?`はじめての人はここから（絵でわかる${BOOK.length}ページ）`:`絵でわかる${BOOK.length}ページ`}</small></button>
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
+      <button class="mbtn" type="button" data-h="lab"><span class="mi">🧪</span><b>練習の街</b><small>点数なしで自由に置いて、稼ぎのしくみをためす。お題つき</small></button>
       <button class="mbtn" type="button" data-h="museum"><span class="mi">📚</span><b>経済ミュージアム</b><small>1964〜2022年の経済を、年表とグラフで</small></button>
       <button class="mbtn" type="button" data-h="demo"><span class="mi">🎬</span><b>展示モード</b><small>CPUが自動で遊び続ける。学園祭の展示に</small></button>
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
@@ -4069,6 +4175,7 @@ $('home').addEventListener('click',e=>{
   const b=e.target.closest('[data-h]'); if(!b||b.disabled) return;
   const a=b.dataset.h; sfx.pick();
   if(a==='museum'){showMuseum();return}
+  if(a==='lab'){showLab();return}
   if(a==='demo'){startDemo();return}
   if(a==='upd'){showUpdates();return}
   if(a==='boss'){startBoss();return}
