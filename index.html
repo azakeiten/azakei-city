@@ -333,6 +333,11 @@ body.simple .polnow{display:none}
 .labq small{display:block;font-weight:600;color:var(--muted);font-size:11px}
 .labbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
 .labsave{margin-top:12px}
+.labbadges{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}
+.labbadges span{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:13px;background:rgba(255,255,255,.05);border:1px dashed var(--line);filter:grayscale(1);opacity:.55}
+.labbadges span small{font-size:10.5px;font-weight:800;color:var(--muted)}
+.labbadges span.on{filter:none;opacity:1;border-style:solid;border-color:color-mix(in srgb,var(--gold) 60%,transparent);background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.labbadges span.on small{color:var(--gold)}
 .lgoal{margin:4px 0 8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--gold) 14%,#191c3c);border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);font-size:13px}
 .lgoal>b{display:block;line-height:1.5}
 .lgoal small{display:block;margin-top:4px;color:var(--muted);font-size:11.5px;font-weight:700}
@@ -2225,8 +2230,15 @@ const BADGES=[
   {id:'xmas',ic:'🎄',name:'イルミネーションの街',hint:'12月1日〜25日に1ゲーム最後まで遊ぶ（期間限定）'},
   {id:'newyear',ic:'🎍',name:'新春の社長',hint:'1月1日〜7日に1ゲーム最後まで遊ぶ（期間限定）'},
   {id:'spring',ic:'🌸',name:'春の社長',hint:'3月20日〜4月15日に1ゲーム最後まで遊ぶ（期間限定）'},
-  {id:'summer',ic:'🎆',name:'夏祭りの社長',hint:'8月に1ゲーム最後まで遊ぶ（期間限定）'}
+  {id:'summer',ic:'🎆',name:'夏祭りの社長',hint:'8月に1ゲーム最後まで遊ぶ（期間限定）'},
+  {id:'lab1',ic:'🧪',name:'研究はじめ',hint:'練習の街のお題を1つクリア'},
+  {id:'lab5',ic:'🔬',name:'研究熱心',hint:'練習の街のお題を5つぜんぶクリア'},
+  {id:'rf1',ic:'🔁',name:'ふりかえり上手',hint:'試合の稼ぎ頭から生まれる「ふりかえりのお題」をクリア'},
+  {id:'rf5',ic:'🎓',name:'ふりかえり名人',hint:'ふりかえりのお題を5回クリア'},
+  {id:'share',ic:'🔗',name:'教え合い',hint:'練習の街の形をコードでコピーするか、もらったコードを読みこむ'}
 ];
+// 🏅 その場でもらえるバッジ（ゲームの外でも）。はじめてのときだけ知らせる
+function giveBadge(id){const got=store.get('azakei-city-badges')||{};if(got[id])return;const B=BADGES.find(b=>b.id===id);if(!B)return;got[id]=todayStr();store.set('azakei-city-badges',got);setTimeout(()=>toast(`${B.ic} バッジ「${B.name}」をゲット！<br><small>社長手帳に入りました</small>`),900)}
 function checkBadges(){
   if(S.mode!=="local"||!S.game||S.game.badged||S.game.demo) return [];
   if(S.game.chal){S.game.badged=true;S.game.fresh=[];saveGame();return []}
@@ -2306,6 +2318,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:42,d:'2026-10-26',t:'🏅 練習の街のバッジ5つ',x:'研究はじめ・研究熱心・ふりかえり上手・ふりかえり名人・教え合い。練習の街でお題をクリアしたり、形をコードで見せ合ったりするともらえます。前にクリアした人も、練習の街を開くとちゃんともらえます。'},
   {v:41,d:'2026-10-25',t:'🎯 試合から生まれる「ふりかえりのお題」',x:'結果画面から稼ぎ頭を練習の街で開くと、その建物だけのお題が出ます。「稼ぎ頭は動かさずに、まわりを変えて +3」。目標は、実際に解ける値をコンピューターがさがして決めています。試合ごとに新しい練習問題！'},
   {v:40,d:'2026-10-24',t:'🏆 試合の稼ぎ頭を練習の街でふりかえり',x:'結果画面に、あなたのいちばんの稼ぎ頭が出ます。「練習の街で開く」を押すと、そのまわり7×7の並びがそのまま練習の街に写るので、どうして稼げたのか、もっと稼げる並びはないかを、じっくりためせます。'},
   {v:39,d:'2026-10-23',t:'🔗 練習の街の形をコードで見せ合う',x:'練習の街で作った形が「AZK-…」という短いコードになります。コピーして友だちに送れば、相手は「読みこむ」で同じ形を開けます（公開サイトでは、リンクを開くだけで練習の街が開きます）。'},
@@ -2790,7 +2803,7 @@ function labGoalHTML(){
   const t=LAB.g&&LAB.g[G.r][G.c], here=t&&t.k===G.k, now=here?labVal(LAB.g,G.r,G.c,LAB.era):null;
   if(G.target==null) return `<div class="lgoal best"><b>🌟 ふりかえり：${esc(G.name)}は、もう最高の並び！</b><small>まわりをどう変えても、稼ぎ ${G.base} より上がりませんでした。いい置き方だったね</small></div>`;
   if(!here) return `<div class="lgoal"><b>🎯 ${esc(G.name)}（${T[G.k].name}）がいなくなりました</b><small>同じマスに${T[G.k].name}を置きなおすと、お題をつづけられます</small></div>`;
-  if(now>=G.target&&!G.done){G.done=true;const d=store.get('azakei-city-lab')||{};d.rf=(d.rf||0)+1;store.set('azakei-city-lab',d);setTimeout(()=>{toast(`🎉 ふりかえりのお題クリア！ ${esc(G.name)}の稼ぎ ${G.base} → ${now}`);try{sfx.end();confetti()}catch(e){}},60)}
+  if(now>=G.target&&!G.done){G.done=true;const d=store.get('azakei-city-lab')||{};d.rf=(d.rf||0)+1;store.set('azakei-city-lab',d);if(d.rf>=1)giveBadge("rf1");if(d.rf>=5)giveBadge("rf5");setTimeout(()=>{toast(`🎉 ふりかえりのお題クリア！ ${esc(G.name)}の稼ぎ ${G.base} → ${now}`);try{sfx.end();confetti()}catch(e){}},60)}
   const pct=Math.max(0,Math.min(100,Math.round((now-G.base)/Math.max(1,G.target-G.base)*100)));
   return `<div class="lgoal${now>=G.target?' ok':''}"><b>${now>=G.target?'✅ クリア！':'🎯 ふりかえりのお題'}：${esc(G.name)}（金色の枠）を動かさずに、まわりを変えて稼ぎ ${G.target} 以上に</b>
     <div class="lgbar"><i style="width:${pct}%"></i></div><small>いま <b>${now}</b> ／ 目標 ${G.target}（試合では ${G.base}）${now>=G.target&&G.best>now?`・じつは最高 ${G.best} までいけます。さがしてみて！`:now>=G.best?'・これが見つかった最高の値！':''}</small></div>`;
@@ -2800,6 +2813,8 @@ function showLab(){
   const bg=$('labbg'), L=labCalc(), Lq=labCalc.q=LAB.era<0?L:(()=>{const e=LAB.era;LAB.era=-1;const x=labCalc();LAB.era=e;return x})();
   const done=store.get('azakei-city-lab')||{}; let fresh=[];
   for(const q of LABQ) if(q.ok(Lq)&&!done[q.id]){done[q.id]=1;fresh.push(q)}
+  // 🏅 練習の街のバッジ（前にクリアした人にも、ここでわたす）
+  {const nq=LABQ.filter(q=>done[q.id]).length;if(nq>=1)giveBadge("lab1");if(nq>=LABQ.length)giveBadge("lab5");const rf=done.rf||0;if(rf>=1)giveBadge("rf1");if(rf>=5)giveBadge("rf5")}
   if(fresh.length){store.set('azakei-city-lab',done);setTimeout(()=>{toast(`🎉 お題クリア！「${fresh[0].t}」`);try{sfx.end()}catch(e){}if(LABQ.every(q=>done[q.id]))try{confetti()}catch(e){}},50)}
   const vAt=(r,c)=>L.cells.find(x=>x.r===r&&x.c===c), pk=LAB.pick&&vAt(...LAB.pick);
   let grid='';
@@ -2822,16 +2837,16 @@ function showLab(){
     <div class="labshare"><div class="slab">🔗 形をコードで見せ合う <small>コードを友だちに送ると、同じ形を開ける</small></div>
       <div class="lsh"><input id="labCode" readonly value="${labEncode(LAB.g)}" placeholder="建物を置くとコードができる" aria-label="この形のコード"><button type="button" class="ghost" data-copy="1"${L.n?'':' disabled'}>${labLink('x')?'リンクをコピー':'コピー'}</button></div>
       <div class="lsh"><input id="labIn" placeholder="もらったコード（AZK-…）を貼る" aria-label="もらったコード"><button type="button" class="ghost" data-load="1">読みこむ</button></div></div>
-    <div class="labq"><div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
+    <div class="labq"><div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${(()=>{const got=store.get("azakei-city-badges")||{},ids=["lab1","lab5","rf1","rf5","share"];return `<div class="labbadges">${ids.map(id=>{const B=BADGES.find(b=>b.id===id);return `<span class="${got[id]?"on":""}" title="${B.name}：${B.hint}">${B.ic}<small>${B.name}</small></span>`}).join("")}</div>`})()}${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
     <div class="labbtns"><button class="ghost" type="button" data-clear="1">ぜんぶ消す</button><button class="ghost" type="button" data-aff="1">🤝 相性表</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
   bg.hidden=false;
   bg.onclick=ev=>{
     if(ev.target===bg||ev.target.closest('[data-x]')){bg.hidden=true;return}
     if(ev.target.closest('[data-clear]')){LAB.g=null;LAB.pick=null;LAB.goal=null;showLab();return}
-    if(ev.target.closest('[data-copy]')){const code=labEncode(LAB.g);if(!code)return;const txt=labLink(code)||code,el=$('labCode');
+    if(ev.target.closest('[data-copy]')){const code=labEncode(LAB.g);if(!code)return;giveBadge('share');const txt=labLink(code)||code,el=$('labCode');
       const ok=()=>toast(`🔗 ${labLink(code)?'リンク':'コード'}をコピーしました。友だちに送ろう`), ng=()=>{el.value=txt;el.select();toast('コードを長押し（右クリック）してコピーしてね')};
       try{navigator.clipboard.writeText(txt).then(ok,ng)}catch(e){ng()} return}
-    if(ev.target.closest('[data-load]')){const g=labDecode($('labIn').value);if(!g){toast('コードが読めませんでした。AZK- から始まる文字を、まるごと貼ってね');return}LAB.g=g;LAB.pick=null;LAB.goal=null;toast('📥 形を読みこみました');showLab();return}
+    if(ev.target.closest('[data-load]')){const g=labDecode($('labIn').value);if(!g){toast('コードが読めませんでした。AZK- から始まる文字を、まるごと貼ってね');return}LAB.g=g;LAB.pick=null;LAB.goal=null;toast('📥 形を読みこみました');giveBadge('share');showLab();return}
     const ss=ev.target.closest('[data-ss]'); if(ss){const arr=store.get('azakei-city-labsave')||[],i=+ss.dataset.ss;
       if(arr[i]){LAB.g=Array.from({length:N},()=>Array(N).fill(null));for(const[r,c,k]of arr[i].cells)LAB.g[r][c]={k,lv:1};LAB.pick=null;LAB.goal=null;toast(`⭐ 形${i+1}を呼び出しました`)}
       else{const cells=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(LAB.g[r][c])cells.push([r,c,LAB.g[r][c].k]);if(!cells.length)return;const was=LAB.era;LAB.era=-1;arr[i]={cells,sum:labCalc().sum};LAB.era=was;store.set('azakei-city-labsave',arr);toast(`⭐ 形${i+1}に保存しました`)}
@@ -4370,7 +4385,7 @@ $('fixbar').onclick=unstick;
 },2000)}
 showHome();
 // 🔗 友だちから届いた「練習の街」のリンク（#lab=AZK-…）なら、その形で練習の街を開く
-if(/^#lab=/.test(location.hash)){const g=labDecode(decodeURIComponent(location.hash.slice(5)));if(g){LAB.g=g;showLab();setTimeout(()=>toast("📥 送られてきた形を開きました"),300)}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}
+if(/^#lab=/.test(location.hash)){const g=labDecode(decodeURIComponent(location.hash.slice(5)));if(g){LAB.g=g;showLab();giveBadge("share");setTimeout(()=>toast("📥 送られてきた形を開きました"),300)}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}
 if(!store.get('azakei-city-seen-rules')){$('rulesBox').open=true;store.set('azakei-city-seen-rules',true)}
 (async()=>{
   if(!window.claude||!window.claude.use){$('mShared').title='この画面では使えません';return}
