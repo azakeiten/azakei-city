@@ -332,6 +332,22 @@ body.simple .polnow{display:none}
 .labq>div.ok{background:rgba(58,210,131,.12);color:#8ff0bd}
 .labq small{display:block;font-weight:600;color:var(--muted);font-size:11px}
 .labbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.labsave{margin-top:12px}
+.labsave .slab small{font-weight:600;color:var(--muted);margin-left:4px}
+.lss{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}
+.ls{position:relative;min-width:0}
+.lsb{width:100%;display:flex;gap:8px;align-items:center;text-align:left;padding:8px;border-radius:12px;border:1px solid var(--line);background:#191c3c;color:var(--ink);font-size:12px;font-weight:800}
+.lsb:hover:not(:disabled){border-color:var(--gold)}
+.lsb.empty{border-style:dashed;color:var(--muted)}
+.lsb:disabled{opacity:.5}
+.lsb b{display:block;font-size:11px;font-weight:700;color:var(--gold)}
+.lsb.empty b{color:var(--muted)}
+.lmini{flex:none;display:grid;grid-template-columns:repeat(7,1fr);gap:1px;width:36px;height:36px;padding:2px;border-radius:6px;background:#6fb35a;place-items:stretch;font-size:16px;color:#fff}
+.lsb.empty .lmini{display:grid;place-items:center;grid-template-columns:1fr;background:rgba(255,255,255,.06);color:var(--muted)}
+.lmini i{border-radius:1px}
+.lmini i[class*="k-"]{background:var(--c,#3d8fe0)}
+.lsx{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:#2a2e55;color:var(--muted);font-size:11px;padding:0;line-height:1}
+@media (max-width:420px){.lsb{flex-direction:column;align-items:flex-start;gap:4px}.lsb b{font-size:10.5px}}
 .labbtns .go{width:auto;padding:10px 22px}
 .labbtns .ghost{width:auto}
 @media (max-width:640px){.labmain{grid-template-columns:1fr}.labside{grid-template-columns:1fr 1fr}.labwhy{grid-column:1/-1}.sheet.lab{padding-left:12px;padding-right:12px}}
@@ -1030,6 +1046,16 @@ ol.three b{font-size:14px} ol.three span{font-size:12px;color:var(--muted)}
 .cont .arrow{margin-left:auto;font-family:var(--display);font-size:22px;color:var(--gold)}
 .menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 @media (max-width:640px){.menu{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ホームのメニュー：あそぶ・まなぶ・きろく に分けて、さがしやすく */
+.menu.hero{grid-template-columns:1fr}
+.menu.hero .mbtn:first-child,.menu.sm .mbtn:first-child{grid-column:auto}
+.hsec{margin-top:20px}
+.hsh{margin:0 0 8px 2px;display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--gold)}
+.hsh small{font-size:11px;font-weight:700;letter-spacing:0;color:var(--muted)}
+.menu.sm .mbtn{padding:12px;border-radius:14px}
+.menu.sm .mbtn .mi{font-size:20px}
+@media (min-width:641px){.menu.sm{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.menu.sm .mbtn:last-child:nth-child(odd){grid-column:1/-1}}
 .mbtn{text-align:left;border:1px solid var(--line);background:var(--night2);border-radius:16px;padding:14px;display:grid;gap:4px;min-width:0}
 .mbtn:hover:not(:disabled){border-color:var(--gold);transform:translateY(-2px)}
 .mbtn:disabled{opacity:.45;cursor:not-allowed}
@@ -2259,6 +2285,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:38,d:'2026-10-22',t:'🏠 ホームを「あそぶ・まなぶ・きろく」に整理・⭐ お気に入りの形',x:'ホームのボタンを、あそぶ／まなぶ／きろくの3つに分けて、さがしやすくしました。練習の街では、作った並べ方を3つまで保存して、いつでも呼び出せます。'},
   {v:37,d:'2026-10-21',t:'🧪 練習の街（お題つき）',x:'ホームの「練習の街」で、点数やライバルを気にせず建物を自由に置けます。マスには稼ぎがすぐ出て、建物をタップすると計算の内わけが見られます。時代を選ぶとNEWSで稼ぎがどう変わるかもわかります。お題を5つクリアしよう！'},
   {v:36,d:'2026-10-20',t:'🤝 相性表・💡 ライバルの「ねらい」・✨ あなたの番',x:'手札の上の「🤝 相性」で、となりに置くと稼ぎがどう変わるかを一覧で見られます（選んでいるカードの行が光る）。ライバルが建てると、ふきだしに「金融を建てて +5・となりの住宅も +2」のように、そこに建てた理由が出ます。まねして学べる！ ライバルの番が終わると、手札が光って「あなたの番！」と知らせます。'},
   {v:35,d:'2026-10-19',t:'🌟 ベストの場所がわかる・💬 先輩からのアドバイス',x:'マスを選ぶと、手札の上に点の内わけ（稼ぎ＋まわり）と、「🌟ベスト」か「最大+◯のマスあり」が出ます。結果画面では、その試合の打ち方を見て、次に試すとよいことを先輩がアドバイスします。'},
@@ -2703,6 +2730,8 @@ function labCalc(){
   }finally{[POLMAP,EVON,LMPOS]=keep}
   return {cells,sum:cells.reduce((s,x)=>s+x.v,0),n:cells.length};
 }
+// お気に入りの形の小さな見取り図（7×7）
+function labMini(cells){const m={};for(const[r,c,k]of cells)m[r+'_'+c]=k;let h='';for(let r=LAB0;r<LAB0+LABN;r++)for(let c=LAB0;c<LAB0+LABN;c++){const k=m[r+'_'+c];h+=`<i class="${k?'k-'+k:''}"></i>`}return h}
 function showLab(){
   if(!LAB.g) LAB.g=Array.from({length:N},()=>Array(N).fill(null));
   const bg=$('labbg'), L=labCalc(), Lq=labCalc.q=LAB.era<0?L:(()=>{const e=LAB.era;LAB.era=-1;const x=labCalc();LAB.era=e;return x})();
@@ -2725,12 +2754,18 @@ function showLab(){
         <div class="labwhy">${pk?`<b>${T[pk.k].name}の稼ぎ ${pk.v}</b>${pk.P.filter(x=>x[1]||/基本|隣|周り|守る/.test(x[0])).map(x=>`<div><span>${esc(x[0])}</span><span class="${x[1]>0?'p':x[1]<0?'m':''}">${x[1]>0?'+':''}${x[1]}</span></div>`).join('')}`:'<p>建物をタップすると、稼ぎの計算が見られるよ</p>'}</div>
       </div>
     </div>
+    <div class="labsave"><div class="slab">⭐ お気に入りの形 <small>空きをタップで保存、保存した形はタップで呼び出し</small></div><div class="lss">${[0,1,2].map(i=>{const s=(store.get('azakei-city-labsave')||[])[i];return s?`<div class="ls"><button type="button" class="lsb" data-ss="${i}"><span class="lmini">${labMini(s.cells)}</span><span>形${i+1}<b>稼ぎ ${s.sum}</b></span></button><button type="button" class="lsx" data-sd="${i}" aria-label="形${i+1}を消す">✕</button></div>`:`<div class="ls"><button type="button" class="lsb empty" data-ss="${i}"${L.n?'':' disabled'}><span class="lmini">＋</span><span>空き<b>${L.n?'いまの形を保存':'建物を置くと保存できる'}</b></span></button></div>`}).join('')}</div></div>
     <div class="labq"><div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
     <div class="labbtns"><button class="ghost" type="button" data-clear="1">ぜんぶ消す</button><button class="ghost" type="button" data-aff="1">🤝 相性表</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
   bg.hidden=false;
   bg.onclick=ev=>{
     if(ev.target===bg||ev.target.closest('[data-x]')){bg.hidden=true;return}
     if(ev.target.closest('[data-clear]')){LAB.g=null;LAB.pick=null;showLab();return}
+    const ss=ev.target.closest('[data-ss]'); if(ss){const arr=store.get('azakei-city-labsave')||[],i=+ss.dataset.ss;
+      if(arr[i]){LAB.g=Array.from({length:N},()=>Array(N).fill(null));for(const[r,c,k]of arr[i].cells)LAB.g[r][c]={k,lv:1};LAB.pick=null;toast(`⭐ 形${i+1}を呼び出しました`)}
+      else{const cells=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(LAB.g[r][c])cells.push([r,c,LAB.g[r][c].k]);if(!cells.length)return;const was=LAB.era;LAB.era=-1;arr[i]={cells,sum:labCalc().sum};LAB.era=was;store.set('azakei-city-labsave',arr);toast(`⭐ 形${i+1}に保存しました`)}
+      showLab();return}
+    const sd=ev.target.closest('[data-sd]'); if(sd){const arr=store.get('azakei-city-labsave')||[];arr[+sd.dataset.sd]=null;store.set('azakei-city-labsave',arr);showLab();return}
     if(ev.target.closest('[data-aff]')){showAff(LAB.k in T&&!TERR[LAB.k]?LAB.k:null);$('affbg').style.zIndex=45;return}
     const p=ev.target.closest('.lp'); if(p){LAB.k=p.dataset.k;showLab();return}
     const b=ev.target.closest('.lc'); if(!b) return;
@@ -4129,19 +4164,25 @@ function showHome(){
       <div class="years">${HIST.map((h,i)=>i%2===0?`<span><b>${h.y}</b> ${esc(h.n)}</span>`:'').join('')}</div>
     </div>
     ${cont}
-    <div class="menu${HASCLAUDE?"":" n6"}">
+    <div class="menu hero">
       <button class="mbtn main play" type="button" data-h="quick"><span class="mi">▶</span><b>すぐ遊ぶ</b><small>ひとりでCPU2人と、ショート（6時代）。設定なしで、いますぐ</small></button>
+    </div>
+    <section class="hsec"><h4 class="hsh">🎮 あそぶ</h4><div class="menu sm">
       <button class="mbtn" type="button" data-h="new"><span class="mi">🏙️</span><b>くわしく設定して遊ぶ</b><small>友だちと2〜4人／フル12時代／ルールやCPUの強さ</small></button>
       <button class="mbtn" type="button" data-h="short"><span class="mi">⏱️</span><b>ショートで遊ぶ</b><small>大事件の6時代だけ。サクッと1ゲーム</small></button>
       <button class="mbtn" type="button" data-h="chal"><span class="mi">🏆</span><b>チャレンジ</b><small>歴史の一場面をひとりで攻略。★を集めよう（★${CHAL.reduce((s,c)=>s+(chalBest()[c.id]||0),0)}/${CHAL.length*3}）</small></button>
       <button class="mbtn" type="button" data-h="daily"><span class="mi">📅</span><b>今日の街</b><small>今日はみんな同じ市場。点数で勝負</small></button>
-      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?`はじめての人はここから（絵でわかる${BOOK.length}ページ）`:`絵でわかる${BOOK.length}ページ`}</small></button>
       ${HASCLAUDE?"":"<!--"}<button class="mbtn" type="button" data-h="shared"${NET.ready?'':' disabled'}><span class="mi">🌐</span><b>みんなの街</b><small>${NET.ready?'みんなで1つの街を育てる':'この画面では使えません'}</small></button>${HASCLAUDE?"":"-->"}
+    </div></section>
+    <section class="hsec"><h4 class="hsh">📚 まなぶ <small>ルールも経済も、ここで</small></h4><div class="menu sm">
+      <button class="mbtn${first?' main':''}" type="button" data-h="book"><span class="mi">📖</span><b>ルールブック</b><small>${first?`はじめての人はここから（絵でわかる${BOOK.length}ページ）`:`絵でわかる${BOOK.length}ページ`}</small></button>
       <button class="mbtn" type="button" data-h="lab"><span class="mi">🧪</span><b>練習の街</b><small>点数なしで自由に置いて、稼ぎのしくみをためす。お題つき</small></button>
       <button class="mbtn" type="button" data-h="museum"><span class="mi">📚</span><b>経済ミュージアム</b><small>1964〜2022年の経済を、年表とグラフで</small></button>
-      <button class="mbtn" type="button" data-h="demo"><span class="mi">🎬</span><b>展示モード</b><small>CPUが自動で遊び続ける。学園祭の展示に</small></button>
+    </div></section>
+    <section class="hsec"><h4 class="hsh">🏅 きろく・そのほか</h4><div class="menu sm">
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
-    </div>
+      <button class="mbtn" type="button" data-h="demo"><span class="mi">🎬</span><b>展示モード</b><small>CPUが自動で遊び続ける。学園祭の展示に</small></button>
+    </div></section>
     <div class="homeprof"><div class="slab">社長の部屋</div>${rankChip(+(store.get("azakei-city-xp")||0))}${bossHTML()}${missionsHTML()}${themePicker()}</div>
     <p class="homefoot">AZAKEI（麻経）・麻布中学校・高等学校 経済系同好会</p>
   </div>`;
