@@ -345,6 +345,14 @@ body.simple .polnow{display:none}
 .weekq.ok{background:rgba(58,210,131,.14);border-color:rgba(58,210,131,.6)}
 .weekq.ok small{color:#8ff0bd}
 .weekq .ghost{width:auto;flex:none;white-space:nowrap}
+.ansq{display:flex;gap:10px;align-items:center;margin:0 0 10px;padding:9px 12px;border-radius:14px;text-align:left;background:rgba(255,255,255,.04);border:1px dashed color-mix(in srgb,var(--gold) 45%,transparent);box-sizing:border-box;width:100%}
+.ansq .wi{font-size:22px;flex:none}
+.ansq>div{flex:1;min-width:0}
+.ansq small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:var(--gold)}
+.ansq b{display:block;font-size:13px;line-height:1.45}
+.ansq i{display:block;font-style:normal;font-size:11px;color:var(--muted);font-weight:700}
+.ansq .ghost{width:auto;flex:none;white-space:nowrap}
+@media (max-width:420px){.ansq{flex-wrap:wrap}.ansq .ghost{width:100%}}
 .weekq.wqhome{margin:6px 0 10px;width:100%;box-sizing:border-box}
 @media (max-width:420px){.weekq.wqhome{flex-wrap:wrap}.weekq.wqhome .ghost{width:100%}}
 .labbadges{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}
@@ -2334,6 +2342,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:45,d:'2026-10-29',t:'📖 先週の答え合わせ',x:'「社長の部屋」と練習の街に、先週の研究の答え合わせができました。「答えを見る」で、名人の答え（コンピューターでたしかめた、少ない建物で解ける並べ方）が練習の街に開きます。自分の記録とくらべてみよう。'},
   {v:44,d:'2026-10-28',t:'🧠 今週の研究に「名人のめやす」と自己ベスト',x:'今週の研究を、少ない建物で解くほどすごい！ 自己ベスト（建物の数）が記録されて、名人のめやす以内で解くとバッジ「研究の名人」。めやすの数は、コンピューターでさがした「本当にできる数」です。'},
   {v:43,d:'2026-10-27',t:'🔬 今週の研究',x:'練習の街に、毎週月曜日に入れかわるお題「今週の研究」ができました。ホームの「社長の部屋」からすぐ挑戦できます。8種類のお題はどれも、解けることをコンピューターでたしかめてあります。3週クリアでバッジ「毎週の研究者」！'},
   {v:42,d:'2026-10-26',t:'🏅 練習の街のバッジ5つ',x:'研究はじめ・研究熱心・ふりかえり上手・ふりかえり名人・教え合い。練習の街でお題をクリアしたり、形をコードで見せ合ったりするともらえます。前にクリアした人も、練習の街を開くとちゃんともらえます。'},
@@ -2777,19 +2786,30 @@ const LABQ=[
 const LAB={g:null,k:'ho',era:-1,pick:null};
 // 🔬 今週の研究：週ごとに入れかわる練習の街のお題（どれも、解けることをコンピューターでたしかめてある）
 const WEEKQ=[
-  {id:'fi8',m:6,t:'金融1つの稼ぎを 8 以上に',h:'金融は、まわり8マス（ななめも）の産業を数える',ok:L=>L.cells.some(x=>x.k==='fi'&&x.v>=8)},
-  {id:'me7',m:5,t:'メディア1つの稼ぎを 7 以上に',h:'メディアは、まわり8マスの住宅を数える',ok:L=>L.cells.some(x=>x.k==='me'&&x.v>=7)},
-  {id:'sc3',m:4,t:'学校1つの稼ぎを 3 以上に',h:'学校の稼ぎは、となりの住宅の数',ok:L=>L.cells.some(x=>x.k==='sc'&&x.v>=3)},
-  {id:'in3',m:7,t:'保険1つの稼ぎを 3 以上に',h:'保険は、まわりの産業2つで＋1',ok:L=>L.cells.some(x=>x.k==='in'&&x.v>=3)},
-  {id:'en7',m:3,t:'エネルギー1つの稼ぎを 7 以上に',h:'エネルギーは、となりの製造1つで＋2',ok:L=>L.cells.some(x=>x.k==='en'&&x.v>=7)},
-  {id:'sum4',m:4,t:'建物4つだけで、合計 16 以上',h:'おたがいに得する2種類で、四角くまとめよう',ok:L=>L.n>0&&L.n<=4&&L.sum>=16},
-  {id:'kinds6',m:6,t:'6種類以上の建物で、合計 24 以上',h:'いろんな種類を、相性よくつなげよう',ok:L=>new Set(L.cells.map(x=>x.k)).size>=6&&L.sum>=24},
-  {id:'safe6',m:6,t:'建物6つ以上、ぜんぶの稼ぎを 3 以上に（倒産ゼロ）',h:'稼ぎ2以下は倒産ライン。ひとりぼっちの建物をなくそう',ok:L=>L.n>=6&&L.cells.every(x=>x.v>=3)}
+  {id:'fi8',m:6,ans:'AZK-17e5sfs4fs',t:'金融1つの稼ぎを 8 以上に',h:'金融は、まわり8マス（ななめも）の産業を数える',ok:L=>L.cells.some(x=>x.k==='fi'&&x.v>=8)},
+  {id:'me7',m:5,ans:'AZK-16wsw5ds4ksh',t:'メディア1つの稼ぎを 7 以上に',h:'メディアは、まわり8マスの住宅を数える',ok:L=>L.cells.some(x=>x.k==='me'&&x.v>=7)},
+  {id:'sc3',m:4,ans:'AZK-16wh5hsh4w1k',t:'学校1つの稼ぎを 3 以上に',h:'学校の稼ぎは、となりの住宅の数',ok:L=>L.cells.some(x=>x.k==='sc'&&x.v>=3)},
+  {id:'in3',m:7,ans:'AZK-16d1t4kir4mdd',t:'保険1つの稼ぎを 3 以上に',h:'保険は、まわりの産業2つで＋1',ok:L=>L.cells.some(x=>x.k==='in'&&x.v>=3)},
+  {id:'en7',m:3,ans:'AZK-17w5mem5w',t:'エネルギー1つの稼ぎを 7 以上に',h:'エネルギーは、となりの製造1つで＋2',ok:L=>L.cells.some(x=>x.k==='en'&&x.v>=7)},
+  {id:'sum4',m:3,ans:'AZK-16kt5tkw4ktk',t:'建物4つだけで、合計 16 以上',h:'おたがいに得する2種類で、四角くまとめよう',ok:L=>L.n>0&&L.n<=4&&L.sum>=16},
+  {id:'kinds6',m:6,ans:'AZK-16wek4smt4dhk',t:'6種類以上の建物で、合計 24 以上',h:'いろんな種類を、相性よくつなげよう',ok:L=>new Set(L.cells.map(x=>x.k)).size>=6&&L.sum>=24},
+  {id:'safe6',m:6,ans:'AZK-16ktw4ktm4rht',t:'建物6つ以上、ぜんぶの稼ぎを 3 以上に（倒産ゼロ）',h:'稼ぎ2以下は倒産ライン。ひとりぼっちの建物をなくそう',ok:L=>L.n>=6&&L.cells.every(x=>x.v>=3)}
 ];
 const localDays=()=>(Date.now()-new Date().getTimezoneOffset()*6e4)/864e5; // 日本時間などの「その国の日付」で数える
 const weekNo=()=>Math.floor((localDays()+3)/7); // 月曜日に入れかわる（1970/1/1は木曜）
 function weekQ(){const w=weekNo();return {...WEEKQ[w%WEEKQ.length],w,left:7-Math.floor((localDays()+3)%7)}}
 function weekDone(){const d=store.get('azakei-city-lab')||{};return !!(d.wk&&d.wk[weekNo()])}
+// 📖 先週の答え合わせ：先週のお題の「名人の答え」（解けることをたしかめた形）を、練習の街で見られる
+function lastWeek(){const w=weekNo()-1, d=store.get('azakei-city-lab')||{};return {...WEEKQ[w%WEEKQ.length],w,done:!!(d.wk&&d.wk[w]),best:(d.wkBest||{})[w]}}
+function ansHTML(){
+  const Q=lastWeek(), an=(()=>{const g=labDecode(Q.ans);let n=0;if(g)for(const row of g)for(const t of row)if(t&&!TERR[t.k])n++;return n})();
+  return `<div class="ansq"><span class="wi">📖</span><div><small>先週の答え合わせ</small><b>${Q.t}</b><i>あなた：${Q.done?`クリア${Q.best!=null?`（建物${Q.best}つ${Q.best<=an?' ⭐':''}）`:''}`:'挑戦しなかった'} ／ 名人の答え：建物${an}つ</i></div><button type="button" class="ghost" data-h="ans">答えを見る</button></div>`;
+}
+function showAns(){
+  const Q=lastWeek(), g=labDecode(Q.ans); if(!g) return;
+  LAB.g=g; LAB.pick=null; LAB.goal=null; LAB.era=-1; showLab();
+  setTimeout(()=>toast(`📖 先週「${Q.t}」の名人の答え<br><small>建物をタップして、どうして稼げるのか見てみよう</small>`),200);
+}
 function weekHTML(where){
   const Q=weekQ(), ok=weekDone();
   return `<div class="weekq${ok?' ok':''}${where==='home'?' wqhome':''}"><span class="wi">🔬</span><div><small>今週の研究${ok?' ・ クリア！':` ・ あと${Q.left}日で入れかわり`}</small><b>${Q.t}</b><i>${Q.h}</i>${(()=>{const b=((store.get('azakei-city-lab')||{}).wkBest||{})[Q.w];return `<em class="wkb">${b!=null?`自己ベスト 建物<b>${b}</b>つ${b<=Q.m?' ⭐名人':''} ・ `:''}名人のめやす：建物${Q.m}つ以内</em>`})()}</div>${where==='home'?`<button type="button" class="ghost" data-h="lab">${ok?'練習の街へ':'挑戦する'}</button>`:''}</div>`;
@@ -2878,7 +2898,7 @@ function showLab(){
     <div class="labshare"><div class="slab">🔗 形をコードで見せ合う <small>コードを友だちに送ると、同じ形を開ける</small></div>
       <div class="lsh"><input id="labCode" readonly value="${labEncode(LAB.g)}" placeholder="建物を置くとコードができる" aria-label="この形のコード"><button type="button" class="ghost" data-copy="1"${L.n?'':' disabled'}>${labLink('x')?'リンクをコピー':'コピー'}</button></div>
       <div class="lsh"><input id="labIn" placeholder="もらったコード（AZK-…）を貼る" aria-label="もらったコード"><button type="button" class="ghost" data-load="1">読みこむ</button></div></div>
-    <div class="labq">${weekHTML('lab')}<div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${(()=>{const got=store.get("azakei-city-badges")||{},ids=["lab1","lab5","rf1","rf5","share"];return `<div class="labbadges">${ids.map(id=>{const B=BADGES.find(b=>b.id===id);return `<span class="${got[id]?"on":""}" title="${B.name}：${B.hint}">${B.ic}<small>${B.name}</small></span>`}).join("")}</div>`})()}${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
+    <div class="labq">${weekHTML('lab')}${ansHTML()}<div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${(()=>{const got=store.get("azakei-city-badges")||{},ids=["lab1","lab5","rf1","rf5","share"];return `<div class="labbadges">${ids.map(id=>{const B=BADGES.find(b=>b.id===id);return `<span class="${got[id]?"on":""}" title="${B.name}：${B.hint}">${B.ic}<small>${B.name}</small></span>`}).join("")}</div>`})()}${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
     <div class="labbtns"><button class="ghost" type="button" data-clear="1">ぜんぶ消す</button><button class="ghost" type="button" data-aff="1">🤝 相性表</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
   bg.hidden=false;
   bg.onclick=ev=>{
@@ -2894,6 +2914,7 @@ function showLab(){
       showLab();return}
     const sd=ev.target.closest('[data-sd]'); if(sd){const arr=store.get('azakei-city-labsave')||[];arr[+sd.dataset.sd]=null;store.set('azakei-city-labsave',arr);showLab();return}
     if(ev.target.closest('[data-aff]')){showAff(LAB.k in T&&!TERR[LAB.k]?LAB.k:null);$('affbg').style.zIndex=45;return}
+    if(ev.target.closest('[data-h="ans"]')){showAns();return}
     const p=ev.target.closest('.lp'); if(p){LAB.k=p.dataset.k;showLab();return}
     const b=ev.target.closest('.lc'); if(!b) return;
     const r=+b.dataset.r,c=+b.dataset.c,t=LAB.g[r][c];
@@ -4333,7 +4354,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
       <button class="mbtn" type="button" data-h="demo"><span class="mi">🎬</span><b>展示モード</b><small>CPUが自動で遊び続ける。学園祭の展示に</small></button>
     </div></section>
-    <div class="homeprof"><div class="slab">社長の部屋</div>${weekHTML("home")}${rankChip(+(store.get("azakei-city-xp")||0))}${bossHTML()}${missionsHTML()}${themePicker()}</div>
+    <div class="homeprof"><div class="slab">社長の部屋</div>${weekHTML("home")}${ansHTML()}${rankChip(+(store.get("azakei-city-xp")||0))}${bossHTML()}${missionsHTML()}${themePicker()}</div>
     <p class="homefoot">AZAKEI（麻経）・麻布中学校・高等学校 経済系同好会</p>
   </div>`;
   $('home').hidden=false;
@@ -4367,6 +4388,7 @@ $('home').addEventListener('click',e=>{
   const a=b.dataset.h; sfx.pick();
   if(a==='museum'){showMuseum();return}
   if(a==='lab'){showLab();return}
+  if(a==='ans'){showAns();return}
   if(a==='demo'){startDemo();return}
   if(a==='upd'){showUpdates();return}
   if(a==='boss'){startBoss();return}
