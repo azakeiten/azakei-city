@@ -361,6 +361,10 @@ body.simple .polnow{display:none}
 .labbadges span.on{filter:none;opacity:1;border-style:solid;border-color:color-mix(in srgb,var(--gold) 60%,transparent);background:color-mix(in srgb,var(--gold) 14%,transparent)}
 .labbadges span.on small{color:var(--gold)}
 .lgoal{margin:4px 0 8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--gold) 14%,#191c3c);border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);font-size:13px}
+.lnote{margin:4px 0 8px;padding:10px 12px;border-radius:12px;background:var(--paper);color:var(--paper-ink);font-size:13px}
+.lnote b{display:block;font-size:13.5px}
+.lnote p{margin:4px 0;font-weight:700;line-height:1.6}
+.lnote small{display:block;color:#6a5a3a;font-size:11px;font-weight:700}
 .lgoal>b{display:block;line-height:1.5}
 .lgoal small{display:block;margin-top:4px;color:var(--muted);font-size:11.5px;font-weight:700}
 .lgoal small b{color:var(--gold);font-size:14px}
@@ -2342,6 +2346,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:46,d:'2026-10-30',t:'📖 名人の答えに解説',x:'先週の答え合わせで名人の答えを開くと、「なぜ解けるのか」の解説が出ます（例：川のそばのエネルギーは水力で＋2）。解説は、答えの本当の計算の内わけから書いています。'},
   {v:45,d:'2026-10-29',t:'📖 先週の答え合わせ',x:'「社長の部屋」と練習の街に、先週の研究の答え合わせができました。「答えを見る」で、名人の答え（コンピューターでたしかめた、少ない建物で解ける並べ方）が練習の街に開きます。自分の記録とくらべてみよう。'},
   {v:44,d:'2026-10-28',t:'🧠 今週の研究に「名人のめやす」と自己ベスト',x:'今週の研究を、少ない建物で解くほどすごい！ 自己ベスト（建物の数）が記録されて、名人のめやす以内で解くとバッジ「研究の名人」。めやすの数は、コンピューターでさがした「本当にできる数」です。'},
   {v:43,d:'2026-10-27',t:'🔬 今週の研究',x:'練習の街に、毎週月曜日に入れかわるお題「今週の研究」ができました。ホームの「社長の部屋」からすぐ挑戦できます。8種類のお題はどれも、解けることをコンピューターでたしかめてあります。3週クリアでバッジ「毎週の研究者」！'},
@@ -2786,14 +2791,14 @@ const LABQ=[
 const LAB={g:null,k:'ho',era:-1,pick:null};
 // 🔬 今週の研究：週ごとに入れかわる練習の街のお題（どれも、解けることをコンピューターでたしかめてある）
 const WEEKQ=[
-  {id:'fi8',m:6,ans:'AZK-17e5sfs4fs',t:'金融1つの稼ぎを 8 以上に',h:'金融は、まわり8マス（ななめも）の産業を数える',ok:L=>L.cells.some(x=>x.k==='fi'&&x.v>=8)},
-  {id:'me7',m:5,ans:'AZK-16wsw5ds4ksh',t:'メディア1つの稼ぎを 7 以上に',h:'メディアは、まわり8マスの住宅を数える',ok:L=>L.cells.some(x=>x.k==='me'&&x.v>=7)},
-  {id:'sc3',m:4,ans:'AZK-16wh5hsh4w1k',t:'学校1つの稼ぎを 3 以上に',h:'学校の稼ぎは、となりの住宅の数',ok:L=>L.cells.some(x=>x.k==='sc'&&x.v>=3)},
-  {id:'in3',m:7,ans:'AZK-16d1t4kir4mdd',t:'保険1つの稼ぎを 3 以上に',h:'保険は、まわりの産業2つで＋1',ok:L=>L.cells.some(x=>x.k==='in'&&x.v>=3)},
-  {id:'en7',m:3,ans:'AZK-17w5mem5w',t:'エネルギー1つの稼ぎを 7 以上に',h:'エネルギーは、となりの製造1つで＋2',ok:L=>L.cells.some(x=>x.k==='en'&&x.v>=7)},
-  {id:'sum4',m:3,ans:'AZK-16kt5tkw4ktk',t:'建物4つだけで、合計 16 以上',h:'おたがいに得する2種類で、四角くまとめよう',ok:L=>L.n>0&&L.n<=4&&L.sum>=16},
-  {id:'kinds6',m:6,ans:'AZK-16wek4smt4dhk',t:'6種類以上の建物で、合計 24 以上',h:'いろんな種類を、相性よくつなげよう',ok:L=>new Set(L.cells.map(x=>x.k)).size>=6&&L.sum>=24},
-  {id:'safe6',m:6,ans:'AZK-16ktw4ktm4rht',t:'建物6つ以上、ぜんぶの稼ぎを 3 以上に（倒産ゼロ）',h:'稼ぎ2以下は倒産ライン。ひとりぼっちの建物をなくそう',ok:L=>L.n>=6&&L.cells.every(x=>x.v>=3)}
+  {id:'fi8',m:6,ans:'AZK-17e5sfs4fs',x:'学校のとなりの産業は＋2。金融を学校3つで囲むと＋6、まわりの産業2つで＋2、合わせて8！',t:'金融1つの稼ぎを 8 以上に',h:'金融は、まわり8マス（ななめも）の産業を数える',ok:L=>L.cells.some(x=>x.k==='fi'&&x.v>=8)},
+  {id:'me7',m:5,ans:'AZK-16wsw5ds4ksh',x:'メディアも、となりの学校1つで＋2。学校3つで＋6、まわりの住宅1つで＋1、合わせて7！',t:'メディア1つの稼ぎを 7 以上に',h:'メディアは、まわり8マスの住宅を数える',ok:L=>L.cells.some(x=>x.k==='me'&&x.v>=7)},
+  {id:'sc3',m:4,ans:'AZK-16wh5hsh4w1k',x:'学校の稼ぎは、となりの住宅の数。学校のまわりに住宅を3つ置けば3。住宅は川のそばだと＋1のおまけ',t:'学校1つの稼ぎを 3 以上に',h:'学校の稼ぎは、となりの住宅の数',ok:L=>L.cells.some(x=>x.k==='sc'&&x.v>=3)},
+  {id:'in3',m:7,ans:'AZK-16d1t4kir4mdd',x:'保険は、まわり8マス（ななめも）の産業2つで＋1。産業を6つ集めて 6÷2＝3',t:'保険1つの稼ぎを 3 以上に',h:'保険は、まわりの産業2つで＋1',ok:L=>L.cells.some(x=>x.k==='in'&&x.v>=3)},
+  {id:'en7',m:3,ans:'AZK-17w5mem5w',x:'川のそばのエネルギーは水力で＋2。となりに製造を2つ置けば 1＋4＋2＝7。たった3つで解ける！',t:'エネルギー1つの稼ぎを 7 以上に',h:'エネルギーは、となりの製造1つで＋2',ok:L=>L.cells.some(x=>x.k==='en'&&x.v>=7)},
+  {id:'sum4',m:3,ans:'AZK-16kt5tkw4ktk',x:'駅のとなりの運輸は、駅1つにつき＋2。運輸3つを駅で囲めば 4＋6＋6＝16。川や駅は建物に数えない！',t:'建物4つだけで、合計 16 以上',h:'おたがいに得する2種類で、四角くまとめよう',ok:L=>L.n>0&&L.n<=4&&L.sum>=16},
+  {id:'kinds6',m:6,ans:'AZK-16wek4smt4dhk',x:'駅のとなりの運輸（乗りかえ）や、川のそばのエネルギー（水力）のように、地形のボーナスを使うと少ない建物でも稼げる',t:'6種類以上の建物で、合計 24 以上',h:'いろんな種類を、相性よくつなげよう',ok:L=>new Set(L.cells.map(x=>x.k)).size>=6&&L.sum>=24},
+  {id:'safe6',m:6,ans:'AZK-16ktw4ktm4rht',x:'ひとりぼっちの建物をなくすのがコツ。運輸を真ん中にして住宅・製造・小売をつなぎ、駅と川のボーナスも使う',t:'建物6つ以上、ぜんぶの稼ぎを 3 以上に（倒産ゼロ）',h:'稼ぎ2以下は倒産ライン。ひとりぼっちの建物をなくそう',ok:L=>L.n>=6&&L.cells.every(x=>x.v>=3)}
 ];
 const localDays=()=>(Date.now()-new Date().getTimezoneOffset()*6e4)/864e5; // 日本時間などの「その国の日付」で数える
 const weekNo=()=>Math.floor((localDays()+3)/7); // 月曜日に入れかわる（1970/1/1は木曜）
@@ -2807,7 +2812,7 @@ function ansHTML(){
 }
 function showAns(){
   const Q=lastWeek(), g=labDecode(Q.ans); if(!g) return;
-  LAB.g=g; LAB.pick=null; LAB.goal=null; LAB.era=-1; showLab();
+  LAB.g=g; LAB.pick=null; LAB.goal=null; LAB.note=Q; LAB.era=-1; showLab();
   setTimeout(()=>toast(`📖 先週「${Q.t}」の名人の答え<br><small>建物をタップして、どうして稼げるのか見てみよう</small>`),200);
 }
 function weekHTML(where){
@@ -2855,6 +2860,11 @@ function labDecode(code){
 }
 function labLink(code){return HASCLAUDE||!/^https?:/.test(location.protocol)?'':location.origin+location.pathname+'#lab='+code}
 // 🎯 ふりかえりのお題の帯（試合の稼ぎ頭から作ったお題）
+// 📖 名人の答えの解説（答え合わせで開いたときだけ）
+function labNoteHTML(){
+  const Q=LAB.note; if(!Q) return '';
+  return `<div class="lnote"><b>📖 名人の答え：${Q.t}</b><p>${Q.x}</p><small>💡 建物をタップすると、稼ぎの計算が見られるよ。動かして、ほかの解き方もさがしてみよう</small></div>`;
+}
 function labGoalHTML(){
   const G=LAB.goal; if(!G) return '';
   const t=LAB.g&&LAB.g[G.r][G.c], here=t&&t.k===G.k, now=here?labVal(LAB.g,G.r,G.c,LAB.era):null;
@@ -2884,7 +2894,7 @@ function showLab(){
   const eras=FULL.map(i=>`<option value="${i}"${LAB.era===i?' selected':''}>${HIST[i].y} ${esc(HIST[i].n)}</option>`).join('');
   bg.innerHTML=`<div class="sheet lab" role="dialog" aria-label="練習の街">
     <div class="slab">🧪 練習の街 <small>点数・ライバルなし。自由に置いてためそう</small></div>
-    ${labGoalHTML()}
+    ${labGoalHTML()}${labNoteHTML()}
     <div class="labpal">${LAB_K.map(k=>`<button type="button" class="lp k-${k}${LAB.k===k?' on':''}" data-k="${k}"><span>${k==='river'?'🌊':k==='sta'?'🚉':ic(k)}</span>${T[k].name}</button>`).join('')}<button type="button" class="lp${LAB.k==='x'?' on':''}" data-k="x"><span>🧹</span>けす</button></div>
     <div class="labmain">
       <div><div class="labgrid" style="--n:${LABN}">${grid}</div><p class="lablg">マスの数字＝稼ぎ　<b class="hi">金</b> 6以上　<b class="lo">赤</b> 2以下は決算で倒産の危険</p></div>
@@ -2903,13 +2913,13 @@ function showLab(){
   bg.hidden=false;
   bg.onclick=ev=>{
     if(ev.target===bg||ev.target.closest('[data-x]')){bg.hidden=true;return}
-    if(ev.target.closest('[data-clear]')){LAB.g=null;LAB.pick=null;LAB.goal=null;showLab();return}
+    if(ev.target.closest('[data-clear]')){LAB.g=null;LAB.pick=null;LAB.goal=null;LAB.note=null;showLab();return}
     if(ev.target.closest('[data-copy]')){const code=labEncode(LAB.g);if(!code)return;giveBadge('share');const txt=labLink(code)||code,el=$('labCode');
       const ok=()=>toast(`🔗 ${labLink(code)?'リンク':'コード'}をコピーしました。友だちに送ろう`), ng=()=>{el.value=txt;el.select();toast('コードを長押し（右クリック）してコピーしてね')};
       try{navigator.clipboard.writeText(txt).then(ok,ng)}catch(e){ng()} return}
-    if(ev.target.closest('[data-load]')){const g=labDecode($('labIn').value);if(!g){toast('コードが読めませんでした。AZK- から始まる文字を、まるごと貼ってね');return}LAB.g=g;LAB.pick=null;LAB.goal=null;toast('📥 形を読みこみました');giveBadge('share');showLab();return}
+    if(ev.target.closest('[data-load]')){const g=labDecode($('labIn').value);if(!g){toast('コードが読めませんでした。AZK- から始まる文字を、まるごと貼ってね');return}LAB.g=g;LAB.pick=null;LAB.goal=null;LAB.note=null;toast('📥 形を読みこみました');giveBadge('share');showLab();return}
     const ss=ev.target.closest('[data-ss]'); if(ss){const arr=store.get('azakei-city-labsave')||[],i=+ss.dataset.ss;
-      if(arr[i]){LAB.g=Array.from({length:N},()=>Array(N).fill(null));for(const[r,c,k]of arr[i].cells)LAB.g[r][c]={k,lv:1};LAB.pick=null;LAB.goal=null;toast(`⭐ 形${i+1}を呼び出しました`)}
+      if(arr[i]){LAB.g=Array.from({length:N},()=>Array(N).fill(null));for(const[r,c,k]of arr[i].cells)LAB.g[r][c]={k,lv:1};LAB.pick=null;LAB.goal=null;LAB.note=null;toast(`⭐ 形${i+1}を呼び出しました`)}
       else{const cells=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(LAB.g[r][c])cells.push([r,c,LAB.g[r][c].k]);if(!cells.length)return;const was=LAB.era;LAB.era=-1;arr[i]={cells,sum:labCalc().sum};LAB.era=was;store.set('azakei-city-labsave',arr);toast(`⭐ 形${i+1}に保存しました`)}
       showLab();return}
     const sd=ev.target.closest('[data-sd]'); if(sd){const arr=store.get('azakei-city-labsave')||[];arr[+sd.dataset.sd]=null;store.set('azakei-city-labsave',arr);showLab();return}
@@ -3546,7 +3556,7 @@ function labFromGame(b){
   const g=S.R.g, r0=Math.max(0,Math.min(N-LABN,b.r-3)), c0=Math.max(0,Math.min(N-LABN,b.c-3)), lg=Array.from({length:N},()=>Array(N).fill(null));
   for(let r=0;r<LABN;r++)for(let c=0;c<LABN;c++){const t=g[r0+r][c0+c];if(t&&LABCH[t.k])lg[LAB0+r][LAB0+c]={k:t.k,lv:1}}
   const pr=LAB0+b.r-r0, pc=LAB0+b.c-c0;
-  LAB.g=lg; LAB.pick=[pr,pc]; LAB.era=FULL.includes(HI(eraNow()))?HI(eraNow()):-1;
+  LAB.g=lg; LAB.pick=[pr,pc]; LAB.note=null; LAB.era=FULL.includes(HI(eraNow()))?HI(eraNow()):-1;
   // 🎯 ふりかえりのお題：稼ぎ頭はそのまま、まわりを変えて +3（とどかないときは、さがせた最高の値まで）
   const base=labVal(lg,pr,pc,LAB.era), best=labBest(lg,pr,pc,LAB.era);
   LAB.goal={r:pr,c:pc,k:b.k,name:b.name||T[b.k].name,base,best,target:best>base?Math.min(base+3,best):null,done:false};
