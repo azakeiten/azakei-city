@@ -365,6 +365,14 @@ body.simple .polnow{display:none}
 .lnote b{display:block;font-size:13.5px}
 .lnote p{margin:4px 0;font-weight:700;line-height:1.6}
 .lnote small{display:block;color:#6a5a3a;font-size:11px;font-weight:700}
+.tips{display:grid;gap:8px;margin-top:8px}
+.tip1{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);text-align:left}
+.tip1 .ti{font-size:22px;flex:none}
+.tip1>div{flex:1;min-width:0}
+.tip1 b{display:block;font-size:14px}
+.tip1 small{display:block;margin-top:2px;font-size:11.5px;line-height:1.55;color:var(--muted)}
+.tip1 .ghost{width:auto;flex:none;white-space:nowrap;padding:7px 10px}
+@media (max-width:480px){.tip1{flex-wrap:wrap}.tip1 .ghost{width:100%}}
 .lgoal>b{display:block;line-height:1.5}
 .lgoal small{display:block;margin-top:4px;color:var(--muted);font-size:11.5px;font-weight:700}
 .lgoal small b{color:var(--gold);font-size:14px}
@@ -2263,7 +2271,8 @@ const BADGES=[
   {id:'rf5',ic:'🎓',name:'ふりかえり名人',hint:'ふりかえりのお題を5回クリア'},
   {id:'share',ic:'🔗',name:'教え合い',hint:'練習の街の形をコードでコピーするか、もらったコードを読みこむ'},
   {id:'wk3',ic:'📅',name:'毎週の研究者',hint:'「今週の研究」を3週クリア'},
-  {id:'wkm',ic:'🧠',name:'研究の名人',hint:'「今週の研究」を名人のめやす（建物の数）以内で解く'}
+  {id:'wkm',ic:'🧠',name:'研究の名人',hint:'「今週の研究」を名人のめやす（建物の数）以内で解く'},
+  {id:'tips',ic:'🗝',name:'ひみつを知る社長',hint:'ルールブックの「社長のひみつノート」で、コツを練習の街でためす'}
 ];
 // 🏅 その場でもらえるバッジ（ゲームの外でも）。はじめてのときだけ知らせる
 function giveBadge(id){const got=store.get('azakei-city-badges')||{};if(got[id])return;const B=BADGES.find(b=>b.id===id);if(!B)return;got[id]=todayStr();store.set('azakei-city-badges',got);setTimeout(()=>toast(`${B.ic} バッジ「${B.name}」をゲット！<br><small>社長手帳に入りました</small>`),900)}
@@ -2346,6 +2355,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:47,d:'2026-10-31',t:'🗝 社長のひみつノート',x:'ルールブックの最後に「社長のひみつノート」ができました。学校は金融やメディアにも＋2、川のそばのエネルギーは水力で＋2…など、知っていると得するコツが8つ。「ためす」で、練習の街でその形の計算をたしかめられます。'},
   {v:46,d:'2026-10-30',t:'📖 名人の答えに解説',x:'先週の答え合わせで名人の答えを開くと、「なぜ解けるのか」の解説が出ます（例：川のそばのエネルギーは水力で＋2）。解説は、答えの本当の計算の内わけから書いています。'},
   {v:45,d:'2026-10-29',t:'📖 先週の答え合わせ',x:'「社長の部屋」と練習の街に、先週の研究の答え合わせができました。「答えを見る」で、名人の答え（コンピューターでたしかめた、少ない建物で解ける並べ方）が練習の街に開きます。自分の記録とくらべてみよう。'},
   {v:44,d:'2026-10-28',t:'🧠 今週の研究に「名人のめやす」と自己ベスト',x:'今週の研究を、少ない建物で解くほどすごい！ 自己ベスト（建物の数）が記録されて、名人のめやす以内で解くとバッジ「研究の名人」。めやすの数は、コンピューターでさがした「本当にできる数」です。'},
@@ -2863,7 +2873,7 @@ function labLink(code){return HASCLAUDE||!/^https?:/.test(location.protocol)?'':
 // 📖 名人の答えの解説（答え合わせで開いたときだけ）
 function labNoteHTML(){
   const Q=LAB.note; if(!Q) return '';
-  return `<div class="lnote"><b>📖 名人の答え：${Q.t}</b><p>${Q.x}</p><small>💡 建物をタップすると、稼ぎの計算が見られるよ。動かして、ほかの解き方もさがしてみよう</small></div>`;
+  return `<div class="lnote"><b>${Q.tip?"🗝 ひみつノート":"📖 名人の答え"}：${Q.t}</b><p>${Q.x}</p><small>💡 建物をタップすると、稼ぎの計算が見られるよ。動かして、ほかの解き方もさがしてみよう</small></div>`;
 }
 function labGoalHTML(){
   const G=LAB.goal; if(!G) return '';
@@ -2909,7 +2919,7 @@ function showLab(){
       <div class="lsh"><input id="labCode" readonly value="${labEncode(LAB.g)}" placeholder="建物を置くとコードができる" aria-label="この形のコード"><button type="button" class="ghost" data-copy="1"${L.n?'':' disabled'}>${labLink('x')?'リンクをコピー':'コピー'}</button></div>
       <div class="lsh"><input id="labIn" placeholder="もらったコード（AZK-…）を貼る" aria-label="もらったコード"><button type="button" class="ghost" data-load="1">読みこむ</button></div></div>
     <div class="labq">${weekHTML('lab')}${ansHTML()}<div class="slab">🎯 お題 ${LABQ.filter(q=>done[q.id]).length}/${LABQ.length} <small>（NEWSなしで判定）</small></div>${(()=>{const got=store.get("azakei-city-badges")||{},ids=["lab1","lab5","rf1","rf5","share"];return `<div class="labbadges">${ids.map(id=>{const B=BADGES.find(b=>b.id===id);return `<span class="${got[id]?"on":""}" title="${B.name}：${B.hint}">${B.ic}<small>${B.name}</small></span>`}).join("")}</div>`})()}${LABQ.map(q=>`<div class="${done[q.id]?'ok':''}"><span>${done[q.id]?'✅':'⬜'}</span><span>${q.t}<small>${q.h}</small></span></div>`).join('')}</div>
-    <div class="labbtns"><button class="ghost" type="button" data-clear="1">ぜんぶ消す</button><button class="ghost" type="button" data-aff="1">🤝 相性表</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
+    <div class="labbtns"><button class="ghost" type="button" data-clear="1">ぜんぶ消す</button><button class="ghost" type="button" data-notes="1">🗝 ひみつノート</button><button class="ghost" type="button" data-aff="1">🤝 相性表</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
   bg.hidden=false;
   bg.onclick=ev=>{
     if(ev.target===bg||ev.target.closest('[data-x]')){bg.hidden=true;return}
@@ -2925,6 +2935,7 @@ function showLab(){
     const sd=ev.target.closest('[data-sd]'); if(sd){const arr=store.get('azakei-city-labsave')||[];arr[+sd.dataset.sd]=null;store.set('azakei-city-labsave',arr);showLab();return}
     if(ev.target.closest('[data-aff]')){showAff(LAB.k in T&&!TERR[LAB.k]?LAB.k:null);$('affbg').style.zIndex=45;return}
     if(ev.target.closest('[data-h="ans"]')){showAns();return}
+    if(ev.target.closest('[data-notes]')){showRulebook(BOOK.length-1);$('bookbg').style.zIndex=45;return}
     const p=ev.target.closest('.lp'); if(p){LAB.k=p.dataset.k;showLab();return}
     const b=ev.target.closest('.lc'); if(!b) return;
     const r=+b.dataset.r,c=+b.dataset.c,t=LAB.g[r][c];
@@ -4129,6 +4140,18 @@ function mini(rows){
 }
 
 /* ---------- ルールブック（絵でわかるルールブック） ---------- */
+// 🗝 社長のひみつノート：知っていると得するコツ（どれも練習の街で計算をたしかめた例つき）
+const NOTES=[
+  {ic:'🏫',t:'学校は、となりの産業みんなに＋2',x:'学校のとなりにある産業は、金融やメディアでも稼ぎ＋2。この形では金融が4（まわりの産業2＋学校2）、メディアが2（学校2）。学校そのものの稼ぎは、となりの住宅の数だよ',code:'AZK-22mfs6d'},
+  {ic:'🌊',t:'川のそばのエネルギーは、水力で＋2',x:'同じエネルギーでも、川のとなりは3、川から離れると1。発電所は川ぞいに建てよう',code:'AZK-23we1e'},
+  {ic:'🚉',t:'駅のとなりは、運輸・小売が＋2',x:'駅のとなりの運輸は乗りかえで＋2、小売は駅前で＋2、住宅も通勤できて＋1。駅のまわりは一等地！',code:'AZK-17h5tkr'},
+  {ic:'⚡',t:'住宅のとなりに、エネルギーは置かない',x:'エネルギーのとなりの住宅は−1。この形では、エネルギーのとなりの住宅は0、小売のとなりの住宅は2。稼ぎ2以下は倒産ラインなので要注意',code:'AZK-16he12hr'},
+  {ic:'🏪',t:'小売どうしは、となりにしない',x:'小売は住宅のとなりで＋2。でも小売どうしがとなりだと−1（お客のうばいあい）。この形では、となりに小売がある方が1、ない方が2',code:'AZK-9h6rr12r6h'},
+  {ic:'↗️',t:'金融・メディア・保険は、ななめも数える',x:'金融は「まわり8マス」の産業を数える。この金融は、ななめにだけ産業が3つあって、稼ぎ3',code:'AZK-16e1r5f7m'},
+  {ic:'🚚',t:'運輸は「種類」を数える',x:'運輸の稼ぎは、となりにある種類の数×2。住宅を3つ並べても1種類で2。住宅・小売・エネルギーなら3種類で6',code:'AZK-8h2h2ht2te2h2r'},
+  {ic:'🏞️',t:'川のそばの住宅は、ながめで＋1',x:'川のとなりの住宅は2、離れると1。川には建てられないけど、まわりを得にしてくれる',code:'AZK-10h12wh'}
+];
+function openTip(i){const P=NOTES[i],g=P&&labDecode(P.code);if(!g)return;$('bookbg').hidden=true;LAB.g=g;LAB.pick=null;LAB.goal=null;LAB.era=-1;LAB.note={t:P.t,x:P.x,tip:1};showLab();giveBadge('tips')}
 const BOOK=[
   {t:'ようこそ、社長',h:()=>`
     <p>1964年の東京オリンピックから、2022年まで。あなたは街の社長です。建物を建てて稼ぎ、<b>最後にいちばんスコアが高い社長</b>が勝ち。</p>
@@ -4234,6 +4257,9 @@ const BOOK=[
       <div class="bk-box" style="margin:0"><b>今日の街</b><br>その日はみんな同じ市場。点数で勝負。</div>
       <div class="bk-box" style="margin:0"><b>ショート</b><br>大事件の6時代だけ。短く遊べる。</div>
     </div>`}
+  ,{t:'社長のひみつノート',h:()=>`
+    <p>知っていると得する、8つのコツ。<b>「ためす」</b>を押すと、練習の街でその形が開いて、本当の計算をたしかめられます。</p>
+    <div class="tips">${NOTES.map((P,i)=>`<div class="tip1"><span class="ti">${P.ic}</span><div><b>${P.t}</b><small>${P.x}</small></div><button type="button" class="ghost" data-tip="${i}">🧪 ためす</button></div>`).join('')}</div>`}
 ];
 let bookPage=0;
 function showRulebook(p){bookPage=Math.max(0,Math.min(BOOK.length-1,p||0));drawBook();$('bookbg').hidden=false;$('bookbg').querySelector('.bk-next').focus()}
@@ -4247,6 +4273,7 @@ function drawBook(){
       <button type="button" class="bk-next" data-bk="${bookPage<BOOK.length-1?'next':'close'}">${bookPage<BOOK.length-1?'つぎへ →':'遊んでみる'}</button></div></div>`;
 }
 $('bookbg').addEventListener('click',e=>{
+  const tp=e.target.closest('[data-tip]'); if(tp){openTip(+tp.dataset.tip);return}
   const b=e.target.closest('[data-bk]');
   if(!b){if(e.target.id==='bookbg')$('bookbg').hidden=true;return}
   const a=b.dataset.bk;
