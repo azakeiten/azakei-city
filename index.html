@@ -273,6 +273,10 @@ body.simple .polnow{display:none}
 .tray .dock .dt b{font-family:var(--display);color:var(--gold);font-size:20px;margin-left:6px}
 .tray .dock .dt small{display:block;margin-top:2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tray .dock .dt small .n{color:#ff8a7a;font-weight:800}
+.tray .dock{flex-wrap:wrap}
+.tray .dock .dkey{display:block;flex:1 1 100%;order:9;max-width:100%;margin-top:0;padding:5px 10px;padding:2px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);background:color-mix(in srgb,var(--gold) 12%,transparent);color:var(--gold);font-size:11px;font-weight:800;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tray .dock .dkey.bad{border-color:rgba(255,107,94,.6);background:rgba(255,107,94,.12);color:#ff8a7a}
+.tip1.hl{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 55%,transparent);background:color-mix(in srgb,var(--gold) 10%,transparent)}
 .dbest,.dmore{display:inline-block;white-space:nowrap;vertical-align:middle;margin-left:4px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800}
 .dbest{background:color-mix(in srgb,var(--gold) 26%,transparent);color:var(--gold)}
 .dmore{background:rgba(255,255,255,.08);color:var(--muted)}
@@ -1267,6 +1271,7 @@ body.drawer .side{transform:none}
 .pulse{position:relative;animation:pulsering 1.4s ease-in-out infinite;border-radius:14px}
 @keyframes pulsering{0%,100%{box-shadow:0 0 0 0 rgba(255,200,58,.0)}50%{box-shadow:0 0 0 6px rgba(255,200,58,.55)}}
 .tray .hintbtn.undo{border-color:var(--line);background:#191c3c}
+@media (max-width:420px){#undoBtn{font-size:0;padding:5px 9px}#undoBtn::before{content:"↶";font-size:15px}}
 .sharebox{margin-top:12px;text-align:center}
 .paper .tip.senpai{background:#fff1c9;border-left:4px solid var(--paper-red);font-size:13px}
 .senpai2{margin-top:10px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--gold) 10%,transparent);font-size:12.5px;line-height:1.5}
@@ -2355,6 +2360,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:48,d:'2026-11-01',t:'🗝 本番でもひみつノートが助けてくれる',x:'ゲーム中にマスを選ぶと、ひみつノートのコツが効いているとき（例：川のそばで水力＋2）は金色、じゃましているとき（例：エネルギーのとなりの住宅は−1）は赤で、手札の上にひとこと出ます。タップすると、ノートのそのコツが光って開きます。'},
   {v:47,d:'2026-10-31',t:'🗝 社長のひみつノート',x:'ルールブックの最後に「社長のひみつノート」ができました。学校は金融やメディアにも＋2、川のそばのエネルギーは水力で＋2…など、知っていると得するコツが8つ。「ためす」で、練習の街でその形の計算をたしかめられます。'},
   {v:46,d:'2026-10-30',t:'📖 名人の答えに解説',x:'先週の答え合わせで名人の答えを開くと、「なぜ解けるのか」の解説が出ます（例：川のそばのエネルギーは水力で＋2）。解説は、答えの本当の計算の内わけから書いています。'},
   {v:45,d:'2026-10-29',t:'📖 先週の答え合わせ',x:'「社長の部屋」と練習の街に、先週の研究の答え合わせができました。「答えを見る」で、名人の答え（コンピューターでたしかめた、少ない建物で解ける並べ方）が練習の街に開きます。自分の記録とくらべてみよう。'},
@@ -2694,10 +2700,27 @@ function renderPre0(){
   const best=bestScore(k,e,ty,R), why=[`稼ぎ${s.own}`];
   if(s.side) why.push(`まわり${sg(s.side)}`); if(ty==='lion') why.push('🦁×2'); if(s.lms.length) why.push(`◆名所+${LMBONUS*s.lms.length}`); if(s.mq) why.push('★お題');
   const badge=s.score>=best?'<span class="dbest" title="このカードでいちばん点がとれるマス">🌟ベスト</span>':`<span class="dmore" title="もっと点がとれるマスがあります">↑最大${sg(best)}</span>`;
-  $('dock').innerHTML=`<div class="dt">${T[k].name}<b>${sg(s.score)}</b> ${badge}<small>${why.join(' ＋ ')}${danger?' ・<span class="n">⚠ 次の決算で倒産しそう</span>':''}</small></div><button class="x" type="button" data-cancel="1">やめる</button><button class="go" type="button" id="go2">ここに建てる</button>`;
+  const kh=keyHint(g,r,c,k);
+  $('dock').innerHTML=`<div class="dt">${T[k].name}<b>${sg(s.score)}</b> ${badge}<small>${why.join(' ＋ ')}${danger?' ・<span class="n">⚠ 次の決算で倒産しそう</span>':''}</small></div><button class="x" type="button" data-cancel="1">やめる</button><button class="go" type="button" id="go2">ここに建てる</button>${kh?`<button type="button" class="dkey${kh.bad?' bad':''}" data-note="${kh.i}">🗝 ${kh.t}　›</button>`:''}`;
   $('go2').onclick=place;
+  {const dk=$("dock").querySelector(".dkey");if(dk)dk.onclick=()=>{const i=+dk.dataset.note;showRulebook(BOOK.length-1);const t=$("bookbg").querySelectorAll(".tip1")[i];if(t){t.classList.add("hl");setTimeout(()=>t.scrollIntoView({block:"center",behavior:"smooth"}),60)}}}
 }
 // このカードで、いちばん点がとれるマスの点（同じ局面・同じカードなら覚えておく）
+// 🗝 ひみつノートのコツが、いまのマスで「効いている／じゃましている」ときに、ひとことで知らせる
+function keyHint(g,r,c,k){
+  const n4=around(g,r,c,D4), has=x=>n4.includes(x), cnt=x=>n4.filter(y=>y===x).length;
+  if(k==='ho'&&has('en')) return {bad:1,t:`エネルギーのとなりの住宅は −${cnt('en')}`,i:3};
+  if(k==='en'&&has('ho')) return {bad:1,t:`となりの住宅が −1 されてしまう`,i:3};
+  if(k==='re'&&has('re')) return {bad:1,t:`小売どうしがとなりで −${cnt('re')}`,i:4};
+  if(k==='tr'&&n4.length>=2&&new Set(n4.filter(x=>x==='ho'||isInd(x))).size<n4.filter(x=>x==='ho'||isInd(x)).length) return {bad:1,t:'運輸は「種類」を数える。同じ種類のとなりは増えない',i:6};
+  if(k==='en'&&has('river')) return {t:'川のそばで水力 ＋2',i:1};
+  if((k==='tr'||k==='re')&&has('sta')) return {t:`駅のとなりで ＋${2*cnt('sta')}`,i:2};
+  if(isInd(k)&&has('sc')) return {t:`学校のとなりで ＋${2*cnt('sc')}`,i:0};
+  if(k==='sc'&&n4.some(isInd)) return {t:`となりの産業${n4.filter(isInd).length}つに ＋2ずつ`,i:0};
+  if(k==='ho'&&has('river')) return {t:'川のながめで ＋1',i:7};
+  if((k==='fi'||k==='me'||k==='in')&&around(g,r,c,D8).length>n4.length) return {t:'ななめのマスも数えてくれる',i:5};
+  return null;
+}
 function bestScore(k,e,ty,R){
   const key=`${S.mode}|${R.n}|${S.game?S.game.tiles.length:S.sharedTiles.length}|${k}|${ty}`;
   if(S.bestc&&S.bestc.key===key) return S.bestc.v;
