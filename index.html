@@ -1852,8 +1852,8 @@ addEventListener('pointerdown',()=>{if(!BGM.unlocked){BGM.unlocked=true;try{AC=A
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const seedOf=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
 // 季節イベント（期間限定）：10月はハロウィン、12月はイルミネーション
-const SEASONS={halloween:{ic:'🎃',name:'ハロウィン',until:'10月31日',badge:'halloween'},xmas:{ic:'🎄',name:'イルミネーション',until:'12月25日',badge:'xmas'},newyear:{ic:'🎍',name:'お正月',until:'1月7日',badge:'newyear'},spring:{ic:'🌸',name:'春',until:'4月15日',badge:'spring'},summer:{ic:'🎆',name:'夏祭り',until:'8月31日',badge:'summer'}};
-function seasonNow(){const d=new Date(),m=d.getMonth()+1,day=d.getDate();return m===10?'halloween':(m===12&&day<=25)?'xmas':(m===1&&day<=7)?'newyear':((m===3&&day>=20)||(m===4&&day<=15))?'spring':m===8?'summer':null}
+const SEASONS={halloween:{ic:'🎃',name:'ハロウィン',until:'10月31日',badge:'halloween'},xmas:{ic:'🎄',name:'イルミネーション',until:'12月25日',badge:'xmas'},newyear:{ic:'🎍',name:'お正月',until:'1月7日',badge:'newyear'},spring:{ic:'🌸',name:'春',until:'4月15日',badge:'spring'},summer:{ic:'🎆',name:'夏祭り',until:'8月31日',badge:'summer'},autumn:{ic:'🍁',name:'紅葉',until:'11月30日',badge:'autumn'}};
+function seasonNow(){const d=new Date(),m=d.getMonth()+1,day=d.getDate();return m===10?'halloween':m===11?'autumn':(m===12&&day<=25)?'xmas':(m===1&&day<=7)?'newyear':((m===3&&day>=20)||(m===4&&day<=15))?'spring':m===8?'summer':null}
 function seasonHTML(){const s=seasonNow();if(!s)return '';const S2=SEASONS[s],got=(store.get('azakei-city-badges')||{})[S2.badge];return `<div class="seasonpill">${S2.ic} <b>${S2.name}期間</b>（${S2.until}まで）・街がいつもとちがう！${got?' ✓ 限定バッジ獲得ずみ':' 1ゲーム遊ぶと限定バッジ'}</div>`}
 const CPUN=['駅前の社長','となりの社長','港町の社長'];
 // ライバル社長：8人の中から、ゲームごとに選ばれる（タイプと口ぐせは決まっている）
@@ -2052,7 +2052,7 @@ function isoDraw(cv,cells,age,t,opt){
       if(opt.season==='xmas'){ctx.fillStyle='#1f6b3a';for(const k of[0,1,2]){const w=s*(.75-k*.18),yy=cy-s*(.45+k*.42);ctx.beginPath();ctx.moveTo(cx-w,yy);ctx.lineTo(cx+w,yy);ctx.lineTo(cx,yy-s*.6);ctx.closePath();ctx.fill()}
         const XC=['#ff5a5a','#ffd34d','#5ac8ff','#ff8ad8'];for(let k=0;k<5;k++){ctx.fillStyle=XC[(k+r+c)%4];ctx.beginPath();ctx.arc(cx+Math.sin(k*2.1)*s*.35,cy-s*(.55+k*.18),1.8,0,Math.PI*2);ctx.fill()}
         ctx.fillStyle='#ffd34d';ctx.beginPath();ctx.arc(cx,cy-s*1.75,2.6,0,Math.PI*2);ctx.fill();continue}
-      const leaf=(TH==='sakura'||opt.season==='spring')?'#ffb3d1':TH==='snow'?'#f4f8ff':TH==='neon'?'#2a7f6b':night?'#2f6b45':'#4caf50';
+      const leaf=opt.season==='autumn'?['#e8742c','#d94a3a','#f2b53a','#c8582a'][Math.abs(Math.round(cx*7+cy*3))%4]:(TH==='sakura'||opt.season==='spring')?'#ffb3d1':TH==='snow'?'#f4f8ff':TH==='neon'?'#2a7f6b':night?'#2f6b45':'#4caf50';
       ctx.fillStyle=shade(leaf,.8);ctx.beginPath();ctx.arc(cx,cy-s*.95,s*.62,0,Math.PI*2);ctx.fill();
       ctx.fillStyle=leaf;ctx.beginPath();ctx.arc(cx-s*.15,cy-s*1.08,s*.45,0,Math.PI*2);ctx.fill();
       continue}
@@ -2069,6 +2069,10 @@ function isoDraw(cv,cells,age,t,opt){
     ctx.fillStyle=sk?'rgba(255,183,213,.9)':'rgba(255,255,255,.9)';
     for(let i=0;i<(sk?28:46);i++){const sp=sk?22+(i%4)*6:18+(i%5)*5, x=((i*83.7)%W+Math.sin(tt*.8+i)*14+tt*(sk?12:4))%W, y=((i*61.3)%Hh+tt*sp)%Hh;
       ctx.beginPath(); if(sk) ctx.ellipse(x,y,3.2,1.8,tt*1.5+i,0,Math.PI*2); else ctx.arc(x,y,1.2+(i%3)*.6,0,Math.PI*2); ctx.fill()}}
+  // 🍁 紅葉：秋（11月）は、赤や黄色の葉っぱが、ひらひら舞い落ちる
+  if(opt.amb&&opt.season==='autumn'&&opt.weather!=='rain'){const tt=(t||0)/1000,LC=['rgba(232,116,44,.9)','rgba(217,74,58,.9)','rgba(242,181,58,.9)'];
+    for(let i=0;i<22;i++){const sp=16+(i%4)*5, x=((i*97.3)%W+Math.sin(tt*.9+i*1.7)*22+tt*9)%W, y=((i*57.1)%Hh+tt*sp)%Hh;
+      ctx.fillStyle=LC[i%3];ctx.save();ctx.translate(x,y);ctx.rotate(tt*1.3+i);ctx.beginPath();ctx.ellipse(0,0,3.6,1.9,0,0,Math.PI*2);ctx.fill();ctx.restore()}}
   // 🏛 名所の旗：完成させた建物の屋上に、完成させた社長の色の旗
   if(opt.lms)for(const m of opt.lms){const top=tops[m.r+'_'+m.c];if(!top)continue;const[x,y]=top[0],ph=th*1.5;
     ctx.strokeStyle='#e8e2d0';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-ph);ctx.stroke();
@@ -2272,6 +2276,7 @@ const BADGES=[
   {id:'demo',ic:'🎬',name:'展示モードを見た',hint:'ホーム画面の「展示モード」を見る'},
   {id:'dict',ic:'📖',name:'ことば博士',hint:'経済ことば辞典のことばを10個しらべる（新聞などで点線のことばをタップ）'},
   {id:'halloween',ic:'🎃',name:'ハロウィンの社長',hint:'10月に1ゲーム最後まで遊ぶ（期間限定）'},
+  {id:'autumn',ic:'🍁',name:'紅葉の社長',hint:'11月に1ゲーム最後まで遊ぶ（期間限定）'},
   {id:'xmas',ic:'🎄',name:'イルミネーションの街',hint:'12月1日〜25日に1ゲーム最後まで遊ぶ（期間限定）'},
   {id:'newyear',ic:'🎍',name:'新春の社長',hint:'1月1日〜7日に1ゲーム最後まで遊ぶ（期間限定）'},
   {id:'spring',ic:'🌸',name:'春の社長',hint:'3月20日〜4月15日に1ゲーム最後まで遊ぶ（期間限定）'},
@@ -2366,6 +2371,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:50,d:'2026-11-03',t:'🍁 紅葉の季節',x:'11月は紅葉期間。街の木が赤や黄色に色づいて、葉っぱがひらひら舞い落ちます。11月に1ゲーム最後まで遊ぶと、期間限定バッジ「紅葉の社長」。コーチの採点は「1手もどす」をしても正しく数えるようになりました。'},
   {v:49,d:'2026-11-02',t:'🧑‍🏫 コーチのひとこと',x:'自分の手のあとに、コーチが「ベストの場所！」「最大+8の場所もあったよ」と教えてくれます。結果画面には「ベストの手 7/12（58%）」の採点も。⚙設定でOFFにできます。スマホでは「やめる」を✕にして、点数とベスト表示が切れないようにしました。'},
   {v:48,d:'2026-11-01',t:'🗝 本番でもひみつノートが助けてくれる',x:'ゲーム中にマスを選ぶと、ひみつノートのコツが効いているとき（例：川のそばで水力＋2）は金色、じゃましているとき（例：エネルギーのとなりの住宅は−1）は赤で、手札の上にひとこと出ます。タップすると、ノートのそのコツが光って開きます。'},
   {v:47,d:'2026-10-31',t:'🗝 社長のひみつノート',x:'ルールブックの最後に「社長のひみつノート」ができました。学校は金融やメディアにも＋2、川のそばのエネルギーは水力で＋2…など、知っていると得するコツが8つ。「ためす」で、練習の街でその形の計算をたしかめられます。'},
@@ -2737,7 +2743,7 @@ function coachSay(d,best){
   else toast(`🧑‍🏫 コーチ：このカードなら、最大 <b>${sg(best)}</b> の場所があったよ<br><small>迷ったら💡ヒントで探せる</small>`);
 }
 function coachRes(key){
-  const o=S.game&&S.game.coach&&S.game.coach[key]; if(!o||!o.n) return '';
+  const n=S.game?S.game.tiles.length:0, lg=((S.game&&S.game.coachLog)||[]).filter(x=>x.ok===key&&x.i<n), o={n:lg.length,b:lg.filter(x=>x.b).length}; if(!o.n) return '';
   const pct=Math.round(o.b/o.n*100), msg=pct>=80?'コーチもびっくりの名采配！':pct>=50?'いい調子。半分以上がベストの手！':'💡ヒントや🤝相性表を使うと、ベストの手がふえるよ';
   return `<div class="coachres"><span>🧑‍🏫</span><div><b>コーチの採点：ベストの手 ${o.b}/${o.n}（${pct}%）</b><small>${msg}</small></div><i style="--p:${pct}%"></i></div>`;
 }
@@ -3967,13 +3973,14 @@ async function place(){
   const card=selCard();
   if(!S.cell||!card||locked()) return;
   const[r,c]=S.cell, k=card.k, ty=myTy(), src=card.src==='d'?'d':'m';
+  if(k==='buy'?!buyable(S.R.g,r,c,eraNow(),myKey()):!valid(S.R.g,r,c)){S.cell=null;render();return} // 念のため：置けないマスなら何もしない
   const sim=k==='buy'?simulateBuy(S.R.g,r,c,eraNow(),ty,S.R):simulate(S.R.g,r,c,k,eraNow(),ty,S.R), d=sim.score, ch=sim.changes||[];
   if(k==='buy') tone(140,.3,'square',.05);
   if(S.tut===2){S.tut=3}
   if(S.mode==='local'){
     const p=viewerP();
     // 🧑‍🏫 コーチ：このカードでいちばん点がとれるマスとくらべて、ひとこと（ベストの手の数も記録）
-    if(k!=='buy'&&!S.game.demo){const best=bestScore(k,eraNow(),ty,S.R),cg=S.game.coach||(S.game.coach={}),o=cg[p.key]||(cg[p.key]={n:0,b:0});o.n++;if(d>=best)o.b++;if(coachOn()&&!tutorOn())setTimeout(()=>coachSay(d,best),650)}
+    if(k!=='buy'&&!S.game.demo){const best=bestScore(k,eraNow(),ty,S.R),n=S.game.tiles.length;S.game.coachLog=(S.game.coachLog||[]).filter(x=>x.i<n);S.game.coachLog.push({i:n,ok:p.key,b:d>=best?1:0}); /* 何手目の記録か覚えておくので、「1手もどす」をすると自動で数えなくなる */if(coachOn()&&!tutorOn())setTimeout(()=>coachSay(d,best),650)}
     S.game.tiles.push({r,c,k,src,t:Date.now(),ok:p.key,nick:p.nick,ty:p.ty});
     saveGame();
     afterPlace(r,c,d,ch);
