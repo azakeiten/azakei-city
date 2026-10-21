@@ -959,6 +959,12 @@ body:has(.demobar:not([hidden])) .tray{display:none}
 .glab b{display:block;font-size:14px}
 .glab small{display:block;margin-top:2px;font-size:11.5px;line-height:1.5;color:var(--muted)}
 .glab .ghost{width:auto;flex:none;white-space:nowrap}
+.coachres{position:relative;display:flex;gap:10px;align-items:center;margin:12px 0;padding:12px 14px 16px;border-radius:14px;text-align:left;background:rgba(74,168,255,.1);border:1px solid rgba(74,168,255,.45);overflow:hidden}
+.coachres>span{font-size:26px}
+.coachres b{display:block;font-size:14px}
+.coachres small{display:block;margin-top:2px;font-size:11.5px;color:var(--muted);font-weight:700}
+.coachres i{position:absolute;left:0;bottom:0;height:5px;width:var(--p);background:linear-gradient(90deg,#4aa8ff,var(--gold))}
+@media (max-width:420px){.tray .dock .x{font-size:0;padding:9px 11px}.tray .dock .x::before{content:"✕";font-size:14px}}
 @media (max-width:480px){.glab{flex-direction:column;align-items:stretch}.glab .ghost{width:100%}}
 .goalres div{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:13px;text-align:left}
 .goalres div.ok{border-color:var(--gold)}
@@ -2360,6 +2366,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:49,d:'2026-11-02',t:'🧑‍🏫 コーチのひとこと',x:'自分の手のあとに、コーチが「ベストの場所！」「最大+8の場所もあったよ」と教えてくれます。結果画面には「ベストの手 7/12（58%）」の採点も。⚙設定でOFFにできます。スマホでは「やめる」を✕にして、点数とベスト表示が切れないようにしました。'},
   {v:48,d:'2026-11-01',t:'🗝 本番でもひみつノートが助けてくれる',x:'ゲーム中にマスを選ぶと、ひみつノートのコツが効いているとき（例：川のそばで水力＋2）は金色、じゃましているとき（例：エネルギーのとなりの住宅は−1）は赤で、手札の上にひとこと出ます。タップすると、ノートのそのコツが光って開きます。'},
   {v:47,d:'2026-10-31',t:'🗝 社長のひみつノート',x:'ルールブックの最後に「社長のひみつノート」ができました。学校は金融やメディアにも＋2、川のそばのエネルギーは水力で＋2…など、知っていると得するコツが8つ。「ためす」で、練習の街でその形の計算をたしかめられます。'},
   {v:46,d:'2026-10-30',t:'📖 名人の答えに解説',x:'先週の答え合わせで名人の答えを開くと、「なぜ解けるのか」の解説が出ます（例：川のそばのエネルギーは水力で＋2）。解説は、答えの本当の計算の内わけから書いています。'},
@@ -2720,6 +2727,19 @@ function keyHint(g,r,c,k){
   if(k==='ho'&&has('river')) return {t:'川のながめで ＋1',i:7};
   if((k==='fi'||k==='me'||k==='in')&&around(g,r,c,D8).length>n4.length) return {t:'ななめのマスも数えてくれる',i:5};
   return null;
+}
+// 🧑‍🏫 コーチのひとこと（⚙設定でOFFにできる）
+const coachOn=()=>store.get('azakei-city-coach')!==false;
+function coachSay(d,best){
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  if(d>=best) toast(pick(['🌟 コーチ：ベストの場所！ 見る目があるね','🌟 コーチ：完ぺき！ そのカードでいちばんの場所','🌟 コーチ：ナイス！ これ以上ない一手']));
+  else if(best-d<=2) toast(`👍 コーチ：いい手！<small>（最大 ${sg(best)} の場所もあったよ）</small>`);
+  else toast(`🧑‍🏫 コーチ：このカードなら、最大 <b>${sg(best)}</b> の場所があったよ<br><small>迷ったら💡ヒントで探せる</small>`);
+}
+function coachRes(key){
+  const o=S.game&&S.game.coach&&S.game.coach[key]; if(!o||!o.n) return '';
+  const pct=Math.round(o.b/o.n*100), msg=pct>=80?'コーチもびっくりの名采配！':pct>=50?'いい調子。半分以上がベストの手！':'💡ヒントや🤝相性表を使うと、ベストの手がふえるよ';
+  return `<div class="coachres"><span>🧑‍🏫</span><div><b>コーチの採点：ベストの手 ${o.b}/${o.n}（${pct}%）</b><small>${msg}</small></div><i style="--p:${pct}%"></i></div>`;
 }
 function bestScore(k,e,ty,R){
   const key=`${S.mode}|${R.n}|${S.game?S.game.tiles.length:S.sharedTiles.length}|${k}|${ty}`;
@@ -3132,6 +3152,7 @@ function settingsHTML(){
     ${sw('big','🔠','文字を大きく',!!store.get('azakei-city-big'),'画面全体を少し大きく')}
     ${sw('fast','⏩','CPUの番を早送り',!!S.fast)}
     ${sw('guide','🧭','はじめての街ガイド',!store.get('azakei-city-tut2'),'ONで、遊び方の吹き出しをもう一度')}
+    ${sw('coach','🧑‍🏫','コーチのひとこと',coachOn(),'自分の手のあとに、ベストの場所だったか教えてくれる')}
     ${sw('view','🏙️','立体の街で遊ぶ',view3d(),'OFFで平面の盤面')}
     <button type="button" class="setrow" data-set="rot"><span class="si">↻</span><span class="sl">立体の街の向き<small>押すたびに90°回る</small></span><b class="sv">${(V3.rot||0)*90}°</b></button>
     ${S.mode==='local'?themePicker():''}</div>`;
@@ -3140,6 +3161,7 @@ $('tools').addEventListener('click',e=>{const b=e.target.closest('[data-set]');i
   if(k==='sound')$('sound').click(); else if(k==='big')$('bigText').click(); else if(k==='view')$('cityBtn').click(); else if(k==='rot')$('rotBtn').click();
   else if(k==='fast'){S.fast=!S.fast;store.set('azakei-city-fast',S.fast);renderFast()}
   else if(k==='guide'){store.set('azakei-city-tut2',store.get('azakei-city-tut2')?null:1);render()}
+  else if(k==='coach'){store.set('azakei-city-coach',!coachOn())}
   setTimeout(renderTools,30)});
 function renderTools(){
   let h='';
@@ -3622,6 +3644,7 @@ function showResult(){
     ${chalResultHTML()}
     ${S.game&&S.game.boss?(mi===0?`<div class="bossres win">👑 <b>${BOSS.nick}に勝った！</b><small>経験値＋${BOSS.xp}。ボスを倒した社長は、ほんのひとにぎり。</small></div>`:`<div class="bossres">👑 ${BOSS.nick}の勝ち…<small>あと${arr[0].score-me.score}点。作戦を変えて、また挑もう。</small></div>`):""}
     ${pbHTML(xp&&xp.pb)}
+    ${!many&&!(S.game&&S.game.demo)?coachRes(mk):""}
     ${!many&&!(S.game&&S.game.demo)?adviceHTML(me,mi,arr):""}
     ${!many&&!(S.game&&S.game.demo)?glabHTML():""}
     ${vsHTML(xp&&xp.vs)}
@@ -3949,6 +3972,8 @@ async function place(){
   if(S.tut===2){S.tut=3}
   if(S.mode==='local'){
     const p=viewerP();
+    // 🧑‍🏫 コーチ：このカードでいちばん点がとれるマスとくらべて、ひとこと（ベストの手の数も記録）
+    if(k!=='buy'&&!S.game.demo){const best=bestScore(k,eraNow(),ty,S.R),cg=S.game.coach||(S.game.coach={}),o=cg[p.key]||(cg[p.key]={n:0,b:0});o.n++;if(d>=best)o.b++;if(coachOn()&&!tutorOn())setTimeout(()=>coachSay(d,best),650)}
     S.game.tiles.push({r,c,k,src,t:Date.now(),ok:p.key,nick:p.nick,ty:p.ty});
     saveGame();
     afterPlace(r,c,d,ch);
