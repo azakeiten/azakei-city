@@ -349,6 +349,19 @@ body.simple .polnow{display:none}
 .weekq.ok{background:rgba(58,210,131,.14);border-color:rgba(58,210,131,.6)}
 .weekq.ok small{color:#8ff0bd}
 .weekq .ghost{width:auto;flex:none;white-space:nowrap}
+.meprof{display:flex;gap:10px;align-items:center;margin:6px 0 10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--gold) 10%,#191c3c);border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);box-sizing:border-box;width:100%}
+.meprof .mk{flex:none;width:48px;height:48px;border-radius:50%;border:2px solid var(--gold);background:#12142c;font-size:26px;line-height:1;padding:0}
+.meprof .mk.empty{border-style:dashed;color:var(--gold);font-size:22px}
+.meprof label{flex:1;min-width:0;display:grid;gap:3px;text-align:left}
+.meprof small{font-size:11px;font-weight:800;color:var(--gold)}
+.meprof small i{font-style:normal;font-weight:600;color:var(--muted)}
+.meprof input{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#12142c;color:var(--ink);font-size:15px;font-weight:800}
+.markpick{margin:-4px 0 10px;padding:8px;border-radius:12px;background:rgba(255,255,255,.04);text-align:left}
+.markpick small{display:block;font-size:11px;font-weight:800;color:var(--muted);margin:0 0 6px 2px}
+.markpick>div{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px}
+.markpick button{height:38px;border-radius:10px;border:1px solid var(--line);background:#191c3c;font-size:20px;padding:0}
+.markpick button.none{font-size:11px;font-weight:800;color:var(--muted)}
+.markpick button.on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 50%,transparent)}
 .ansq{display:flex;gap:10px;align-items:center;margin:0 0 10px;padding:9px 12px;border-radius:14px;text-align:left;background:rgba(255,255,255,.04);border:1px dashed color-mix(in srgb,var(--gold) 45%,transparent);box-sizing:border-box;width:100%}
 .ansq .wi{font-size:22px;flex:none}
 .ansq>div{flex:1;min-width:0}
@@ -2371,6 +2384,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:51,d:'2026-11-04',t:'🎩 あなたの社長名とマーク',x:'ホームの「社長の部屋」で、社長名を入れて、名前の前につくマーク（🎩👑🚀🍙🐱など16種類）を選べるようになりました。ゲームの中では「🎩たろう」のように出ます。'},
   {v:50,d:'2026-11-03',t:'🍁 紅葉の季節',x:'11月は紅葉期間。街の木が赤や黄色に色づいて、葉っぱがひらひら舞い落ちます。11月に1ゲーム最後まで遊ぶと、期間限定バッジ「紅葉の社長」。コーチの採点は「1手もどす」をしても正しく数えるようになりました。'},
   {v:49,d:'2026-11-02',t:'🧑‍🏫 コーチのひとこと',x:'自分の手のあとに、コーチが「ベストの場所！」「最大+8の場所もあったよ」と教えてくれます。結果画面には「ベストの手 7/12（58%）」の採点も。⚙設定でOFFにできます。スマホでは「やめる」を✕にして、点数とベスト表示が切れないようにしました。'},
   {v:48,d:'2026-11-01',t:'🗝 本番でもひみつノートが助けてくれる',x:'ゲーム中にマスを選ぶと、ひみつノートのコツが効いているとき（例：川のそばで水力＋2）は金色、じゃましているとき（例：エネルギーのとなりの住宅は−1）は赤で、手札の上にひとこと出ます。タップすると、ノートのそのコツが光って開きます。'},
@@ -2475,7 +2489,7 @@ function renderCoCard(){
   const old=(t.age||0)>=3, risk=isInd(t.k)&&canBust(t)&&nv!=null&&nv<=BUST, mine=t.ok===myKey();
   el.innerHTML=`<button class="cc-x" type="button" aria-label="とじる">✕</button>
     <div class="cc-top"><span class="cc-ic k-${t.k}">${ic(t.k)}</span><span><b>${esc(t.name||T[t.k].name)}${(t.lv||1)>1?` <i class="cc-star">${'★'.repeat(t.lv-1)}</i>`:''}</b><small>${T[t.k].name}${old?' ・ <span class="cc-old">老舗</span>':''}</small></span></div>
-    <div class="cc-owner" style="--oc:${ownerColor(t.ok)}">${t.ty&&TY[t.ty]?TY[t.ty].face:''} ${esc(t.nick||'—')}${mine&&t.nick!=='あなた'?'（あなた）':''}</div>
+    <div class="cc-owner" style="--oc:${ownerColor(t.ok)}">${t.ty&&TY[t.ty]?TY[t.ty].face:''} ${esc(t.nick||'—')}${mine&&!/あなた$/.test(t.nick||'')?'（あなた）':''}</div>
     ${mine&&S.mode==="local"&&S.game&&!S.game.demo&&t.n0!=null&&!S.game.chal?`<div class="cc-rename"><input id="ccName" maxlength="10" placeholder="新しい社名" value="${esc((S.game.cnames||{})[t.n0]||"")}"><button class="ghost" type="button" id="ccNameGo" data-n0="${t.n0}">✎ 名前を変える</button></div>`:""}
     ${Object.entries(S.R.claimed).filter(([,v])=>v&&v.r===r&&v.c===c).map(([id,v])=>`<div class="cc-lm">🏛 名所「${LM.find(l=>l.id===id)?.name||id}」を完成させた建物（${esc(v.nick||"")}）</div>`).join("")}
     <div class="cc-stats"><div><small>創業</small><b>${t.y0||'—'}</b></div><div><small>決算</small><b>${t.age||0}回</b></div><div><small>これまで</small><b>+${t.earn||0}</b></div><div><small>いまの稼ぎ</small><b class="cc-now">${v}</b></div></div>
@@ -3827,6 +3841,7 @@ function startGame(){
   S.game={seed,daily:SU.daily?today:null,short:!SU.daily&&SU.short,simple:!SU.daily&&SU.simple,cpu:SU.boss?"boss":SU.daily?"normal":SU.cpu,boss:!!SU.boss,players,tiles:[]}; if(!SU.boss) store.set("azakei-city-cpu",SU.cpu); SU.boss=false;
   store.set('azakei-city-names',SU.rows.map(r=>r.nick)); store.set('azakei-city-ty-local',SU.rows[0].ty);
   if(n===1&&players[0].nick!=='あなた'){S.nick=players[0].nick;store.set('azakei-city-nick',S.nick);$('nick').value=S.nick}
+  if(n===1) players[0].nick=meNick(); // 社長のマークを名前の前に
   clearTimeout(ticker.w); S.tick=null;
   saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false;
   S.viewer=players[0].key;
@@ -4165,6 +4180,9 @@ $('resultbg').addEventListener('click',e=>{if(e.target.id==='resultbg')$('result
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!finished())hidePaper();$('resultbg').hidden=true;if(S.mode==='shared'?S.tyShared:S.game)$('typebg').hidden=true});
 $('nick').value=S.nick;
 $('nick').addEventListener('input',e=>{S.nick=e.target.value.slice(0,12);store.set('azakei-city-nick',S.nick);renderRank()});
+// 社長の部屋：マークを選ぶ・名前を入れる
+$('home').addEventListener('click',e=>{const b=e.target.closest('[data-mark]');if(!b)return;store.set('azakei-city-mark',b.dataset.mark);showHome();sfx.pick();toast(b.dataset.mark?`${b.dataset.mark} マークを「${b.dataset.mark}${esc((S.nick||'').trim()||'あなた')}」にしました`:'マークをなしにしました')});
+$('home').addEventListener('input',e=>{if(e.target.id!=='homeNick')return;S.nick=e.target.value.slice(0,10);store.set('azakei-city-nick',S.nick);const n=$('nick');if(n)n.value=S.nick});
 $('riskT').addEventListener('change',e=>{S.risk=e.target.checked;renderBoard()});
 function paintSound(){$('sound').textContent=S.sound?'音 ON':'音 OFF';$('sound').setAttribute('aria-pressed',S.sound)}
 $('sound').onclick=()=>{S.sound=!S.sound;store.set('azakei-city-sound',S.sound);paintSound();sfx.pick()};
@@ -4376,7 +4394,7 @@ function showChallenges(){
 function startChallenge(id){
   const c=CHAL.find(x=>x.id===id); if(!c) return;
   const ty=store.get('azakei-city-ty-local')||'fox';
-  S.game={seed:Math.floor(Math.random()*1e9),chal:id,eras:c.eras.slice(),players:[{key:'h1',nick:(S.nick||'').trim()||'あなた',ty,cpu:false}],tiles:[]};
+  S.game={seed:Math.floor(Math.random()*1e9),chal:id,eras:c.eras.slice(),players:[{key:'h1',nick:meNick(),ty,cpu:false}],tiles:[]};
   saveGame(); S.seen.local=-1; S.sel=S.cell=S.insp=null; S.pause=false; S.busy=false; S.policy=false; S.viewer='h1';
   $('typebg').hidden=true; hideHome();
   if(S.mode!=='local') setMode('local'); else render();
@@ -4446,7 +4464,7 @@ function showHome(){
       <button class="mbtn" type="button" data-h="notebook"><span class="mi">🏅</span><b>社長手帳</b><small>集めたバッジ ${(()=>{const g=store.get('azakei-city-badges')||{};return BADGES.filter(b=>g[b.id]).length})()}/${BADGES.length}</small></button>
       <button class="mbtn" type="button" data-h="demo"><span class="mi">🎬</span><b>展示モード</b><small>CPUが自動で遊び続ける。学園祭の展示に</small></button>
     </div></section>
-    <div class="homeprof"><div class="slab">社長の部屋</div>${weekHTML("home")}${ansHTML()}${rankChip(+(store.get("azakei-city-xp")||0))}${bossHTML()}${missionsHTML()}${themePicker()}</div>
+    <div class="homeprof"><div class="slab">社長の部屋</div>${meProfHTML()}${weekHTML("home")}${ansHTML()}${rankChip(+(store.get("azakei-city-xp")||0))}${bossHTML()}${missionsHTML()}${themePicker()}</div>
     <p class="homefoot">AZAKEI（麻経）・麻布中学校・高等学校 経済系同好会</p>
   </div>`;
   $('home').hidden=false;
@@ -4454,6 +4472,14 @@ function showHome(){
   const f=$('home').querySelector('.cont,.mbtn.main'); if(f) f.focus();
 }
 // すぐ遊ぶ：設定画面をとばして、ひとり・ショートで始める（社長タイプは前回のもの、なければおまかせ）
+// 🎩 社長のマーク：名前の前につく、自分だけのしるし（ホームの「社長の部屋」で選ぶ）
+const MARKS=['🎩','👑','🌟','🚀','🍙','🐱','🐶','🎸','⚽','📚','🌈','🔥','🍀','🎨','🦄','🍣'];
+function meNick(){const n=(S.nick||'').trim()||'あなた',m=store.get('azakei-city-mark')||'';return m?m+n:n}
+function meProfHTML(){
+  const m=store.get('azakei-city-mark')||'';
+  return `<div class="meprof"><button type="button" class="mk${m?'':' empty'}" data-h="mark" aria-label="社長のマークを選ぶ">${m||'＋'}</button><label><small>あなたの社長名 <i>（ゲームの中でこの名前になるよ）</i></small><input id="homeNick" maxlength="10" value="${esc(S.nick||'')}" placeholder="なまえを入れてね" autocomplete="off"></label></div>
+  <div class="markpick" id="markPick" hidden><small>マークを選ぶ（名前の前につくよ）</small><div>${MARKS.map(x=>`<button type="button" data-mark="${x}" class="${x===m?'on':''}">${x}</button>`).join('')}<button type="button" data-mark="" class="none${m?'':' on'}">なし</button></div></div>`;
+}
 function quickStart(){
   const ty=store.get('azakei-city-ty-local')||TYK[Math.floor(Math.random()*TYK.length)];
   SU.daily=false; SU.short=true; SU.n=1; SU.cpu=store.get('azakei-city-cpu')||'normal';
@@ -4481,6 +4507,7 @@ $('home').addEventListener('click',e=>{
   if(a==='museum'){showMuseum();return}
   if(a==='lab'){showLab();return}
   if(a==='ans'){showAns();return}
+  if(a==='mark'){const p=$('markPick');if(p)p.hidden=!p.hidden;return}
   if(a==='demo'){startDemo();return}
   if(a==='upd'){showUpdates();return}
   if(a==='boss'){startBoss();return}
