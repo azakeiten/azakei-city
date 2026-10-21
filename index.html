@@ -362,6 +362,30 @@ body.simple .polnow{display:none}
 .markpick button{height:38px;border-radius:10px;border:1px solid var(--line);background:#191c3c;font-size:20px;padding:0}
 .markpick button.none{font-size:11px;font-weight:800;color:var(--muted)}
 .markpick button.on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 50%,transparent)}
+/* 🪪 社長の名刺 */
+.ov.cardbg{z-index:42;background:rgba(6,7,20,.9);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.bizwrap{width:100%;max-width:400px;display:grid;gap:10px;justify-items:center}
+.biz{position:relative;width:100%;box-sizing:border-box;aspect-ratio:1.62;padding:16px 18px;border-radius:16px;overflow:hidden;color:#2a2214;
+  background:radial-gradient(120% 90% at 100% 0%,rgba(255,200,58,.35),transparent 55%),linear-gradient(160deg,#fffaf0,#f3e6c8);
+  border:2px solid #c9a24a;box-shadow:0 18px 50px rgba(0,0,0,.5),inset 0 0 0 5px #fffaf0,inset 0 0 0 6px rgba(201,162,74,.6);display:flex;flex-direction:column;justify-content:space-between;animation:pop .4s ease}
+.biz::after{content:"";position:absolute;right:-30px;bottom:-30px;width:140px;height:140px;border-radius:50%;background:repeating-radial-gradient(circle,rgba(201,162,74,.18) 0 2px,transparent 2px 10px);pointer-events:none}
+.bz-top{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:800;letter-spacing:.1em;color:#8a6a2a}
+.bz-logo{font-family:var(--display);font-size:13px;letter-spacing:.12em;color:#b8860b}
+.bz-main{display:flex;gap:12px;align-items:center}
+.bz-mark{flex:none;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:32px;background:#fff;border:2px solid #c9a24a;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.bz-main small{display:block;font-size:11px;font-weight:800;color:#8a6a2a}
+.bz-main b{display:block;font-family:var(--serif);font-size:24px;line-height:1.2;word-break:break-all}
+.bz-main b i{font-style:normal;font-size:13px;margin-left:4px;color:#6a5a3a}
+.bz-main em{display:block;font-style:normal;font-size:11px;font-weight:700;color:#6a5a3a}
+.bz-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center;border-top:1px dashed rgba(138,106,42,.5);padding-top:8px}
+.bz-stats b{display:block;font-family:var(--display);font-size:18px;color:#7a4f00;line-height:1.1}
+.bz-stats small{font-size:10px;font-weight:800;color:#8a6a2a}
+.bz-foot{font-size:9.5px;font-weight:700;color:#8a6a2a;letter-spacing:.05em}
+.bz-tip{margin:0;font-size:12px;color:var(--muted);font-weight:700}
+.meprof .bzbtn{flex:none;width:auto;padding:8px 10px;font-size:12px;white-space:nowrap}
+.bzres{display:flex;justify-content:center;margin:8px 0}
+.bzres .ghost{width:auto}
+@media (max-width:380px){.biz{padding:12px 14px}.bz-main b{font-size:20px}.bz-mark{width:48px;height:48px;font-size:26px}}
 .ansq{display:flex;gap:10px;align-items:center;margin:0 0 10px;padding:9px 12px;border-radius:14px;text-align:left;background:rgba(255,255,255,.04);border:1px dashed color-mix(in srgb,var(--gold) 45%,transparent);box-sizing:border-box;width:100%}
 .ansq .wi{font-size:22px;flex:none}
 .ansq>div{flex:1;min-width:0}
@@ -1390,6 +1414,7 @@ body.drawer .side{transform:none}
 <div class="ov" id="goalbg" hidden></div>
 <div class="ov" id="affbg" hidden></div>
 <div class="ov labbg" id="labbg" hidden></div>
+<div class="ov cardbg" id="cardbg" hidden></div>
 
 <script>
 const N=11, MID=5, ERA=8, ERAS=12, MKT=5;
@@ -2384,6 +2409,7 @@ function museumChart(){
 }
 // 🆕 アップデート情報（新しい順）。v が増えると、ホーム画面に NEW が付く
 const UPDATES=[
+  {v:52,d:'2026-11-05',t:'🪪 社長の名刺',x:'社長名・マーク・ランク・試合数・1位の数・ベストスコア・バッジ・名所をまとめた「社長の名刺」ができました。ホームの社長の部屋や、結果画面から見られます。スクリーンショットして友だちに見せよう！'},
   {v:51,d:'2026-11-04',t:'🎩 あなたの社長名とマーク',x:'ホームの「社長の部屋」で、社長名を入れて、名前の前につくマーク（🎩👑🚀🍙🐱など16種類）を選べるようになりました。ゲームの中では「🎩たろう」のように出ます。'},
   {v:50,d:'2026-11-03',t:'🍁 紅葉の季節',x:'11月は紅葉期間。街の木が赤や黄色に色づいて、葉っぱがひらひら舞い落ちます。11月に1ゲーム最後まで遊ぶと、期間限定バッジ「紅葉の社長」。コーチの採点は「1手もどす」をしても正しく数えるようになりました。'},
   {v:49,d:'2026-11-02',t:'🧑‍🏫 コーチのひとこと',x:'自分の手のあとに、コーチが「ベストの場所！」「最大+8の場所もあったよ」と教えてくれます。結果画面には「ベストの手 7/12（58%）」の採点も。⚙設定でOFFにできます。スマホでは「やめる」を✕にして、点数とベスト表示が切れないようにしました。'},
@@ -3665,6 +3691,7 @@ function showResult(){
     ${S.game&&S.game.boss?(mi===0?`<div class="bossres win">👑 <b>${BOSS.nick}に勝った！</b><small>経験値＋${BOSS.xp}。ボスを倒した社長は、ほんのひとにぎり。</small></div>`:`<div class="bossres">👑 ${BOSS.nick}の勝ち…<small>あと${arr[0].score-me.score}点。作戦を変えて、また挑もう。</small></div>`):""}
     ${pbHTML(xp&&xp.pb)}
     ${!many&&!(S.game&&S.game.demo)?coachRes(mk):""}
+    ${!many&&!(S.game&&S.game.demo)?`<div class="bzres"><button class="ghost" type="button" id="bzRes">🪪 社長の名刺を見る</button></div>`:""}
     ${!many&&!(S.game&&S.game.demo)?adviceHTML(me,mi,arr):""}
     ${!many&&!(S.game&&S.game.demo)?glabHTML():""}
     ${vsHTML(xp&&xp.vs)}
@@ -3687,6 +3714,7 @@ function showResult(){
   // ランクのゲージを、少し待ってから伸ばす（ランクアップなら、ファンファーレ）
   setTimeout(()=>{const bar=$('resultbg').querySelector('.rankres .rk-bar i');if(bar)bar.style.width=bar.dataset.to+'%';if($('resultbg').querySelector('.rankres.up'))sfx.goal()},700);
   $('again').onclick=()=>{$('resultbg').hidden=true;showSetup()};
+  if($('bzRes')) $('bzRes').onclick=showCard;
   if($('glabBtn')) $('glabBtn').onclick=()=>{const b=bestMine();if(b)labFromGame(b)};
   if($('citySave')) $('citySave').onclick=()=>{const v=$('cityIn').value.trim().slice(0,10);if(!v)return;S.game.city=v;saveGame();$('citySave').textContent='変えました';toast(`🏙️ 街の名前は「${esc(v)}」`)};
   $('closeRes').onclick=()=>{$('resultbg').hidden=true;toggleCity(true)};
@@ -4475,9 +4503,37 @@ function showHome(){
 // 🎩 社長のマーク：名前の前につく、自分だけのしるし（ホームの「社長の部屋」で選ぶ）
 const MARKS=['🎩','👑','🌟','🚀','🍙','🐱','🐶','🎸','⚽','📚','🌈','🔥','🍀','🎨','🦄','🍣'];
 function meNick(){const n=(S.nick||'').trim()||'あなた',m=store.get('azakei-city-mark')||'';return m?m+n:n}
+// 🪪 社長の名刺：名前・マーク・ランク・記録をまとめた1枚（見せ合ったり、スクショしたり）
+function cardData(){
+  const rec=store.get('azakei-city-rec')||{}, xp=+(store.get('azakei-city-xp')||0), k=rankOf(xp), got=store.get('azakei-city-badges')||{};
+  const ty=store.get('azakei-city-ty-local'), best=rec.best||{}, bs=Math.max(0,...['full','short','daily'].map(m=>best[m]?best[m].score:0));
+  return {mark:store.get('azakei-city-mark')||'',name:(S.nick||'').trim()||'あなた',lv:k.i+1,rank:k.name,ty:ty&&TY[ty]?ty:null,
+    games:rec.games||0,wins:rec.wins||0,best:bs,badges:BADGES.filter(b=>got[b.id]).length,lm:Object.keys(rec.lmGot||{}).length,lab:LABQ.filter(q=>(store.get('azakei-city-lab')||{})[q.id]).length};
+}
+function showCard(){
+  const D=cardData(), bg=$('cardbg');
+  bg.innerHTML=`<div class="bizwrap" role="dialog" aria-label="社長の名刺">
+    <div class="biz">
+      <div class="bz-top"><span class="bz-logo">AZAKEI CITY</span><span>社長の名刺</span></div>
+      <div class="bz-main"><span class="bz-mark">${D.mark||'🏙️'}</span><div><small>Lv.${D.lv} ${D.rank}</small><b>${esc(D.name)}<i>社長</i></b>${D.ty?`<em>${TY[D.ty].face} ${TY[D.ty].name}社長タイプ</em>`:''}</div></div>
+      <div class="bz-stats">
+        <div><b>${D.games}</b><small>試合</small></div><div><b>${D.wins}</b><small>1位</small></div><div><b>${D.best||'—'}</b><small>ベスト</small></div>
+        <div><b>${D.badges}</b><small>バッジ</small></div><div><b>${D.lm}</b><small>名所</small></div>
+      </div>
+      <div class="bz-foot">麻布中学校・高等学校 経済系同好会 AZAKEI</div>
+    </div>
+    <p class="bz-tip">📸 スクリーンショットして、友だちに見せよう</p>
+    <div class="labbtns"><button class="ghost" type="button" data-bzcopy="1">文字でコピー</button><button class="go" type="button" data-x="1">とじる</button></div></div>`;
+  bg.hidden=false;
+  bg.onclick=e=>{
+    if(e.target===bg||e.target.closest('[data-x]')){bg.hidden=true;return}
+    if(e.target.closest('[data-bzcopy]')){const t=`【AZAKEI CITY 社長の名刺】\n${D.mark}${D.name}社長（Lv.${D.lv} ${D.rank}）\n試合 ${D.games}／1位 ${D.wins}／ベスト ${D.best}点／バッジ ${D.badges}個／名所 ${D.lm}`;
+      try{navigator.clipboard.writeText(t).then(()=>toast('🪪 名刺をコピーしました'),()=>toast('コピーできませんでした。スクリーンショットで送ってね'))}catch(_){toast('コピーできませんでした。スクリーンショットで送ってね')}}
+  };
+}
 function meProfHTML(){
   const m=store.get('azakei-city-mark')||'';
-  return `<div class="meprof"><button type="button" class="mk${m?'':' empty'}" data-h="mark" aria-label="社長のマークを選ぶ">${m||'＋'}</button><label><small>あなたの社長名 <i>（ゲームの中でこの名前になるよ）</i></small><input id="homeNick" maxlength="10" value="${esc(S.nick||'')}" placeholder="なまえを入れてね" autocomplete="off"></label></div>
+  return `<div class="meprof"><button type="button" class="mk${m?'':' empty'}" data-h="mark" aria-label="社長のマークを選ぶ">${m||'＋'}</button><label><small>あなたの社長名 <i>（ゲームの中でこの名前になるよ）</i></small><input id="homeNick" maxlength="10" value="${esc(S.nick||"")}" placeholder="なまえを入れてね" autocomplete="off"></label><button type="button" class="ghost bzbtn" data-h="card">🪪 名刺</button></div>
   <div class="markpick" id="markPick" hidden><small>マークを選ぶ（名前の前につくよ）</small><div>${MARKS.map(x=>`<button type="button" data-mark="${x}" class="${x===m?'on':''}">${x}</button>`).join('')}<button type="button" data-mark="" class="none${m?'':' on'}">なし</button></div></div>`;
 }
 function quickStart(){
@@ -4507,6 +4563,7 @@ $('home').addEventListener('click',e=>{
   if(a==='museum'){showMuseum();return}
   if(a==='lab'){showLab();return}
   if(a==='ans'){showAns();return}
+  if(a==='card'){showCard();return}
   if(a==='mark'){const p=$('markPick');if(p)p.hidden=!p.hidden;return}
   if(a==='demo'){startDemo();return}
   if(a==='upd'){showUpdates();return}
